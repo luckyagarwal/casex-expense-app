@@ -2,7 +2,10 @@
  * Notion Expense PWA — Cloudflare Worker
  *
  * Endpoints:
- *   GET  /                          → HTML PWA shell
+ *   GET  /                          → HTML PWA shell (auth-gated)
+ *   GET  /login                     → PIN login page
+ *   POST /login                     → validate PIN, set session cookie
+ *   GET  /logout                    → clear session cookie
  *   GET  /api/bootstrap[?refresh=1] → categories, subcategories, accounts, recents
  *   GET  /api/expenses?period=today|week|month[&refresh=1]
  *                                   → cached expense list; refresh=1 bypasses KV
@@ -12,7 +15,8 @@
  *
  * Env secrets (wrangler secret put ...):
  *   NOTION_TOKEN    — Notion integration token
- *   SHARED_SECRET   — optional; if set, gates all /api/* routes
+ *   PIN             — login PIN (if unset, auth is skipped)
+ *   SESSION_SECRET  — random string for signing cookies (generate any long random string)
  *
  * Env vars (wrangler.toml [vars]):
  *   EXPENSES_DB_ID, CATEGORIES_DB_ID, SUBCATEGORIES_DB_ID, ACCOUNTS_DB_ID
@@ -325,6 +329,114 @@ async function handleDeleteExpense(env, pageId) {
 }
 
 // ----------------------------------------------------------------------------
+// Session auth (PIN + signed cookie)
+// ----------------------------------------------------------------------------
+
+const COOKIE      = "ne_sess";
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+function getCookie(request, name) {
+  const hdr = request.headers.get("Cookie") || "";
+  const pair = hdr.split(";").map(s => s.trim()).find(s => s.startsWith(name + "="));
+  return pair ? pair.slice(name.length + 1) : null;
+}
+
+async function signSession(secret, ts) {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const buf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts));
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+async function makeSessionCookie(env) {
+  const ts  = Date.now().toString();
+  const sig = await signSession(env.SESSION_SECRET || "fallback-secret", ts);
+  const val = btoa(ts + "|" + sig);
+  return `${COOKIE}=${val}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL / 1000}`;
+}
+
+async function isValidSession(request, env) {
+  if (!env.PIN) return true; // no PIN configured = open access
+  const raw = getCookie(request, COOKIE);
+  if (!raw) return false;
+  try {
+    const decoded = atob(raw);
+    const bar     = decoded.indexOf("|");
+    const ts      = decoded.slice(0, bar);
+    const sig     = decoded.slice(bar + 1);
+    if (Date.now() - parseInt(ts) > SESSION_TTL) return false;
+    const expected = await signSession(env.SESSION_SECRET || "fallback-secret", ts);
+    return sig === expected;
+  } catch { return false; }
+}
+
+const LOGIN_HTML = (err) => `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#191919"/>
+<title>Expense Tracker — Login</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#191919;color:rgba(255,255,255,.87);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
+  }
+  .box{
+    width:100%;max-width:340px;
+    background:#202020;border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:32px 24px;text-align:center;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+  }
+  .icon{font-size:44px;margin-bottom:16px}
+  h1{font-size:20px;font-weight:700;margin-bottom:6px}
+  .sub{font-size:13px;color:rgba(255,255,255,.44);margin-bottom:24px}
+  input{
+    width:100%;background:#2f2f2f;border:1px solid rgba(255,255,255,.08);
+    color:rgba(255,255,255,.87);border-radius:10px;
+    padding:14px;font-size:22px;text-align:center;letter-spacing:8px;
+    outline:none;margin-bottom:14px;
+  }
+  input:focus{border-color:#ff7369}
+  input::placeholder{letter-spacing:0;font-size:14px;color:rgba(255,255,255,.3)}
+  button{
+    width:100%;background:#ff7369;color:#fff;border:none;
+    border-radius:10px;padding:15px;font-size:16px;font-weight:700;
+    cursor:pointer;
+  }
+  button:active{opacity:.85}
+  .err{color:#f46a6a;font-size:13px;margin-bottom:14px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">💸</div>
+  <h1>Expense Tracker</h1>
+  <p class="sub">Enter your PIN to continue</p>
+  ${err ? `<div class="err">Incorrect PIN. Try again.</div>` : ""}
+  <form method="POST" action="/login">
+    <input type="password" name="pin" inputmode="numeric" pattern="[0-9]*"
+           placeholder="Enter PIN" autofocus autocomplete="current-password"/>
+    <button type="submit">Unlock →</button>
+  </form>
+</div>
+</body>
+</html>`;
+
+function htmlResp(body, status = 200, extraHeaders = {}) {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "text/html; charset=utf-8", ...extraHeaders },
+  });
+}
+
+// ----------------------------------------------------------------------------
 // HTML shell
 // ----------------------------------------------------------------------------
 
@@ -346,39 +458,67 @@ export default {
 
     if (url.pathname === "/healthz") return new Response("ok");
 
+    // ── Login page ──
+    if (url.pathname === "/login") {
+      if (request.method === "GET") return htmlResp(LOGIN_HTML(false));
+      if (request.method === "POST") {
+        const body = await request.formData().catch(() => null);
+        const pin  = body?.get("pin")?.trim();
+        if (!env.PIN || pin === env.PIN) {
+          const cookie = await makeSessionCookie(env);
+          return new Response(null, {
+            status: 302,
+            headers: { Location: "/", "Set-Cookie": cookie },
+          });
+        }
+        return htmlResp(LOGIN_HTML(true), 401);
+      }
+    }
+
+    // ── Logout ──
+    if (url.pathname === "/logout") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/login",
+          "Set-Cookie": `${COOKIE}=; Path=/; HttpOnly; Max-Age=0`,
+        },
+      });
+    }
+
+    // ── Auth gate — redirect to /login if no valid session ──
+    if (!(await isValidSession(request, env))) {
+      if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
+      return new Response(null, { status: 302, headers: { Location: "/login" } });
+    }
+
+    // ── App shell ──
     if (url.pathname === "/") {
       return new Response(HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
+    // ── API routes ──
     if (url.pathname.startsWith("/api/")) {
       try {
-        // Bootstrap
         if (url.pathname === "/api/bootstrap" && request.method === "GET") {
           const refresh = url.searchParams.get("refresh") === "1";
           return json(await handleBootstrap(env, refresh));
         }
-
-        // Expense history (cached)
         if (url.pathname === "/api/expenses" && request.method === "GET") {
           return json(await handleGetExpenses(env, url));
         }
-
-        // Create expense
         if (url.pathname === "/api/expense" && request.method === "POST") {
           const body = await request.json().catch(() => null);
           const result = await handleCreateExpense(env, body);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }
-
-        // Delete expense
         if (url.pathname.startsWith("/api/expense/") && request.method === "DELETE") {
           const pageId = url.pathname.slice("/api/expense/".length);
           const result = await handleDeleteExpense(env, pageId);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }
-
         return json({ error: "not found" }, 404);
       } catch (err) {
         return json({ error: err.message || "server error", details: err.body || null }, err.status || 500);
