@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# wrangler
+.wrangler/
+.dev.vars
+.dev.vars.local
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+wrangler-*.log
+
+# build output
+dist/
+build/
+*.tsbuildinfo
