@@ -377,19 +377,99 @@ async function verifyAccessJWT(token, teamName, aud) {
   } catch { return false; }
 }
 
-async function isAuthorized(request, env) {
-  if (!env.CF_ACCESS_TEAM || !env.CF_ACCESS_AUD) return true; // not configured = open
-  const token = request.headers.get("Cf-Access-Jwt-Assertion")
-             || getCookie(request, "CF_Authorization");
-  if (!token) return false;
-  return verifyAccessJWT(token, env.CF_ACCESS_TEAM, env.CF_ACCESS_AUD);
+// PIN fallback — session cookie
+const SESS_COOKIE = "ne_sess";
+const SESS_TTL    = 30 * 24 * 60 * 60; // 30 days in seconds
+
+async function makeSessionCookie(secret) {
+  const ts  = Date.now().toString();
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = btoa(String.fromCharCode(
+    ...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts)))
+  ));
+  return `${SESS_COOKIE}=${btoa(ts + "|" + sig)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESS_TTL}`;
 }
 
-function cfLoginUrl(env, returnUrl) {
-  return `https://${env.CF_ACCESS_TEAM}.cloudflareaccess.com/cdn-cgi/access/login/${
-    new URL(returnUrl).hostname
-  }?redirect_url=${encodeURIComponent(returnUrl)}`;
+async function hasValidSession(request, secret) {
+  const raw = getCookie(request, SESS_COOKIE);
+  if (!raw) return false;
+  try {
+    const decoded = atob(raw);
+    const bar = decoded.indexOf("|");
+    const ts  = decoded.slice(0, bar);
+    const sig = decoded.slice(bar + 1);
+    if (Date.now() - parseInt(ts) > SESS_TTL * 1000) return false;
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const expected = btoa(String.fromCharCode(
+      ...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts)))
+    ));
+    return sig === expected;
+  } catch { return false; }
 }
+
+async function isAuthorized(request, env) {
+  // 1. Valid PIN session cookie → always allow
+  const sessSecret = env.SESSION_SECRET || "ne-default-secret";
+  if (await hasValidSession(request, sessSecret)) return true;
+
+  // 2. Valid Cloudflare Access JWT → allow
+  if (env.CF_ACCESS_TEAM && env.CF_ACCESS_AUD) {
+    const token = request.headers.get("Cf-Access-Jwt-Assertion")
+               || getCookie(request, "CF_Authorization");
+    if (token && await verifyAccessJWT(token, env.CF_ACCESS_TEAM, env.CF_ACCESS_AUD)) return true;
+  }
+
+  // 3. No auth configured at all → open access
+  if (!env.PIN && !env.CF_ACCESS_TEAM) return true;
+
+  return false;
+}
+
+const LOGIN_HTML = (err) => `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#191919"/>
+<title>Expense Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#191919;color:rgba(255,255,255,.87);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));}
+  .box{width:100%;max-width:320px;background:#202020;
+    border:1px solid rgba(255,255,255,.08);border-radius:16px;
+    padding:32px 24px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+  .icon{font-size:44px;margin-bottom:16px}
+  h1{font-size:20px;font-weight:700;margin-bottom:6px}
+  .sub{font-size:13px;color:rgba(255,255,255,.44);margin-bottom:24px}
+  input{width:100%;background:#2f2f2f;border:1px solid rgba(255,255,255,.08);
+    color:rgba(255,255,255,.87);border-radius:10px;padding:14px;
+    font-size:24px;text-align:center;letter-spacing:10px;
+    outline:none;margin-bottom:14px;-webkit-text-security:disc;}
+  input:focus{border-color:#ff7369}
+  button{width:100%;background:#ff7369;color:#fff;border:none;
+    border-radius:10px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;}
+  button:active{opacity:.85}
+  .err{color:#f46a6a;font-size:13px;margin-bottom:14px;font-weight:500}
+</style></head>
+<body><div class="box">
+  <div class="icon">💸</div>
+  <h1>Expense Tracker</h1>
+  <p class="sub">Enter your access code</p>
+  ${err ? '<div class="err">Incorrect code. Try again.</div>' : ""}
+  <form method="POST" action="/login">
+    <input type="tel" name="pin" inputmode="numeric" placeholder="••••••••" autofocus autocomplete="one-time-code"/>
+    <button type="submit">Unlock →</button>
+  </form>
+</div></body></html>`;
 
 // ----------------------------------------------------------------------------
 // HTML shell
@@ -413,14 +493,35 @@ export default {
 
     if (url.pathname === "/healthz") return new Response("ok");
 
-    // ── Cloudflare Access auth gate ──
-    if (!(await isAuthorized(request, env))) {
-      if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
-      // Redirect to Cloudflare Access login — it handles OTP/Google etc.
+    // ── PIN login ──
+    if (url.pathname === "/login") {
+      if (request.method === "GET") {
+        return new Response(LOGIN_HTML(false), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      }
+      if (request.method === "POST") {
+        const form = await request.formData().catch(() => null);
+        const pin  = (form?.get("pin") || "").trim();
+        const valid = env.PIN ? pin === env.PIN : pin === "34501829";
+        if (valid) {
+          const cookie = await makeSessionCookie(env.SESSION_SECRET || "ne-default-secret");
+          return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": cookie } });
+        }
+        return new Response(LOGIN_HTML(true), { status: 401, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      }
+    }
+
+    // ── Logout ──
+    if (url.pathname === "/logout") {
       return new Response(null, {
         status: 302,
-        headers: { Location: cfLoginUrl(env, request.url) },
+        headers: { Location: "/login", "Set-Cookie": `${SESS_COOKIE}=; Path=/; Max-Age=0` },
       });
+    }
+
+    // ── Auth gate ──
+    if (!(await isAuthorized(request, env))) {
+      if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
+      return new Response(null, { status: 302, headers: { Location: "/login" } });
     }
 
     // ── App shell ──
