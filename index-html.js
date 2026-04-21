@@ -416,9 +416,37 @@ export const HTML = /* html */ `<!doctype html>
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .hidden { display: none !important; }
+
+  /* ── FULL PAGE LOADER ── */
+  #pageLoader {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    transition: opacity 0.4s ease;
+  }
+  #pageLoader.fade-out { opacity: 0; pointer-events: none; }
+  .loader-icon { font-size: 40px; animation: loader-pulse 1.4s ease-in-out infinite; }
+  @keyframes loader-pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(0.88);opacity:0.6} }
+  .loader-ring {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loader-text { font-size: 13px; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; }
 </style>
 </head>
 <body>
+
+<!-- FULL PAGE LOADER -->
+<div id="pageLoader">
+  <div class="loader-icon">💸</div>
+  <div class="loader-ring"></div>
+  <div class="loader-text">Syncing with Notion…</div>
+</div>
 
 <!-- SIDE PANEL OVERLAY -->
 <div id="sideOverlay" class="side-overlay hidden"></div>
@@ -602,12 +630,25 @@ export const HTML = /* html */ `<!doctype html>
     return data;
   }
 
+  // ── loader ──
+  function hideLoader() {
+    const loader = $("pageLoader");
+    if (!loader) return;
+    loader.classList.add("fade-out");
+    setTimeout(() => loader.remove(), 420);
+  }
+
   // ── bootstrap ──
   async function bootstrap(fromCache) {
     if (fromCache) {
       const cached = localStorage.getItem(LS_CACHE);
       if (cached) {
-        try { state.data = JSON.parse(cached); renderAll(); setStatus("ready"); } catch {}
+        try {
+          state.data = JSON.parse(cached);
+          renderAll();
+          setStatus("ready");
+          hideLoader(); // cached data available — show app immediately
+        } catch {}
       }
     }
     try {
@@ -620,6 +661,8 @@ export const HTML = /* html */ `<!doctype html>
     } catch (err) {
       setStatus("");
       if (!state.data) toast("Failed to load: " + err.message, "err");
+    } finally {
+      hideLoader(); // always hide loader once network attempt completes
     }
   }
 
