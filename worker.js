@@ -329,11 +329,10 @@ async function handleDeleteExpense(env, pageId) {
 }
 
 // ----------------------------------------------------------------------------
-// Session auth (PIN + signed cookie)
+// Cloudflare Access JWT auth
+// CF_ACCESS_TEAM = your Zero Trust team name (e.g. "casex")
+// CF_ACCESS_AUD  = Application ID from Access app details page
 // ----------------------------------------------------------------------------
-
-const COOKIE      = "ne_sess";
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
 
 function getCookie(request, name) {
   const hdr = request.headers.get("Cookie") || "";
@@ -341,99 +340,55 @@ function getCookie(request, name) {
   return pair ? pair.slice(name.length + 1) : null;
 }
 
-async function signSession(secret, ts) {
-  const key = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-  );
-  const buf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(ts));
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+function b64url(str) {
+  return atob(str.replace(/-/g, "+").replace(/_/g, "/").padEnd(str.length + (4 - str.length % 4) % 4, "="));
 }
 
-async function makeSessionCookie(env) {
-  const ts  = Date.now().toString();
-  const sig = await signSession(env.SESSION_SECRET || "fallback-secret", ts);
-  const val = btoa(ts + "|" + sig);
-  return `${COOKIE}=${val}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL / 1000}`;
-}
-
-async function isValidSession(request, env) {
-  if (!env.PIN) return true; // no PIN configured = open access
-  const raw = getCookie(request, COOKIE);
-  if (!raw) return false;
+async function verifyAccessJWT(token, teamName, aud) {
   try {
-    const decoded = atob(raw);
-    const bar     = decoded.indexOf("|");
-    const ts      = decoded.slice(0, bar);
-    const sig     = decoded.slice(bar + 1);
-    if (Date.now() - parseInt(ts) > SESSION_TTL) return false;
-    const expected = await signSession(env.SESSION_SECRET || "fallback-secret", ts);
-    return sig === expected;
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+
+    const header  = JSON.parse(b64url(parts[0]));
+    const payload = JSON.parse(b64url(parts[1]));
+
+    // Check expiry
+    if (payload.exp < Math.floor(Date.now() / 1000)) return false;
+
+    // Check audience
+    const audOk = Array.isArray(payload.aud) ? payload.aud.includes(aud) : payload.aud === aud;
+    if (!audOk) return false;
+
+    // Fetch public keys from Cloudflare (cached at edge)
+    const certsUrl = `https://${teamName}.cloudflareaccess.com/cdn-cgi/access/certs`;
+    const certs = await fetch(certsUrl, { cf: { cacheTtl: 3600 } }).then(r => r.json());
+    const jwk = (certs.keys || []).find(k => k.kid === header.kid);
+    if (!jwk) return false;
+
+    // Verify RS256 signature
+    const key = await crypto.subtle.importKey(
+      "jwk", jwk,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false, ["verify"]
+    );
+    const sig  = Uint8Array.from(b64url(parts[2]), c => c.charCodeAt(0));
+    const data = new TextEncoder().encode(parts[0] + "." + parts[1]);
+    return crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, sig, data);
   } catch { return false; }
 }
 
-const LOGIN_HTML = (err) => `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#191919"/>
-<title>Expense Tracker — Login</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:#191919;color:rgba(255,255,255,.87);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
-    min-height:100vh;display:flex;align-items:center;justify-content:center;
-    padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));
-  }
-  .box{
-    width:100%;max-width:340px;
-    background:#202020;border:1px solid rgba(255,255,255,.08);
-    border-radius:16px;padding:32px 24px;text-align:center;
-    box-shadow:0 8px 32px rgba(0,0,0,.5);
-  }
-  .icon{font-size:44px;margin-bottom:16px}
-  h1{font-size:20px;font-weight:700;margin-bottom:6px}
-  .sub{font-size:13px;color:rgba(255,255,255,.44);margin-bottom:24px}
-  input{
-    width:100%;background:#2f2f2f;border:1px solid rgba(255,255,255,.08);
-    color:rgba(255,255,255,.87);border-radius:10px;
-    padding:14px;font-size:22px;text-align:center;letter-spacing:8px;
-    outline:none;margin-bottom:14px;
-  }
-  input:focus{border-color:#ff7369}
-  input::placeholder{letter-spacing:0;font-size:14px;color:rgba(255,255,255,.3)}
-  button{
-    width:100%;background:#ff7369;color:#fff;border:none;
-    border-radius:10px;padding:15px;font-size:16px;font-weight:700;
-    cursor:pointer;
-  }
-  button:active{opacity:.85}
-  .err{color:#f46a6a;font-size:13px;margin-bottom:14px;font-weight:500}
-</style>
-</head>
-<body>
-<div class="box">
-  <div class="icon">💸</div>
-  <h1>Expense Tracker</h1>
-  <p class="sub">Enter your PIN to continue</p>
-  ${err ? `<div class="err">Incorrect PIN. Try again.</div>` : ""}
-  <form method="POST" action="/login">
-    <input type="password" name="pin" inputmode="numeric" pattern="[0-9]*"
-           placeholder="Enter PIN" autofocus autocomplete="current-password"/>
-    <button type="submit">Unlock →</button>
-  </form>
-</div>
-</body>
-</html>`;
+async function isAuthorized(request, env) {
+  if (!env.CF_ACCESS_TEAM || !env.CF_ACCESS_AUD) return true; // not configured = open
+  const token = request.headers.get("Cf-Access-Jwt-Assertion")
+             || getCookie(request, "CF_Authorization");
+  if (!token) return false;
+  return verifyAccessJWT(token, env.CF_ACCESS_TEAM, env.CF_ACCESS_AUD);
+}
 
-function htmlResp(body, status = 200, extraHeaders = {}) {
-  return new Response(body, {
-    status,
-    headers: { "Content-Type": "text/html; charset=utf-8", ...extraHeaders },
-  });
+function cfLoginUrl(env, returnUrl) {
+  return `https://${env.CF_ACCESS_TEAM}.cloudflareaccess.com/cdn-cgi/access/login/${
+    new URL(returnUrl).hostname
+  }?redirect_url=${encodeURIComponent(returnUrl)}`;
 }
 
 // ----------------------------------------------------------------------------
@@ -458,38 +413,14 @@ export default {
 
     if (url.pathname === "/healthz") return new Response("ok");
 
-    // ── Login page ──
-    if (url.pathname === "/login") {
-      if (request.method === "GET") return htmlResp(LOGIN_HTML(false));
-      if (request.method === "POST") {
-        const body = await request.formData().catch(() => null);
-        const pin  = body?.get("pin")?.trim();
-        if (!env.PIN || pin === env.PIN) {
-          const cookie = await makeSessionCookie(env);
-          return new Response(null, {
-            status: 302,
-            headers: { Location: "/", "Set-Cookie": cookie },
-          });
-        }
-        return htmlResp(LOGIN_HTML(true), 401);
-      }
-    }
-
-    // ── Logout ──
-    if (url.pathname === "/logout") {
+    // ── Cloudflare Access auth gate ──
+    if (!(await isAuthorized(request, env))) {
+      if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
+      // Redirect to Cloudflare Access login — it handles OTP/Google etc.
       return new Response(null, {
         status: 302,
-        headers: {
-          Location: "/login",
-          "Set-Cookie": `${COOKIE}=; Path=/; HttpOnly; Max-Age=0`,
-        },
+        headers: { Location: cfLoginUrl(env, request.url) },
       });
-    }
-
-    // ── Auth gate — redirect to /login if no valid session ──
-    if (!(await isValidSession(request, env))) {
-      if (url.pathname.startsWith("/api/")) return json({ error: "unauthorized" }, 401);
-      return new Response(null, { status: 302, headers: { Location: "/login" } });
     }
 
     // ── App shell ──
