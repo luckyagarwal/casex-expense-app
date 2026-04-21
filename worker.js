@@ -316,19 +316,6 @@ async function handleDeleteExpense(env, pageId) {
 }
 
 // ----------------------------------------------------------------------------
-// Auth gate
-// ----------------------------------------------------------------------------
-
-function checkAuth(request, env) {
-  if (!env.SHARED_SECRET) return true; // open access if no secret configured
-  const h = request.headers.get("X-Auth");
-  if (h && h === env.SHARED_SECRET) return true;
-  const k = new URL(request.url).searchParams.get("k");
-  if (k && k === env.SHARED_SECRET) return true;
-  return false;
-}
-
-// ----------------------------------------------------------------------------
 // HTML shell
 // ----------------------------------------------------------------------------
 
@@ -355,8 +342,6 @@ export default {
     }
 
     if (url.pathname.startsWith("/api/")) {
-      if (!checkAuth(request, env)) return json({ error: "unauthorized" }, 401);
-
       try {
         // Bootstrap
         if (url.pathname === "/api/bootstrap" && request.method === "GET") {
