@@ -207,11 +207,20 @@ async function handleGetExpenses(env, url) {
     startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
   }
 
-  const [expensesRaw, categories, subcategories, accounts] = await Promise.all([
-    queryAll(env, env.EXPENSES_DB_ID, {
+  // Try with date filter; fall back to unfiltered if the Date property doesn't exist yet
+  let expensesRaw;
+  try {
+    expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
       filter: { property: "Date", date: { on_or_after: startDate } },
       sorts:  [{ property: "Date", direction: "descending" }],
-    }, 100),
+    }, 100);
+  } catch {
+    expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
+      sorts: [{ timestamp: "created_time", direction: "descending" }],
+    }, 100);
+  }
+
+  const [categories, subcategories, accounts] = await Promise.all([
     queryAll(env, env.CATEGORIES_DB_ID,    {}),
     queryAll(env, env.SUBCATEGORIES_DB_ID, {}),
     queryAll(env, env.ACCOUNTS_DB_ID,      {}),
