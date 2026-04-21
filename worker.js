@@ -229,9 +229,6 @@ async function handleCreateExpense(env, body) {
     accountName,
   } = body || {};
 
-  if (!expense || !expense.trim()) {
-    return { error: "Expense name required", status: 400 };
-  }
   if (amount === undefined || amount === null || isNaN(Number(amount))) {
     return { error: "Amount required and must be a number", status: 400 };
   }
@@ -262,7 +259,7 @@ async function handleCreateExpense(env, body) {
   ]);
 
   const properties = {
-    Expense: { title: [{ text: { content: expense.trim() } }] },
+    Expense: { title: [{ text: { content: (expense || "").trim() } }] },
     Amount: { number: Number(amount) },
   };
   if (date) properties.Date = { date: { start: date } };
@@ -285,6 +282,82 @@ async function handleCreateExpense(env, body) {
       accountId: acctId && !accountId ? acctId : null,
     },
   };
+}
+
+// ----------------------------------------------------------------------------
+// Expense history: fetches expenses filtered by period (today / week / month)
+// Resolves category, subcategory, account names server-side.
+// ----------------------------------------------------------------------------
+
+async function handleGetExpenses(env, url) {
+  const period = url.searchParams.get("period") || "month";
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  let startDate = todayStr;
+  if (period === "week") {
+    const d = new Date(now);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+    startDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  } else if (period === "month") {
+    startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+  }
+
+  // Fetch expenses + lookup tables in parallel
+  const [expensesRaw, categories, subcategories, accounts] = await Promise.all([
+    queryAll(
+      env,
+      env.EXPENSES_DB_ID,
+      {
+        filter: { property: "Date", date: { on_or_after: startDate } },
+        sorts: [{ property: "Date", direction: "descending" }],
+      },
+      100,
+    ),
+    queryAll(env, env.CATEGORIES_DB_ID, {}),
+    queryAll(env, env.SUBCATEGORIES_DB_ID, {}),
+    queryAll(env, env.ACCOUNTS_DB_ID, {}),
+  ]);
+
+  const catById = Object.fromEntries(
+    categories.map((p) => [p.id, titleOf(p, "Category")]),
+  );
+  const subById = Object.fromEntries(
+    subcategories.map((p) => [p.id, titleOf(p, "Subcategory")]),
+  );
+  const accById = Object.fromEntries(
+    accounts.map((p) => [p.id, titleOf(p, "Account")]),
+  );
+
+  const expenses = expensesRaw
+    .map((p) => {
+      const dateStart = dateStartOf(p, "Date") || "";
+      const cats = relationIdsOf(p, "Category")
+        .map((id) => catById[id])
+        .filter(Boolean);
+      const subs = relationIdsOf(p, "Subcategory")
+        .map((id) => subById[id])
+        .filter(Boolean);
+      const accts = relationIdsOf(p, "Account")
+        .map((id) => accById[id])
+        .filter(Boolean);
+      return {
+        id: p.id,
+        name: titleOf(p, "Expense") || "",
+        amount: numberOf(p, "Amount") || 0,
+        date: dateStart,
+        category: cats[0] || "",
+        subcategory: subs.join(", "),
+        account: accts[0] || "",
+      };
+    })
+    .filter((e) => e.date && e.date.split("T")[0] >= startDate);
+
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  return { expenses, total, period, startDate };
 }
 
 // ----------------------------------------------------------------------------
@@ -334,6 +407,10 @@ export default {
       try {
         if (url.pathname === "/api/bootstrap" && request.method === "GET") {
           const data = await handleBootstrap(env);
+          return json(data);
+        }
+        if (url.pathname === "/api/expenses" && request.method === "GET") {
+          const data = await handleGetExpenses(env, url);
           return json(data);
         }
         if (url.pathname === "/api/expense" && request.method === "POST") {
