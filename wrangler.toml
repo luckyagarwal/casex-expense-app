@@ -14,8 +14,8 @@ ACCOUNTS_DB_ID = "cfb4b5c9-ab71-8396-a0b1-814e4ee0d56c"
 # Then paste the returned id below (and preview_id for local dev).
 [[kv_namespaces]]
 binding = "EXPENSE_CACHE"
-id = "PASTE_KV_NAMESPACE_ID_HERE"
-preview_id = "PASTE_KV_PREVIEW_ID_HERE"
+id = "31d79c5b7556417aa765a1c4acdb3071"
+preview_id = "30b4dbb96d674b6a93f56b9d97711920"
 
 # Optional custom domain (uncomment after adding a zone to Cloudflare)
 # [[routes]]
