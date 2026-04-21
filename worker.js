@@ -365,11 +365,13 @@ async function handleGetExpenses(env, url) {
 // ----------------------------------------------------------------------------
 
 function checkAuth(request, env) {
+  // If no SHARED_SECRET is configured, allow all requests (open personal use).
+  if (!env.SHARED_SECRET) return true;
   const h = request.headers.get("X-Auth");
-  if (h && env.SHARED_SECRET && h === env.SHARED_SECRET) return true;
+  if (h && h === env.SHARED_SECRET) return true;
   const url = new URL(request.url);
   const k = url.searchParams.get("k");
-  if (k && env.SHARED_SECRET && k === env.SHARED_SECRET) return true;
+  if (k && k === env.SHARED_SECRET) return true;
   return false;
 }
 

@@ -721,8 +721,8 @@ export const HTML = /* html */ `<!doctype html>
     $("date").value = d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
     $("time").value = pad(d.getHours()) + ":" + pad(d.getMinutes());
 
-    state.secret = getSecret();
-    if (!state.secret) showAuthGate(); else hideAuthGate();
+    state.secret = getSecret() || "";  // empty string = no-auth mode
+    hideAuthGate();  // always skip the gate; server allows open access when no SHARED_SECRET set
 
     $("unlockBtn").onclick = () => {
       const v = $("secretInput").value.trim();
