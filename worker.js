@@ -379,7 +379,7 @@ async function verifyAccessJWT(token, teamName, aud) {
 
 // PIN fallback — session cookie
 const SESS_COOKIE = "ne_sess";
-const SESS_TTL    = 30 * 24 * 60 * 60; // 30 days in seconds
+const SESS_TTL    = 10 * 365 * 24 * 60 * 60; // 10 years in seconds
 
 async function makeSessionCookie(secret) {
   const ts  = Date.now().toString();
@@ -401,7 +401,6 @@ async function hasValidSession(request, secret) {
     const bar = decoded.indexOf("|");
     const ts  = decoded.slice(0, bar);
     const sig = decoded.slice(bar + 1);
-    if (Date.now() - parseInt(ts) > SESS_TTL * 1000) return false;
     const key = await crypto.subtle.importKey(
       "raw", new TextEncoder().encode(secret),
       { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
