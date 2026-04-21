@@ -1,27 +1,78 @@
 /**
- * Notion Expense — low-friction PWA for adding expenses to Notion.
+ * Notion Expense PWA — Cloudflare Worker
  *
  * Endpoints:
- *   GET  /                → HTML form (PWA)
- *   GET  /api/bootstrap   → categories, subcategories, accounts, recent-5 per field,
- *                           subcategory-by-category frequency map (from last 50 expenses)
- *   POST /api/expense     → create an expense row; inline-creates missing category /
- *                           subcategory / account by title if an id isn't provided
- *   GET  /healthz         → 200 OK
+ *   GET  /                          → HTML PWA shell
+ *   GET  /api/bootstrap[?refresh=1] → categories, subcategories, accounts, recents
+ *   GET  /api/expenses?period=today|week|month[&refresh=1]
+ *                                   → cached expense list; refresh=1 bypasses KV
+ *   POST /api/expense               → create expense in Notion, invalidates KV
+ *   DELETE /api/expense/:id         → archive page in Notion, invalidates KV
+ *   GET  /healthz                   → 200 OK
  *
- * Auth: all /api/* routes require header "X-Auth: <SHARED_SECRET>" (client stores
- * it in localStorage after first visit via ?k=... query parameter).
- *
- * Env bindings (wrangler secret put ...):
- *   NOTION_TOKEN     — your Notion integration token (secret_... / ntn_...)
- *   SHARED_SECRET    — any random string; gates /api/* access
+ * Env secrets (wrangler secret put ...):
+ *   NOTION_TOKEN    — Notion integration token
+ *   SHARED_SECRET   — optional; if set, gates all /api/* routes
  *
  * Env vars (wrangler.toml [vars]):
  *   EXPENSES_DB_ID, CATEGORIES_DB_ID, SUBCATEGORIES_DB_ID, ACCOUNTS_DB_ID
+ *
+ * KV binding (wrangler.toml [[kv_namespaces]]):
+ *   EXPENSE_CACHE   — stores expense snapshots; gracefully absent = no caching
  */
 
-const NOTION_API = "https://api.notion.com/v1";
+const NOTION_API     = "https://api.notion.com/v1";
 const NOTION_VERSION = "2022-06-28";
+
+// Cache TTLs in seconds
+const TTL = { bootstrap: 1800, today: 300, week: 1800, month: 3600 };
+
+// ----------------------------------------------------------------------------
+// KV cache helpers
+// ----------------------------------------------------------------------------
+
+async function kvGet(env, key) {
+  if (!env.EXPENSE_CACHE) return null;
+  try {
+    const raw = await env.EXPENSE_CACHE.get(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+async function kvSet(env, key, data, ttl) {
+  if (!env.EXPENSE_CACHE) return;
+  try {
+    await env.EXPENSE_CACHE.put(key, JSON.stringify({ ...data, cachedAt: Date.now() }), {
+      expirationTtl: ttl,
+    });
+  } catch { /* non-fatal */ }
+}
+
+async function kvDel(env, ...keys) {
+  if (!env.EXPENSE_CACHE) return;
+  await Promise.allSettled(keys.map((k) => env.EXPENSE_CACHE.delete(k)));
+}
+
+// Deterministic KV keys that auto-rotate when the period rolls over
+function periodKey(period) {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  if (period === "today") {
+    return `expenses:today:${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+  if (period === "week") {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const jan4 = new Date(d.getFullYear(), 0, 4);
+    const wk = 1 + Math.round(((d - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+    return `expenses:week:${d.getFullYear()}-W${pad(wk)}`;
+  }
+  if (period === "month") {
+    return `expenses:month:${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  }
+  return `expenses:${period}`;
+}
 
 // ----------------------------------------------------------------------------
 // Notion helpers
@@ -38,37 +89,25 @@ async function notion(env, method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await resp.text();
-  let json;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = { raw: text };
-  }
+  let data;
+  try { data = text ? JSON.parse(text) : null; }
+  catch { data = { raw: text }; }
   if (!resp.ok) {
-    const err = new Error(
-      `Notion ${method} ${path} → ${resp.status}: ${json?.message || text}`,
-    );
+    const err = new Error(`Notion ${method} ${path} → ${resp.status}: ${data?.message || text}`);
     err.status = resp.status;
-    err.body = json;
+    err.body   = data;
     throw err;
   }
-  return json;
+  return data;
 }
 
 async function queryAll(env, databaseId, body = {}, pageSize = 100) {
-  // Paginate through a database query. Only pull as much as we need.
   const results = [];
-  let startCursor = undefined;
+  let startCursor;
   for (let i = 0; i < 5; i++) {
-    // hard cap at ~500 rows
     const payload = { page_size: pageSize, ...body };
     if (startCursor) payload.start_cursor = startCursor;
-    const data = await notion(
-      env,
-      "POST",
-      `/databases/${databaseId}/query`,
-      payload,
-    );
+    const data = await notion(env, "POST", `/databases/${databaseId}/query`, payload);
     results.push(...(data.results || []));
     if (!data.has_more) break;
     startCursor = data.next_cursor;
@@ -76,221 +115,84 @@ async function queryAll(env, databaseId, body = {}, pageSize = 100) {
   return results;
 }
 
-function titleOf(page, titleProp) {
-  const rt = page.properties?.[titleProp]?.title || [];
-  return rt.map((t) => t.plain_text || "").join("").trim();
+function titleOf(page, prop) {
+  return (page.properties?.[prop]?.title || []).map((t) => t.plain_text || "").join("").trim();
 }
-
-function relationIdsOf(page, propName) {
-  const rel = page.properties?.[propName]?.relation || [];
-  return rel.map((r) => r.id);
+function relationIdsOf(page, prop) {
+  return (page.properties?.[prop]?.relation || []).map((r) => r.id);
 }
+function numberOf(page, prop)    { return page.properties?.[prop]?.number  ?? null; }
+function dateStartOf(page, prop) { return page.properties?.[prop]?.date?.start ?? null; }
 
-function numberOf(page, propName) {
-  return page.properties?.[propName]?.number ?? null;
-}
-
-function dateStartOf(page, propName) {
-  return page.properties?.[propName]?.date?.start ?? null;
-}
-
-async function createRowInDb(env, databaseId, titleProp, title) {
-  const page = await notion(env, "POST", "/pages", {
-    parent: { database_id: databaseId },
-    properties: {
-      [titleProp]: { title: [{ text: { content: title } }] },
-    },
+async function createRowInDb(env, dbId, titleProp, title) {
+  return notion(env, "POST", "/pages", {
+    parent: { database_id: dbId },
+    properties: { [titleProp]: { title: [{ text: { content: title } }] } },
   });
-  return page;
 }
 
 // ----------------------------------------------------------------------------
-// Bootstrap: everything the form needs on load
+// Bootstrap — categories, subcategories, accounts + recency data
 // ----------------------------------------------------------------------------
 
-async function handleBootstrap(env) {
-  // Pull all lookup rows. Keep small by only requesting the properties we care
-  // about implicitly — Notion returns full page objects either way, so we
-  // just read what we need.
-  const [categories, subcategories, accounts, recentExpenses] =
-    await Promise.all([
-      queryAll(env, env.CATEGORIES_DB_ID, {
-        sorts: [{ property: "Category", direction: "ascending" }],
-      }),
-      queryAll(env, env.SUBCATEGORIES_DB_ID, {
-        sorts: [{ property: "Subcategory", direction: "ascending" }],
-      }),
-      queryAll(env, env.ACCOUNTS_DB_ID, {
-        sorts: [{ property: "Account", direction: "ascending" }],
-      }),
-      queryAll(
-        env,
-        env.EXPENSES_DB_ID,
-        {
-          sorts: [{ timestamp: "created_time", direction: "descending" }],
-        },
-        50,
-      ),
-    ]);
+async function handleBootstrap(env, refresh = false) {
+  const KEY = "bootstrap";
+  if (!refresh) {
+    const cached = await kvGet(env, KEY);
+    if (cached) return { ...cached, cached: true };
+  }
 
-  const categoryList = categories.map((p) => ({
-    id: p.id,
-    name: titleOf(p, "Category"),
-  }));
-  const subcategoryList = subcategories.map((p) => ({
-    id: p.id,
-    name: titleOf(p, "Subcategory"),
-  }));
-  const accountList = accounts.map((p) => ({
-    id: p.id,
-    name: titleOf(p, "Account"),
-  }));
+  const [categories, subcategories, accounts, recentExpenses] = await Promise.all([
+    queryAll(env, env.CATEGORIES_DB_ID,    { sorts: [{ property: "Category",    direction: "ascending" }] }),
+    queryAll(env, env.SUBCATEGORIES_DB_ID, { sorts: [{ property: "Subcategory", direction: "ascending" }] }),
+    queryAll(env, env.ACCOUNTS_DB_ID,      { sorts: [{ property: "Account",     direction: "ascending" }] }),
+    queryAll(env, env.EXPENSES_DB_ID,      { sorts: [{ timestamp: "created_time", direction: "descending" }] }, 50),
+  ]);
 
-  // Compute recents: most-recently-used unique ids, top 5 per field.
-  const recentCats = [];
-  const recentSubs = [];
-  const recentAccts = [];
-  const seenCat = new Set(),
-    seenSub = new Set(),
-    seenAcct = new Set();
+  const categoryList    = categories.map((p)    => ({ id: p.id, name: titleOf(p, "Category")    }));
+  const subcategoryList = subcategories.map((p) => ({ id: p.id, name: titleOf(p, "Subcategory") }));
+  const accountList     = accounts.map((p)      => ({ id: p.id, name: titleOf(p, "Account")     }));
 
-  // subcatByCategory: { [categoryId]: { [subcategoryId]: count } }
+  const recentCats = [], recentSubs = [], recentAccts = [];
+  const seenCat = new Set(), seenSub = new Set(), seenAcct = new Set();
   const subcatByCategory = {};
 
-  // Trim to the most recent 50
-  const recent = recentExpenses.slice(0, 50);
-  for (const ex of recent) {
+  for (const ex of recentExpenses.slice(0, 50)) {
     const cats = relationIdsOf(ex, "Category");
     const subs = relationIdsOf(ex, "Subcategory");
     const accts = relationIdsOf(ex, "Account");
-
-    for (const c of cats) {
-      if (!seenCat.has(c) && recentCats.length < 5) {
-        recentCats.push(c);
-        seenCat.add(c);
-      }
-    }
-    for (const s of subs) {
-      if (!seenSub.has(s) && recentSubs.length < 5) {
-        recentSubs.push(s);
-        seenSub.add(s);
-      }
-    }
-    for (const a of accts) {
-      if (!seenAcct.has(a) && recentAccts.length < 5) {
-        recentAccts.push(a);
-        seenAcct.add(a);
-      }
-    }
-
-    // cross-product: every (cat, sub) pair seen in this expense bumps count
+    for (const c of cats) { if (!seenCat.has(c)  && recentCats.length  < 5) { recentCats.push(c);  seenCat.add(c);  } }
+    for (const s of subs) { if (!seenSub.has(s)  && recentSubs.length  < 5) { recentSubs.push(s);  seenSub.add(s);  } }
+    for (const a of accts){ if (!seenAcct.has(a) && recentAccts.length < 5) { recentAccts.push(a); seenAcct.add(a); } }
     for (const c of cats) {
       if (!subcatByCategory[c]) subcatByCategory[c] = {};
-      for (const s of subs) {
-        subcatByCategory[c][s] = (subcatByCategory[c][s] || 0) + 1;
-      }
+      for (const s of subs) subcatByCategory[c][s] = (subcatByCategory[c][s] || 0) + 1;
     }
   }
 
-  return {
-    categories: categoryList,
-    subcategories: subcategoryList,
-    accounts: accountList,
-    recent: {
-      categories: recentCats,
-      subcategories: recentSubs,
-      accounts: recentAccts,
-    },
+  const result = {
+    categories: categoryList, subcategories: subcategoryList, accounts: accountList,
+    recent: { categories: recentCats, subcategories: recentSubs, accounts: recentAccts },
     subcatByCategory,
   };
+  await kvSet(env, KEY, result, TTL.bootstrap);
+  return { ...result, cached: false };
 }
 
 // ----------------------------------------------------------------------------
-// Create expense (inline-creates missing lookup rows if names given w/o ids)
-// ----------------------------------------------------------------------------
-
-async function resolveOrCreate(env, databaseId, titleProp, id, name) {
-  if (id) return id;
-  if (!name || !name.trim()) return null;
-  const page = await createRowInDb(env, databaseId, titleProp, name.trim());
-  return page.id;
-}
-
-async function handleCreateExpense(env, body) {
-  const {
-    expense,
-    amount,
-    date,
-    categoryId,
-    categoryName,
-    subcategoryId,
-    subcategoryName,
-    accountId,
-    accountName,
-  } = body || {};
-
-  if (amount === undefined || amount === null || isNaN(Number(amount))) {
-    return { error: "Amount required and must be a number", status: 400 };
-  }
-
-  // Resolve or create each relation
-  const [catId, subId, acctId] = await Promise.all([
-    resolveOrCreate(
-      env,
-      env.CATEGORIES_DB_ID,
-      "Category",
-      categoryId,
-      categoryName,
-    ),
-    resolveOrCreate(
-      env,
-      env.SUBCATEGORIES_DB_ID,
-      "Subcategory",
-      subcategoryId,
-      subcategoryName,
-    ),
-    resolveOrCreate(
-      env,
-      env.ACCOUNTS_DB_ID,
-      "Account",
-      accountId,
-      accountName,
-    ),
-  ]);
-
-  const properties = {
-    Expense: { title: [{ text: { content: (expense || "").trim() } }] },
-    Amount: { number: Number(amount) },
-  };
-  if (date) properties.Date = { date: { start: date } };
-  if (catId) properties.Category = { relation: [{ id: catId }] };
-  if (subId) properties.Subcategory = { relation: [{ id: subId }] };
-  if (acctId) properties.Account = { relation: [{ id: acctId }] };
-
-  const page = await notion(env, "POST", "/pages", {
-    parent: { database_id: env.EXPENSES_DB_ID },
-    properties,
-  });
-
-  return {
-    ok: true,
-    pageId: page.id,
-    url: page.url,
-    created: {
-      categoryId: catId && !categoryId ? catId : null,
-      subcategoryId: subId && !subcategoryId ? subId : null,
-      accountId: acctId && !accountId ? acctId : null,
-    },
-  };
-}
-
-// ----------------------------------------------------------------------------
-// Expense history: fetches expenses filtered by period (today / week / month)
-// Resolves category, subcategory, account names server-side.
+// Expense history — fetches & caches by period
 // ----------------------------------------------------------------------------
 
 async function handleGetExpenses(env, url) {
-  const period = url.searchParams.get("period") || "month";
+  const period  = url.searchParams.get("period")  || "month";
+  const refresh = url.searchParams.get("refresh") === "1";
+  const KEY     = periodKey(period);
+
+  if (!refresh) {
+    const cached = await kvGet(env, KEY);
+    if (cached) return { ...cached, cached: true };
+  }
+
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -299,65 +201,118 @@ async function handleGetExpenses(env, url) {
   if (period === "week") {
     const d = new Date(now);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
+    d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
     startDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   } else if (period === "month") {
     startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
   }
 
-  // Fetch expenses + lookup tables in parallel
   const [expensesRaw, categories, subcategories, accounts] = await Promise.all([
-    queryAll(
-      env,
-      env.EXPENSES_DB_ID,
-      {
-        filter: { property: "Date", date: { on_or_after: startDate } },
-        sorts: [{ property: "Date", direction: "descending" }],
-      },
-      100,
-    ),
-    queryAll(env, env.CATEGORIES_DB_ID, {}),
+    queryAll(env, env.EXPENSES_DB_ID, {
+      filter: { property: "Date", date: { on_or_after: startDate } },
+      sorts:  [{ property: "Date", direction: "descending" }],
+    }, 100),
+    queryAll(env, env.CATEGORIES_DB_ID,    {}),
     queryAll(env, env.SUBCATEGORIES_DB_ID, {}),
-    queryAll(env, env.ACCOUNTS_DB_ID, {}),
+    queryAll(env, env.ACCOUNTS_DB_ID,      {}),
   ]);
 
-  const catById = Object.fromEntries(
-    categories.map((p) => [p.id, titleOf(p, "Category")]),
-  );
-  const subById = Object.fromEntries(
-    subcategories.map((p) => [p.id, titleOf(p, "Subcategory")]),
-  );
-  const accById = Object.fromEntries(
-    accounts.map((p) => [p.id, titleOf(p, "Account")]),
-  );
+  const catById = Object.fromEntries(categories.map((p)    => [p.id, titleOf(p, "Category")]));
+  const subById = Object.fromEntries(subcategories.map((p) => [p.id, titleOf(p, "Subcategory")]));
+  const accById = Object.fromEntries(accounts.map((p)      => [p.id, titleOf(p, "Account")]));
 
   const expenses = expensesRaw
     .map((p) => {
-      const dateStart = dateStartOf(p, "Date") || "";
-      const cats = relationIdsOf(p, "Category")
-        .map((id) => catById[id])
-        .filter(Boolean);
-      const subs = relationIdsOf(p, "Subcategory")
-        .map((id) => subById[id])
-        .filter(Boolean);
-      const accts = relationIdsOf(p, "Account")
-        .map((id) => accById[id])
-        .filter(Boolean);
+      const date = dateStartOf(p, "Date") || "";
       return {
-        id: p.id,
-        name: titleOf(p, "Expense") || "",
-        amount: numberOf(p, "Amount") || 0,
-        date: dateStart,
-        category: cats[0] || "",
-        subcategory: subs.join(", "),
-        account: accts[0] || "",
+        id:          p.id,
+        name:        titleOf(p, "Expense") || "",
+        amount:      numberOf(p, "Amount") || 0,
+        date,
+        category:    relationIdsOf(p, "Category").map((id) => catById[id]).filter(Boolean)[0] || "",
+        subcategory: relationIdsOf(p, "Subcategory").map((id) => subById[id]).filter(Boolean).join(", "),
+        account:     relationIdsOf(p, "Account").map((id) => accById[id]).filter(Boolean)[0] || "",
       };
     })
     .filter((e) => e.date && e.date.split("T")[0] >= startDate);
 
-  const total = expenses.reduce((s, e) => s + e.amount, 0);
-  return { expenses, total, period, startDate };
+  const total  = expenses.reduce((s, e) => s + e.amount, 0);
+  const result = { expenses, total, period, startDate };
+  await kvSet(env, KEY, result, TTL[period] || 1800);
+  return { ...result, cached: false };
+}
+
+// ----------------------------------------------------------------------------
+// Create expense — then bust all period caches
+// ----------------------------------------------------------------------------
+
+async function resolveOrCreate(env, dbId, titleProp, id, name) {
+  if (id) return id;
+  if (!name?.trim()) return null;
+  const page = await createRowInDb(env, dbId, titleProp, name.trim());
+  return page.id;
+}
+
+async function handleCreateExpense(env, body) {
+  const { expense, amount, date, categoryId, categoryName,
+          subcategoryId, subcategoryName, accountId, accountName } = body || {};
+
+  if (amount === undefined || amount === null || isNaN(Number(amount)))
+    return { error: "Amount required and must be a number", status: 400 };
+
+  const [catId, subId, acctId] = await Promise.all([
+    resolveOrCreate(env, env.CATEGORIES_DB_ID,    "Category",    categoryId,    categoryName),
+    resolveOrCreate(env, env.SUBCATEGORIES_DB_ID, "Subcategory", subcategoryId, subcategoryName),
+    resolveOrCreate(env, env.ACCOUNTS_DB_ID,      "Account",     accountId,     accountName),
+  ]);
+
+  const properties = {
+    Expense: { title: [{ text: { content: (expense || "").trim() } }] },
+    Amount:  { number: Number(amount) },
+  };
+  if (date)   properties.Date        = { date:     { start: date } };
+  if (catId)  properties.Category    = { relation: [{ id: catId  }] };
+  if (subId)  properties.Subcategory = { relation: [{ id: subId  }] };
+  if (acctId) properties.Account     = { relation: [{ id: acctId }] };
+
+  const page = await notion(env, "POST", "/pages", {
+    parent: { database_id: env.EXPENSES_DB_ID },
+    properties,
+  });
+
+  // Bust all cached periods so the new expense shows up immediately
+  await kvDel(env,
+    periodKey("today"), periodKey("week"), periodKey("month"),
+    "bootstrap",
+  );
+
+  return {
+    ok: true, pageId: page.id, url: page.url,
+    created: {
+      categoryId:    catId  && !categoryId    ? catId  : null,
+      subcategoryId: subId  && !subcategoryId ? subId  : null,
+      accountId:     acctId && !accountId     ? acctId : null,
+    },
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Delete expense — archive in Notion, bust KV
+// ----------------------------------------------------------------------------
+
+async function handleDeleteExpense(env, pageId) {
+  if (!pageId) return { error: "Page ID required", status: 400 };
+
+  // Notion "delete" = archive the page
+  await notion(env, "PATCH", `/pages/${pageId}`, { archived: true });
+
+  // Invalidate all period caches
+  await kvDel(env,
+    periodKey("today"), periodKey("week"), periodKey("month"),
+    "bootstrap",
+  );
+
+  return { ok: true, pageId };
 }
 
 // ----------------------------------------------------------------------------
@@ -365,24 +320,22 @@ async function handleGetExpenses(env, url) {
 // ----------------------------------------------------------------------------
 
 function checkAuth(request, env) {
-  // If no SHARED_SECRET is configured, allow all requests (open personal use).
-  if (!env.SHARED_SECRET) return true;
+  if (!env.SHARED_SECRET) return true; // open access if no secret configured
   const h = request.headers.get("X-Auth");
   if (h && h === env.SHARED_SECRET) return true;
-  const url = new URL(request.url);
-  const k = url.searchParams.get("k");
+  const k = new URL(request.url).searchParams.get("k");
   if (k && k === env.SHARED_SECRET) return true;
   return false;
 }
 
 // ----------------------------------------------------------------------------
-// HTML (inline) — see /sessions/.../index.html.js for source
+// HTML shell
 // ----------------------------------------------------------------------------
 
 import { HTML } from "./index-html.js";
 
 // ----------------------------------------------------------------------------
-// Main
+// Router
 // ----------------------------------------------------------------------------
 
 const json = (data, status = 200) =>
@@ -398,35 +351,43 @@ export default {
     if (url.pathname === "/healthz") return new Response("ok");
 
     if (url.pathname === "/") {
-      return new Response(HTML, {
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      });
+      return new Response(HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
     if (url.pathname.startsWith("/api/")) {
       if (!checkAuth(request, env)) return json({ error: "unauthorized" }, 401);
 
       try {
+        // Bootstrap
         if (url.pathname === "/api/bootstrap" && request.method === "GET") {
-          const data = await handleBootstrap(env);
-          return json(data);
+          const refresh = url.searchParams.get("refresh") === "1";
+          return json(await handleBootstrap(env, refresh));
         }
+
+        // Expense history (cached)
         if (url.pathname === "/api/expenses" && request.method === "GET") {
-          const data = await handleGetExpenses(env, url);
-          return json(data);
+          return json(await handleGetExpenses(env, url));
         }
+
+        // Create expense
         if (url.pathname === "/api/expense" && request.method === "POST") {
           const body = await request.json().catch(() => null);
           const result = await handleCreateExpense(env, body);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }
+
+        // Delete expense
+        if (url.pathname.startsWith("/api/expense/") && request.method === "DELETE") {
+          const pageId = url.pathname.slice("/api/expense/".length);
+          const result = await handleDeleteExpense(env, pageId);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+
         return json({ error: "not found" }, 404);
       } catch (err) {
-        return json(
-          { error: err.message || "server error", details: err.body || null },
-          err.status || 500,
-        );
+        return json({ error: err.message || "server error", details: err.body || null }, err.status || 500);
       }
     }
 

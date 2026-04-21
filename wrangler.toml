@@ -2,14 +2,20 @@ name = "notion-expense"
 main = "worker.js"
 compatibility_date = "2024-12-30"
 
-# Your Notion database IDs — these are hardcoded from your workspace and
-# safe to check into a repo. Only the integration token and the shared
-# secret are secrets (set via `wrangler secret put ...`).
+# Your Notion database IDs — safe to commit, these are just IDs.
 [vars]
 EXPENSES_DB_ID = "6184b5c9-ab71-824d-99d5-81978e54930c"
 CATEGORIES_DB_ID = "90f4b5c9-ab71-8284-bb89-014c64d367e0"
 SUBCATEGORIES_DB_ID = "d40c7df3-394b-4e30-9c97-36a1ba8172c4"
 ACCOUNTS_DB_ID = "cfb4b5c9-ab71-8396-a0b1-814e4ee0d56c"
+
+# KV cache for expense history snapshots.
+# Create with: npx wrangler kv namespace create EXPENSE_CACHE
+# Then paste the returned id below (and preview_id for local dev).
+[[kv_namespaces]]
+binding = "EXPENSE_CACHE"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
+preview_id = "PASTE_KV_PREVIEW_ID_HERE"
 
 # Optional custom domain (uncomment after adding a zone to Cloudflare)
 # [[routes]]

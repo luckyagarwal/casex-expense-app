@@ -263,6 +263,54 @@ export const HTML = /* html */ `<!doctype html>
     margin: 0 auto 10px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* refresh + cache status */
+  .side-hdr-actions { display: flex; align-items: center; gap: 8px; }
+  .refresh-btn {
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--accent); border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: opacity .2s;
+  }
+  .refresh-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .refresh-btn .spin-sm {
+    width: 12px; height: 12px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite;
+    display: none;
+  }
+  .refresh-btn.loading .spin-sm { display: block; }
+  .refresh-btn.loading .r-icon { display: none; }
+  .cache-badge {
+    font-size: 10px; color: var(--muted);
+    padding: 3px 8px; border-radius: 100px;
+    background: var(--panel-2); border: 1px solid var(--border);
+  }
+  .cache-badge.live { color: var(--ok); border-color: var(--ok); background: rgba(61,220,151,.08); }
+  /* delete button on cards */
+  .del-btn {
+    background: none; border: none;
+    color: var(--muted); font-size: 15px;
+    cursor: pointer; padding: 2px 4px; border-radius: 6px;
+    opacity: 0; transition: opacity .15s, color .15s;
+    line-height: 1;
+  }
+  .ecard:hover .del-btn, .ecard:focus-within .del-btn { opacity: 1; }
+  .del-btn:hover { color: var(--danger); }
+  /* inline confirm */
+  .del-confirm {
+    display: none; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--danger); font-weight: 600;
+  }
+  .del-confirm.on { display: flex; }
+  .del-confirm button {
+    padding: 3px 8px; border-radius: 6px; font-size: 11px;
+    font-weight: 700; cursor: pointer; border: none;
+  }
+  .del-yes { background: var(--danger); color: #fff; }
+  .del-no  { background: var(--panel); border: 1px solid var(--border) !important; color: var(--fg); }
+  /* deleting animation */
+  .ecard.deleting { opacity: .4; pointer-events: none; transition: opacity .3s; }
 </style>
 </head>
 <body>
@@ -285,7 +333,13 @@ export const HTML = /* html */ `<!doctype html>
       <div>Expense History</div>
       <div class="side-hdr-sub">Your Notion Finance Tracker</div>
     </div>
-    <button class="close-btn" id="closeBtn">✕</button>
+    <div class="side-hdr-actions">
+      <button class="refresh-btn" id="refreshBtn" title="Hard refresh from Notion">
+        <span class="spin-sm"></span>
+        <span class="r-icon">⟳</span> Refresh
+      </button>
+      <button class="close-btn" id="closeBtn">✕</button>
+    </div>
   </div>
   <div class="period-tabs">
     <button class="ptab active" data-period="today">Today</button>
@@ -297,7 +351,10 @@ export const HTML = /* html */ `<!doctype html>
       <div class="side-summary-lbl">Total Spent</div>
       <div class="side-summary-cnt" id="sideCnt">—</div>
     </div>
-    <div class="side-total" id="sideTotal">₹—</div>
+    <div style="text-align:right">
+      <div class="side-total" id="sideTotal">₹—</div>
+      <span class="cache-badge" id="cacheBadge" style="display:none"></span>
+    </div>
   </div>
   <div class="side-list" id="sideList">
     <div class="side-state"><div class="spin"></div>Loading…</div>
@@ -655,25 +712,44 @@ export const HTML = /* html */ `<!doctype html>
     return new Date(dateStr).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", hour12:true });
   }
 
-  async function loadSideExpenses(period) {
+  async function loadSideExpenses(period, hardRefresh = false) {
     if (sideLoading) return;
     sideLoading = true;
+    const btn = $("refreshBtn");
+    btn.disabled = true;
+    btn.classList.add("loading");
     $("sideList").innerHTML = '<div class="side-state"><div class="spin"></div>Loading…</div>';
     $("sideTotal").textContent = "₹—";
-    $("sideCnt").textContent = "—";
+    $("sideCnt").textContent   = "—";
+    $("cacheBadge").style.display = "none";
     try {
-      const data = await api("/api/expenses?period=" + period);
+      const qs  = "/api/expenses?period=" + period + (hardRefresh ? "&refresh=1" : "");
+      const data = await api(qs);
       renderSideExpenses(data);
     } catch (err) {
       $("sideList").innerHTML = '<div class="side-state"><div class="side-state-ico">⚠️</div>Failed to load expenses</div>';
     } finally {
       sideLoading = false;
+      btn.disabled = false;
+      btn.classList.remove("loading");
     }
   }
 
-  function renderSideExpenses({ expenses, total }) {
+  function renderSideExpenses({ expenses, total, cached, cachedAt }) {
     $("sideTotal").textContent = "₹" + (total || 0).toLocaleString("en-IN");
     $("sideCnt").textContent   = expenses.length + " expense" + (expenses.length !== 1 ? "s" : "");
+
+    // Cache status badge
+    const badge = $("cacheBadge");
+    if (cached && cachedAt) {
+      const mins = Math.round((Date.now() - cachedAt) / 60000);
+      badge.textContent = mins < 1 ? "cached · just now" : \`cached · \${mins}m ago\`;
+      badge.className   = "cache-badge";
+    } else {
+      badge.textContent = "live";
+      badge.className   = "cache-badge live";
+    }
+    badge.style.display = "inline-block";
 
     if (!expenses.length) {
       $("sideList").innerHTML = '<div class="side-state"><div class="side-state-ico">💸</div>No expenses yet</div>';
@@ -686,15 +762,25 @@ export const HTML = /* html */ `<!doctype html>
       (groups[dk] = groups[dk] || []).push(e);
     });
 
-    let html = "";
+    const list = $("sideList");
+    list.innerHTML = "";
+
     Object.keys(groups).sort((a,b) => b.localeCompare(a)).forEach((dk) => {
       const dayTotal = groups[dk].reduce((s,e) => s + e.amount, 0);
-      html += \`<div class="egrp-hdr">\${fmtDate(dk)} &nbsp;·&nbsp; ₹\${dayTotal.toLocaleString("en-IN")}</div>\`;
+      const hdr = document.createElement("div");
+      hdr.className = "egrp-hdr";
+      hdr.textContent = fmtDate(dk) + "  ·  ₹" + dayTotal.toLocaleString("en-IN");
+      list.appendChild(hdr);
+
       groups[dk].forEach((e) => {
-        const emoji = CAT_EMOJI[e.category] || "💰";
-        const name  = e.name || e.subcategory || e.category || "Expense";
+        const emoji   = CAT_EMOJI[e.category] || "💰";
+        const name    = e.name || e.subcategory || e.category || "Expense";
         const timeStr = e.date.includes("T") ? " · " + fmtTime(e.date) : "";
-        html += \`<div class="ecard">
+
+        const card = document.createElement("div");
+        card.className = "ecard";
+        card.dataset.id = e.id;
+        card.innerHTML = \`
           <div class="ecard-ico">\${emoji}</div>
           <div class="ecard-det">
             <div class="ecard-name">\${name}</div>
@@ -705,13 +791,71 @@ export const HTML = /* html */ `<!doctype html>
             <div class="ecard-date">\${fmtDate(e.date)}\${timeStr}</div>
           </div>
           <div class="ecard-right">
-            <div class="ecard-amt">₹\${(e.amount || 0).toLocaleString("en-IN")}</div>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+              <div class="ecard-amt">₹\${(e.amount || 0).toLocaleString("en-IN")}</div>
+              <button class="del-btn" title="Delete">🗑</button>
+            </div>
             \${e.account ? \`<div class="echip echip-acc" style="display:inline-block;margin-top:4px">\${e.account}</div>\` : ""}
-          </div>
-        </div>\`;
+            <div class="del-confirm">
+              Delete? &nbsp;
+              <button class="del-yes">Yes</button>
+              <button class="del-no">No</button>
+            </div>
+          </div>\`;
+
+        // Delete wiring
+        const delBtn  = card.querySelector(".del-btn");
+        const confirm = card.querySelector(".del-confirm");
+        const yesBtn  = card.querySelector(".del-yes");
+        const noBtn   = card.querySelector(".del-no");
+
+        delBtn.addEventListener("click", () => {
+          delBtn.style.display = "none";
+          confirm.classList.add("on");
+        });
+        noBtn.addEventListener("click", () => {
+          confirm.classList.remove("on");
+          delBtn.style.display = "";
+        });
+        yesBtn.addEventListener("click", async () => {
+          card.classList.add("deleting");
+          try {
+            await api("/api/expense/" + e.id, { method: "DELETE" });
+            card.style.transition = "max-height .3s, opacity .3s, margin .3s";
+            card.style.maxHeight  = card.offsetHeight + "px";
+            requestAnimationFrame(() => {
+              card.style.maxHeight  = "0";
+              card.style.opacity    = "0";
+              card.style.marginBottom = "0";
+              card.style.overflow   = "hidden";
+            });
+            setTimeout(() => {
+              card.remove();
+              // Recompute day total
+              const remaining = [...list.querySelectorAll(\`.ecard[data-id]\`)].filter(
+                (c) => !c.classList.contains("deleting")
+              );
+              // Update global total
+              const allAmts = [...list.querySelectorAll(".ecard-amt")].map(
+                (el) => parseFloat(el.textContent.replace(/[₹,]/g, "")) || 0
+              );
+              const newTotal = allAmts.reduce((s, a) => s + a, 0);
+              $("sideTotal").textContent = "₹" + newTotal.toLocaleString("en-IN");
+              const cnt = remaining.length;
+              $("sideCnt").textContent = cnt + " expense" + (cnt !== 1 ? "s" : "");
+              toast("Deleted from Notion ✓", "ok");
+            }, 320);
+          } catch (err) {
+            card.classList.remove("deleting");
+            confirm.classList.remove("on");
+            delBtn.style.display = "";
+            toast("Delete failed: " + err.message, "err");
+          }
+        });
+
+        list.appendChild(card);
       });
     });
-    $("sideList").innerHTML = html;
   }
 
   // ── init ──
@@ -745,16 +889,17 @@ export const HTML = /* html */ `<!doctype html>
     $("expense").addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
 
     // Side panel wiring
-    $("menuBtn").onclick  = openSide;
-    $("closeBtn").onclick = closeSide;
+    $("menuBtn").onclick     = openSide;
+    $("closeBtn").onclick    = closeSide;
     $("sideOverlay").onclick = closeSide;
+    $("refreshBtn").onclick  = () => loadSideExpenses(sidePeriod, true);
 
     document.querySelectorAll(".ptab").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".ptab").forEach((t) => t.classList.remove("active"));
         btn.classList.add("active");
         sidePeriod = btn.dataset.period;
-        loadSideExpenses(sidePeriod);
+        loadSideExpenses(sidePeriod, false);
       });
     });
 
