@@ -7,8 +7,9 @@
  *   POST /login                     → validate PIN, set session cookie
  *   GET  /logout                    → clear session cookie
  *   GET  /api/bootstrap[?refresh=1] → categories, subcategories, accounts, recents
- *   GET  /api/expenses?period=today|week|month[&refresh=1]
- *                                   → cached expense list; refresh=1 bypasses KV
+ *   GET  /api/expenses?period=today|week|month[&refresh=1][&timeZone=...]
+ *   GET  /api/expenses?from=YYYY-MM-DD&to=YYYY-MM-DD[&categoryId=...][&accountId=...][&timeZone=...]
+ *                                   → expense list for period or custom range
  *   POST /api/expense               → create expense in Notion, invalidates KV
  *   DELETE /api/expense/:id         → archive page in Notion, invalidates KV
  *   GET  /healthz                   → 200 OK
@@ -57,25 +58,81 @@ async function kvDel(env, ...keys) {
   await Promise.allSettled(keys.map((k) => env.EXPENSE_CACHE.delete(k)));
 }
 
-// Deterministic KV keys that auto-rotate when the period rolls over
-function periodKey(period) {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
+function partsInTimeZone(timeZone, date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timeZone || "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(date).map((part) => [part.type, part.value]));
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    weekday: parts.weekday,
+  };
+}
+
+function ymd({ year, month, day }) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function shiftDate(dateStr, deltaDays) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + deltaDays);
+  return ymd({
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  });
+}
+
+function isoWeekKey(dateStr) {
+  const thursday = shiftDate(dateStr, 3 - ((new Date(`${dateStr}T00:00:00Z`).getUTCDay() + 6) % 7));
+  const [year] = thursday.split("-").map(Number);
+  const jan4 = `${year}-01-04`;
+  const jan4Date = new Date(`${jan4}T00:00:00Z`);
+  const thursdayDate = new Date(`${thursday}T00:00:00Z`);
+  const jan4Weekday = (jan4Date.getUTCDay() + 6) % 7;
+  const week = 1 + Math.round(((thursdayDate - jan4Date) / 86400000 - 3 + jan4Weekday) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+function rangeForPeriod(period, timeZone) {
+  const localNow = partsInTimeZone(timeZone);
+  const today = ymd(localNow);
   if (period === "today") {
-    return `expenses:today:${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    return { startDate: today, endDate: today };
   }
   if (period === "week") {
-    const d = new Date(now);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-    const jan4 = new Date(d.getFullYear(), 0, 4);
-    const wk = 1 + Math.round(((d - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
-    return `expenses:week:${d.getFullYear()}-W${pad(wk)}`;
+    const weekdayMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+    const dayOffset = weekdayMap[localNow.weekday] ?? 0;
+    const startDate = shiftDate(today, -dayOffset);
+    const endDate = shiftDate(startDate, 6);
+    return { startDate, endDate };
   }
   if (period === "month") {
-    return `expenses:month:${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+    const startDate = `${localNow.year}-${String(localNow.month).padStart(2, "0")}-01`;
+    const nextMonth = localNow.month === 12
+      ? `${localNow.year + 1}-01-01`
+      : `${localNow.year}-${String(localNow.month + 1).padStart(2, "0")}-01`;
+    const endDate = shiftDate(nextMonth, -1);
+    return { startDate, endDate };
   }
-  return `expenses:${period}`;
+  return { startDate: today, endDate: today };
+}
+
+// Deterministic KV keys that auto-rotate when the period rolls over
+function periodKey(period, timeZone) {
+  const tzKey = (timeZone || "UTC").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const { startDate } = rangeForPeriod(period, timeZone);
+  if (period === "today") return `expenses:today:${tzKey}:${startDate}`;
+  if (period === "week") return `expenses:week:${tzKey}:${isoWeekKey(startDate)}`;
+  if (period === "month") return `expenses:month:${tzKey}:${startDate.slice(0, 7)}`;
+  return `expenses:${tzKey}:${period}`;
 }
 
 // ----------------------------------------------------------------------------
@@ -122,6 +179,20 @@ async function queryAll(env, databaseId, body = {}, pageSize = 100) {
 function titleOf(page, prop) {
   return (page.properties?.[prop]?.title || []).map((t) => t.plain_text || "").join("").trim();
 }
+function iconOf(page) {
+  const icon = page?.icon;
+  if (!icon) return null;
+  if (icon.type === "emoji") {
+    return { type: "emoji", value: icon.emoji };
+  }
+  if (icon.type === "external" && icon.external?.url) {
+    return { type: "image", value: icon.external.url };
+  }
+  if (icon.type === "file" && icon.file?.url) {
+    return { type: "image", value: icon.file.url };
+  }
+  return null;
+}
 function relationIdsOf(page, prop) {
   return (page.properties?.[prop]?.relation || []).map((r) => r.id);
 }
@@ -153,9 +224,21 @@ async function handleBootstrap(env, refresh = false) {
     queryAll(env, env.EXPENSES_DB_ID,      { sorts: [{ timestamp: "created_time", direction: "descending" }] }, 50),
   ]);
 
-  const categoryList    = categories.map((p)    => ({ id: p.id, name: titleOf(p, "Category")    }));
-  const subcategoryList = subcategories.map((p) => ({ id: p.id, name: titleOf(p, "Subcategory") }));
-  const accountList     = accounts.map((p)      => ({ id: p.id, name: titleOf(p, "Account")     }));
+  const categoryList = categories.map((p) => ({
+    id: p.id,
+    name: titleOf(p, "Category"),
+    icon: iconOf(p),
+  }));
+  const subcategoryList = subcategories.map((p) => ({
+    id: p.id,
+    name: titleOf(p, "Subcategory"),
+    icon: iconOf(p),
+  }));
+  const accountList = accounts.map((p) => ({
+    id: p.id,
+    name: titleOf(p, "Account"),
+    icon: iconOf(p),
+  }));
 
   const recentCats = [], recentSubs = [], recentAccts = [];
   const seenCat = new Set(), seenSub = new Set(), seenAcct = new Set();
@@ -187,41 +270,67 @@ async function handleBootstrap(env, refresh = false) {
 // Expense history — fetches & caches by period
 // ----------------------------------------------------------------------------
 
-async function handleGetExpenses(env, url) {
-  const period  = url.searchParams.get("period")  || "month";
-  const refresh = url.searchParams.get("refresh") === "1";
-  const KEY     = periodKey(period);
+function expenseMatches(expense, filters) {
+  const dateOnly = (expense.date || "").split("T")[0];
+  if (filters.from && dateOnly < filters.from) return false;
+  if (filters.to && dateOnly > filters.to) return false;
+  if (filters.categoryId && expense.categoryId !== filters.categoryId) return false;
+  if (filters.accountId && expense.accountId !== filters.accountId) return false;
+  return true;
+}
 
-  if (!refresh) {
+async function handleGetExpenses(env, url) {
+  const period = url.searchParams.get("period") || "month";
+  const refresh = url.searchParams.get("refresh") === "1";
+  const timeZone = url.searchParams.get("timeZone") || "";
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
+  const categoryId = url.searchParams.get("categoryId") || "";
+  const accountId = url.searchParams.get("accountId") || "";
+  const filteredQuery = Boolean(from || to || categoryId || accountId);
+  const range = filteredQuery
+    ? { startDate: from || "0000-01-01", endDate: to || "9999-12-31" }
+    : rangeForPeriod(period, timeZone);
+  const KEY = filteredQuery ? null : periodKey(period, timeZone);
+
+  if (KEY && !refresh) {
     const cached = await kvGet(env, KEY);
     if (cached) return { ...cached, cached: true };
-  }
-
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-
-  let startDate = todayStr;
-  if (period === "week") {
-    const d = new Date(now);
-    const day = d.getDay();
-    d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
-    startDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  } else if (period === "month") {
-    startDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
   }
 
   // Try with date filter; fall back to unfiltered if the Date property doesn't exist yet
   let expensesRaw;
   try {
+    const andFilters = [{
+      property: "Date",
+      date: { on_or_after: range.startDate },
+    }];
+    if (range.endDate) {
+      andFilters.push({
+        property: "Date",
+        date: { on_or_before: range.endDate },
+      });
+    }
+    if (categoryId) {
+      andFilters.push({
+        property: "Category",
+        relation: { contains: categoryId },
+      });
+    }
+    if (accountId) {
+      andFilters.push({
+        property: "Account",
+        relation: { contains: accountId },
+      });
+    }
     expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
-      filter: { property: "Date", date: { on_or_after: startDate } },
+      filter: andFilters.length === 1 ? andFilters[0] : { and: andFilters },
       sorts:  [{ property: "Date", direction: "descending" }],
-    }, 100);
+    }, 200);
   } catch {
     expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
       sorts: [{ timestamp: "created_time", direction: "descending" }],
-    }, 100);
+    }, 200);
   }
 
   const [categories, subcategories, accounts] = await Promise.all([
@@ -230,9 +339,18 @@ async function handleGetExpenses(env, url) {
     queryAll(env, env.ACCOUNTS_DB_ID,      {}),
   ]);
 
-  const catById = Object.fromEntries(categories.map((p)    => [p.id, titleOf(p, "Category")]));
-  const subById = Object.fromEntries(subcategories.map((p) => [p.id, titleOf(p, "Subcategory")]));
-  const accById = Object.fromEntries(accounts.map((p)      => [p.id, titleOf(p, "Account")]));
+  const catById = Object.fromEntries(categories.map((p) => [p.id, {
+    name: titleOf(p, "Category"),
+    icon: iconOf(p),
+  }]));
+  const subById = Object.fromEntries(subcategories.map((p) => [p.id, {
+    name: titleOf(p, "Subcategory"),
+    icon: iconOf(p),
+  }]));
+  const accById = Object.fromEntries(accounts.map((p) => [p.id, {
+    name: titleOf(p, "Account"),
+    icon: iconOf(p),
+  }]));
 
   const expenses = expensesRaw
     .map((p) => {
@@ -242,16 +360,35 @@ async function handleGetExpenses(env, url) {
         name:        titleOf(p, "Expense") || "",
         amount:      numberOf(p, "Amount") || 0,
         date,
-        category:    relationIdsOf(p, "Category").map((id) => catById[id]).filter(Boolean)[0] || "",
-        subcategory: relationIdsOf(p, "Subcategory").map((id) => subById[id]).filter(Boolean).join(", "),
-        account:     relationIdsOf(p, "Account").map((id) => accById[id]).filter(Boolean)[0] || "",
+        categoryId:  relationIdsOf(p, "Category").filter(Boolean)[0] || "",
+        category:    relationIdsOf(p, "Category").map((id) => catById[id]?.name).filter(Boolean)[0] || "",
+        categoryIcon: relationIdsOf(p, "Category").map((id) => catById[id]?.icon).filter(Boolean)[0] || null,
+        subcategoryIds: relationIdsOf(p, "Subcategory").filter(Boolean),
+        subcategory: relationIdsOf(p, "Subcategory").map((id) => subById[id]?.name).filter(Boolean).join(", "),
+        subcategoryIcons: relationIdsOf(p, "Subcategory").map((id) => subById[id]?.icon).filter(Boolean),
+        accountId:   relationIdsOf(p, "Account").filter(Boolean)[0] || "",
+        account:     relationIdsOf(p, "Account").map((id) => accById[id]?.name).filter(Boolean)[0] || "",
+        accountIcon: relationIdsOf(p, "Account").map((id) => accById[id]?.icon).filter(Boolean)[0] || null,
       };
     })
-    .filter((e) => e.date && e.date.split("T")[0] >= startDate);
+    .filter((e) => e.date)
+    .filter((e) => expenseMatches(e, {
+      from: range.startDate,
+      to: range.endDate,
+      categoryId,
+      accountId,
+    }));
 
   const total  = expenses.reduce((s, e) => s + e.amount, 0);
-  const result = { expenses, total, period, startDate };
-  await kvSet(env, KEY, result, TTL[period] || 1800);
+  const result = {
+    expenses,
+    total,
+    period: filteredQuery ? "range" : period,
+    startDate: range.startDate,
+    endDate: range.endDate,
+    filters: { from: from || "", to: to || "", categoryId, accountId },
+  };
+  if (KEY) await kvSet(env, KEY, result, TTL[period] || 1800);
   return { ...result, cached: false };
 }
 
