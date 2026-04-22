@@ -455,13 +455,19 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .delete-btn {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border: 1px solid rgba(244, 106, 106, 0.28);
     background: rgba(244, 106, 106, 0.12);
     color: var(--danger);
     border-radius: 12px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
   }
 
   .empty-state,
@@ -2076,7 +2082,7 @@ export const HTML = /* html */ `<!doctype html>
         '</div>' +
         '<div class="expense-right">' +
           '<div class="expense-amount">' + formatCurrencyParts(expense.amount) + '</div>' +
-          '<button class="delete-btn" data-delete-id="' + expense.id + '" title="Delete">x</button>' +
+          '<button class="delete-btn" data-delete-id="' + expense.id + '" title="Delete" aria-label="Delete">🗑️</button>' +
         '</div>' +
       '</div>';
   }
