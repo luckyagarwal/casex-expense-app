@@ -5,7 +5,11 @@ export const HTML = /* html */ `<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="format-detection" content="telephone=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" id="themeColorMeta" content="#121212" />
@@ -72,6 +76,14 @@ export const HTML = /* html */ `<!doctype html>
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
     overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+
+  /* Prevent iOS from auto-zooming when focusing inputs (requires ≥16px) */
+  input, select, textarea {
+    font-size: 16px;
   }
 
   body {
@@ -150,12 +162,14 @@ export const HTML = /* html */ `<!doctype html>
   .topbar-leading {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     flex: 1;
     min-width: 0;
   }
 
-  .topbar-leading .screen-title {
+  /* Only shrink the title when paired with a back button (subpages) */
+  .topbar-leading .back-btn ~ .screen-title,
+  .topbar-leading:has(.back-btn) .screen-title {
     font-size: 20px;
     letter-spacing: -0.03em;
   }
@@ -635,6 +649,14 @@ export const HTML = /* html */ `<!doctype html>
     color: var(--accent);
   }
 
+  .field-optional {
+    color: var(--fg-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    opacity: 0.75;
+  }
+
   .amount-shell {
     display: flex;
     align-items: center;
@@ -663,21 +685,59 @@ export const HTML = /* html */ `<!doctype html>
 
   .text-input,
   .date-input,
-  .time-input {
+  .time-input,
+  .select-input {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     border-radius: 16px;
     border: 1px solid var(--border);
     background: var(--surface-3);
     color: var(--fg);
     padding: 14px 15px;
     outline: none;
-    font-size: 15px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .date-input,
+  .time-input {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: center;
+  }
+
+  .select-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%238b8b8b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    padding-right: 38px;
+    cursor: pointer;
   }
 
   .text-input::placeholder,
   .amount-input::placeholder {
     color: var(--fg-muted);
   }
+
+  /* Expand/collapse toggle for chip sections */
+  .expand-toggle {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 0 2px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  .expand-toggle:hover { opacity: 0.85; }
+  .expand-toggle[hidden] { display: none; }
+
+  .search-row[hidden] { display: none; }
 
   .input-row {
     display: grid;
@@ -802,12 +862,39 @@ export const HTML = /* html */ `<!doctype html>
 
   .filter-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
     gap: 12px;
   }
 
   .filter-grid.three {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);
+  }
+
+  /* ── Consolidated search filter card ── */
+  .filter-card {
+    padding: 6px 18px 14px;
+  }
+  .filter-block {
+    padding: 14px 0 6px;
+    border-top: 1px solid var(--border);
+  }
+  .filter-block:first-child {
+    border-top: none;
+    padding-top: 6px;
+  }
+  .date-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: 10px;
+    min-width: 0;
+  }
+  .date-grid > .date-input {
+    min-width: 0;
+    width: 100%;
+  }
+  .chips.chips-inline {
+    margin-bottom: 0;
+    min-height: 0;
   }
 
   .filter-select {
@@ -989,20 +1076,27 @@ export const HTML = /* html */ `<!doctype html>
     position: fixed;
     left: 18px;
     right: 18px;
-    bottom: calc(132px + env(safe-area-inset-bottom));
+    bottom: calc(96px + env(safe-area-inset-bottom));
     border-radius: 18px;
     padding: 14px 16px;
     text-align: center;
     background: var(--surface-2);
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
-    transform: translateY(140%);
-    transition: transform 0.24s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
     z-index: 50;
   }
 
   .toast.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0s;
   }
 
   .toast.ok {
@@ -1137,10 +1231,12 @@ export const HTML = /* html */ `<!doctype html>
 <div class="app-shell">
   <section class="view active" id="expensesView" data-view="expenses">
     <div class="topbar">
-      <h1 class="screen-title">Expenses</h1>
+      <div class="topbar-leading">
+        <button class="icon-btn menu-open-btn" title="Menu" aria-label="Menu">☰</button>
+        <h1 class="screen-title">Expenses</h1>
+      </div>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshExpensesBtn" title="Refresh">↻</button>
-        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1173,9 +1269,11 @@ export const HTML = /* html */ `<!doctype html>
 
   <section class="view add-view" id="addView" data-view="add">
     <div class="topbar">
-      <h1 class="screen-title">Add Expense</h1>
+      <div class="topbar-leading">
+        <button class="icon-btn menu-open-btn" title="Menu" aria-label="Menu">☰</button>
+        <h1 class="screen-title">Add Expense</h1>
+      </div>
       <div class="topbar-actions">
-        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchFromAddBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1193,28 +1291,31 @@ export const HTML = /* html */ `<!doctype html>
       <input id="expense" class="text-input" type="text" placeholder="Coffee, Uber, groceries..." autocomplete="off" />
     </div>
 
-    <div class="input-card">
+    <div class="input-card" id="catCard">
       <div class="field-label">Category <span class="required-dot">*</span></div>
       <div class="chips" id="catChips"></div>
-      <div class="search-row">
+      <button type="button" class="expand-toggle" id="catExpandBtn" hidden>Show all ⌄</button>
+      <div class="search-row" id="catSearchRow" hidden>
         <input id="catSearch" class="text-input" type="text" placeholder="Search or create category..." autocomplete="off" />
         <div id="catDropdown" class="dropdown hidden"></div>
       </div>
     </div>
 
-    <div class="input-card">
-      <div class="field-label">Subcategory <span class="required-dot">*</span></div>
+    <div class="input-card" id="subCard">
+      <div class="field-label">Subcategory <span class="field-optional">(optional)</span></div>
       <div class="chips" id="subChips"></div>
-      <div class="search-row">
+      <button type="button" class="expand-toggle" id="subExpandBtn" hidden>Show all ⌄</button>
+      <div class="search-row" id="subSearchRow" hidden>
         <input id="subSearch" class="text-input" type="text" placeholder="Search or create subcategory..." autocomplete="off" />
         <div id="subDropdown" class="dropdown hidden"></div>
       </div>
     </div>
 
-    <div class="input-card">
+    <div class="input-card" id="acctCard">
       <div class="field-label">Account <span class="required-dot">*</span></div>
       <div class="chips" id="acctChips"></div>
-      <div class="search-row">
+      <button type="button" class="expand-toggle" id="acctExpandBtn" hidden>Show all ⌄</button>
+      <div class="search-row" id="acctSearchRow" hidden>
         <input id="acctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
         <div id="acctDropdown" class="dropdown hidden"></div>
       </div>
@@ -1229,15 +1330,17 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <button id="saveBtn" class="save-btn">Save Expense</button>
-    <div class="helper-text" id="lastSaved">Choose a category, subcategory, and account to save.</div>
+    <div class="helper-text" id="lastSaved">Choose a category and account to save. Subcategory is optional.</div>
   </section>
 
   <section class="view" id="analyticsView" data-view="analytics">
     <div class="topbar">
-      <h1 class="screen-title">Breakdown</h1>
+      <div class="topbar-leading">
+        <button class="icon-btn menu-open-btn" title="Menu" aria-label="Menu">☰</button>
+        <h1 class="screen-title">Breakdown</h1>
+      </div>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshAnalyticsBtn" title="Refresh">↻</button>
-        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchFromAnalyticsBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1289,33 +1392,35 @@ export const HTML = /* html */ `<!doctype html>
       </div>
     </div>
 
-    <div class="input-card">
-      <div class="field-label">Range</div>
-      <div class="filter-grid" style="grid-template-columns:1fr 1fr">
-        <input id="searchFrom" class="date-input" type="date" />
-        <input id="searchTo" class="date-input" type="date" />
+    <div class="input-card filter-card">
+      <div class="filter-block">
+        <div class="field-label">Range</div>
+        <div class="date-grid">
+          <input id="searchFrom" class="date-input" type="date" />
+          <input id="searchTo" class="date-input" type="date" />
+        </div>
       </div>
-    </div>
 
-    <div class="input-card">
-      <div class="field-label">Category</div>
-      <div class="chips" id="searchCategoryChips">
-        <button class="chip selected" data-filter-cat="">All</button>
+      <div class="filter-block">
+        <div class="field-label">Sort</div>
+        <div class="chips chips-inline">
+          <button class="chip selected" id="sortDescBtn" type="button">Newest first</button>
+          <button class="chip" id="sortAscBtn" type="button">Oldest first</button>
+        </div>
       </div>
-    </div>
 
-    <div class="input-card">
-      <div class="field-label">Account</div>
-      <div class="chips" id="searchAccountChips">
-        <button class="chip selected" data-filter-acct="">All</button>
+      <div class="filter-block">
+        <div class="field-label">Account</div>
+        <select id="searchAccountSelect" class="select-input">
+          <option value="">All accounts</option>
+        </select>
       </div>
-    </div>
 
-    <div class="input-card">
-      <div class="field-label">Sort</div>
-      <div class="chips">
-        <button class="chip selected" id="sortDescBtn">Newest first</button>
-        <button class="chip" id="sortAscBtn">Oldest first</button>
+      <div class="filter-block">
+        <div class="field-label">Category</div>
+        <div class="chips chips-inline" id="searchCategoryChips">
+          <button class="chip selected" data-filter-cat="" type="button">All</button>
+        </div>
       </div>
     </div>
 
@@ -1393,7 +1498,9 @@ export const HTML = /* html */ `<!doctype html>
 <script>
 (() => {
   const LS_CACHE = "notion_expense_cache_v2";
+  const LS_CACHE_AT = "notion_expense_cache_at_v2";
   const LS_THEME = "notion_expense_theme_v2";
+  const SUGGESTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
   const PERIOD_LABELS = { today: "day", week: "weekly", month: "monthly" };
   const COLOR_PALETTE = ["#ff7a59", "#5ad6c9", "#f2c14e", "#7f8cff", "#c46cff", "#ff5f9e", "#58b368", "#ff9f43"];
   const USER_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -1411,6 +1518,7 @@ export const HTML = /* html */ `<!doctype html>
     lastNonSearchView: "expenses",
     navHidden: false,
     searchFilter: { categoryId: null, accountId: null, sort: "desc" },
+    expanded: { cat: false, sub: false, acct: false },
     chosen: {
       categoryId: null, categoryName: null,
       subcategoryId: null, subcategoryName: null,
@@ -1605,12 +1713,19 @@ export const HTML = /* html */ `<!doctype html>
       const data = await api("/api/bootstrap");
       state.data = data;
       localStorage.setItem(LS_CACHE, JSON.stringify(data));
+      localStorage.setItem(LS_CACHE_AT, String(Date.now()));
       renderFormChips();
     } catch (err) {
       if (!state.data) toast("Failed to load Notion data: " + err.message, "err");
     } finally {
       hideLoader();
     }
+  }
+
+  function suggestionsStale() {
+    const at = parseInt(localStorage.getItem(LS_CACHE_AT) || "0", 10);
+    if (!at) return true;
+    return (Date.now() - at) > SUGGESTIONS_TTL_MS;
   }
 
   function renderFormChips() {
@@ -1638,8 +1753,11 @@ export const HTML = /* html */ `<!doctype html>
 
   function renderChips(prefix, idField, nameField, fullList, recentIds) {
     const el = $(prefix + "Chips");
+    const expandBtn = $(prefix + "ExpandBtn");
+    const searchRow = $(prefix + "SearchRow");
     el.innerHTML = "";
 
+    // SELECTED STATE: show only the chosen chip with × to clear.
     if (state.chosen[idField] || state.chosen[nameField]) {
       const chosenItem = state.chosen[idField] ? byId(fullList, state.chosen[idField]) : null;
       const fallback = state.chosen[nameField] || chosenItem && chosenItem.name || "?";
@@ -1659,15 +1777,18 @@ export const HTML = /* html */ `<!doctype html>
         renderChips(prefix, idField, nameField, fullList, recentIds);
       };
       el.appendChild(chip);
+      if (expandBtn) expandBtn.hidden = true;
+      if (searchRow) searchRow.hidden = true;
       return;
     }
 
-    (recentIds || []).forEach((id) => {
-      const item = byId(fullList, id);
-      if (!item) return;
+    const expanded = !!state.expanded[prefix];
+    const suggestedIds = (recentIds || []).filter((id) => byId(fullList, id));
+    const suggestedSet = new Set(suggestedIds);
+    const pickChip = (item, suggest) => {
       const chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "chip suggest";
+      chip.className = "chip" + (suggest ? " suggest" : "");
       chip.innerHTML = renderChipLabel(item, initialFor(item.name));
       chip.onclick = () => {
         state.chosen[idField] = item.id;
@@ -1679,8 +1800,41 @@ export const HTML = /* html */ `<!doctype html>
         }
         renderChips(prefix, idField, nameField, fullList, recentIds);
       };
-      el.appendChild(chip);
-    });
+      return chip;
+    };
+
+    if (!expanded) {
+      // Collapsed: show suggested/recent chips only.
+      suggestedIds.slice(0, 6).forEach((id) => {
+        const item = byId(fullList, id);
+        if (item) el.appendChild(pickChip(item, true));
+      });
+    } else {
+      // Expanded: suggested first (marked), then all remaining alphabetically.
+      suggestedIds.forEach((id) => {
+        const item = byId(fullList, id);
+        if (item) el.appendChild(pickChip(item, true));
+      });
+      const rest = (fullList || [])
+        .filter((item) => item && !suggestedSet.has(item.id))
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name));
+      rest.forEach((item) => el.appendChild(pickChip(item, false)));
+    }
+
+    // Toggle + search row visibility.
+    const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
+    if (expandBtn) {
+      expandBtn.hidden = !hasMore && !expanded;
+      expandBtn.textContent = expanded ? "Show less ⌃" : "Show all ⌄";
+      expandBtn.onclick = () => {
+        state.expanded[prefix] = !state.expanded[prefix];
+        renderChips(prefix, idField, nameField, fullList, recentIds);
+      };
+    }
+    if (searchRow) {
+      searchRow.hidden = !expanded;
+    }
   }
 
   function recentFor(prefix) {
@@ -1765,9 +1919,6 @@ export const HTML = /* html */ `<!doctype html>
     if (!state.chosen.categoryId && !state.chosen.categoryName) {
       return toast("Select a category", "err");
     }
-    if (!state.chosen.subcategoryId && !state.chosen.subcategoryName) {
-      return toast("Select a subcategory", "err");
-    }
     if (!state.chosen.accountId && !state.chosen.accountName) {
       return toast("Select an account", "err");
     }
@@ -1799,14 +1950,19 @@ export const HTML = /* html */ `<!doctype html>
       $("expense").value = "";
       $("lastSaved").textContent = "Saved at " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
+      // Invalidate caches and navigate immediately — user doesn't wait for network.
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
-      await bootstrap(false);
-      await Promise.all([
-        ensureExpensesLoaded(state.expensesPeriod, true),
-        ensureAnalyticsLoaded(state.analyticsPeriod, true),
-      ]);
       setActiveView("expenses");
+
+      // Background refresh — no await, no blocking UI.
+      ensureExpensesLoaded(state.expensesPeriod, true).catch(() => {});
+      ensureAnalyticsLoaded(state.analyticsPeriod, true).catch(() => {});
+
+      // Only refresh the suggestions/categories/accounts payload once per 24h.
+      if (suggestionsStale()) {
+        bootstrap(false).catch(() => {});
+      }
     } catch (err) {
       toast("Save failed: " + err.message, "err");
     } finally {
@@ -1985,7 +2141,20 @@ export const HTML = /* html */ `<!doctype html>
     }
 
     buildChips("searchCategoryChips", state.data.categories || [], "categoryId", "filterCat");
-    buildChips("searchAccountChips", state.data.accounts || [], "accountId", "filterAcct");
+    populateSearchAccountSelect();
+  }
+
+  function populateSearchAccountSelect() {
+    const sel = $("searchAccountSelect");
+    if (!sel || !state.data) return;
+    const currentVal = state.searchFilter.accountId || "";
+    sel.innerHTML = '<option value="">All accounts</option>' +
+      (state.data.accounts || []).map((acct) =>
+        '<option value="' + escapeHtml(acct.id) + '"' + (acct.id === currentVal ? " selected" : "") + ">" + escapeHtml(acct.name) + "</option>"
+      ).join("");
+    sel.onchange = () => {
+      state.searchFilter.accountId = sel.value || null;
+    };
   }
 
   async function runSearch(hardRefresh) {
