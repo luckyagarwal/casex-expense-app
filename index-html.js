@@ -103,7 +103,7 @@ export const HTML = /* html */ `<!doctype html>
     padding:
       max(20px, env(safe-area-inset-top))
       18px
-      calc(148px + env(safe-area-inset-bottom));
+      calc(88px + env(safe-area-inset-bottom));
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -116,7 +116,7 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .view.add-view {
-    padding-bottom: calc(186px + env(safe-area-inset-bottom));
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -823,114 +823,166 @@ export const HTML = /* html */ `<!doctype html>
     -webkit-appearance: none;
   }
 
-  .bottom-nav {
+  /* ── Side menu ── */
+  .side-overlay {
     position: fixed;
-    left: 16px;
-    right: 16px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    z-index: 40;
-    border: 1px solid var(--border);
-    border-radius: 30px;
-    background: var(--nav-bg);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: var(--shadow);
-    padding: 12px 14px 16px;
-    display: grid;
-    grid-template-columns: 1fr 92px 1fr;
-    align-items: center;
-    gap: 10px;
-    transform: translateY(0);
-    transition: transform 0.28s ease, opacity 0.28s ease;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0,0,0,0.42);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
-
-  .bottom-nav.hidden {
-    transform: translateY(120%);
-    opacity: 0.01;
+  .side-overlay.open {
+    opacity: 1;
+    pointer-events: all;
   }
-
-  .nav-tab {
-    border: none;
-    background: transparent;
+  .side-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(270px, 78vw);
+    z-index: 70;
+    background: var(--surface-2);
+    border-right: 1px solid var(--border);
+    box-shadow: 24px 0 60px rgba(0,0,0,0.26);
     display: flex;
     flex-direction: column;
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    transform: translateX(-110%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .side-menu.open {
+    transform: translateX(0);
+  }
+  .side-hdr {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 0 0;
-    color: var(--fg-muted);
-    cursor: pointer;
+    gap: 12px;
+    padding: 4px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
   }
-
-  .nav-tab.active {
-    color: var(--fg);
-  }
-
-  .nav-icon {
+  .side-logo {
     width: 36px;
     height: 36px;
-    border-radius: 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), #f39a63);
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: 1px solid transparent;
-    font-size: 17px;
+    font-size: 20px;
+    font-weight: 700;
+    flex-shrink: 0;
   }
-
-  .nav-tab.active .nav-icon {
-    background: var(--surface-3);
-    border-color: var(--border);
-  }
-
-  .nav-label {
-    font-size: 10px;
+  .side-app-name {
+    font-size: 16px;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    line-height: 1;
+    flex: 1;
+    letter-spacing: -0.01em;
   }
-
-  .nav-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: -42px;
-  }
-
-  .nav-fab {
-    width: 78px;
-    height: 78px;
-    border-radius: 30px;
-    border: 6px solid var(--bg);
-    background: linear-gradient(135deg, var(--accent), #f39a63);
-    color: #fff;
-    box-shadow: 0 18px 30px rgba(235, 124, 85, 0.28);
+  .side-close-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg-muted);
+    border-radius: 10px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    position: relative;
+    font-size: 14px;
   }
-
-  .fab-plus {
-    font-size: 34px;
-    line-height: 1;
-    margin-top: -1px;
+  .side-nav {
+    flex: 1;
+    padding: 4px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
   }
-
-  .fab-label {
-    font-size: 10px;
+  .side-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    color: var(--fg-soft);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background 0.15s ease;
+  }
+  .side-nav-item:active {
+    background: var(--surface-3);
+  }
+  .side-nav-item.active {
+    background: var(--surface-3);
+    color: var(--accent);
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--fg-muted);
-    line-height: 1;
+  }
+  .side-nav-icon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .side-footer {
+    padding: 8px 12px 4px;
+    border-top: 1px solid var(--border);
+  }
+  .side-theme-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    color: var(--fg-soft);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
   }
 
-  .nav-fab.active + .fab-label {
-    color: var(--fg);
+  /* ── Floating add button ── */
+  .float-fab {
+    position: fixed;
+    right: 20px;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), #f39a63);
+    color: #fff;
+    font-size: 30px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 28px rgba(235, 124, 85, 0.38);
+    z-index: 45;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .float-fab:active {
+    transform: scale(0.93);
+    box-shadow: 0 6px 16px rgba(235, 124, 85, 0.3);
+  }
+  .float-fab.hidden {
+    display: none;
   }
 
   .toast {
@@ -1028,10 +1080,6 @@ export const HTML = /* html */ `<!doctype html>
       margin: 0 auto;
     }
 
-    .bottom-nav {
-      max-width: 428px;
-      margin: 0 auto;
-    }
   }
 
   @media (max-width: 420px) {
@@ -1092,7 +1140,7 @@ export const HTML = /* html */ `<!doctype html>
       <h1 class="screen-title">Expenses</h1>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshExpensesBtn" title="Refresh">↻</button>
-        <button class="icon-btn" id="themeBtn" title="Toggle theme">☀</button>
+        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1127,7 +1175,7 @@ export const HTML = /* html */ `<!doctype html>
     <div class="topbar">
       <h1 class="screen-title">Add Expense</h1>
       <div class="topbar-actions">
-        <button class="icon-btn" id="addThemeBtn" title="Toggle theme">☀</button>
+        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchFromAddBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1189,7 +1237,7 @@ export const HTML = /* html */ `<!doctype html>
       <h1 class="screen-title">Breakdown</h1>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshAnalyticsBtn" title="Refresh">↻</button>
-        <button class="icon-btn" id="analyticsThemeBtn" title="Toggle theme">☀</button>
+        <button class="icon-btn menu-open-btn" title="Menu">☰</button>
         <button class="search-capsule" id="openSearchFromAnalyticsBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1243,25 +1291,31 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card">
       <div class="field-label">Range</div>
-      <div class="filter-grid">
+      <div class="filter-grid" style="grid-template-columns:1fr 1fr">
         <input id="searchFrom" class="date-input" type="date" />
         <input id="searchTo" class="date-input" type="date" />
       </div>
     </div>
 
     <div class="input-card">
-      <div class="field-label">Filters</div>
-      <div class="filter-grid three">
-        <select id="searchCategory" class="filter-select">
-          <option value="">All categories</option>
-        </select>
-        <select id="searchAccount" class="filter-select">
-          <option value="">All accounts</option>
-        </select>
-        <select id="searchSort" class="filter-select">
-          <option value="desc">Date: Newest first</option>
-          <option value="asc">Date: Oldest first</option>
-        </select>
+      <div class="field-label">Category</div>
+      <div class="chips" id="searchCategoryChips">
+        <button class="chip selected" data-filter-cat="">All</button>
+      </div>
+    </div>
+
+    <div class="input-card">
+      <div class="field-label">Account</div>
+      <div class="chips" id="searchAccountChips">
+        <button class="chip selected" data-filter-acct="">All</button>
+      </div>
+    </div>
+
+    <div class="input-card">
+      <div class="field-label">Sort</div>
+      <div class="chips">
+        <button class="chip selected" id="sortDescBtn">Newest first</button>
+        <button class="chip" id="sortAscBtn">Oldest first</button>
       </div>
     </div>
 
@@ -1302,23 +1356,37 @@ export const HTML = /* html */ `<!doctype html>
     </div>
   </section>
 
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="nav-tab active" data-view-target="expenses">
-      <span class="nav-icon">=</span>
-      <span class="nav-label">Expenses</span>
+  <button class="float-fab" id="floatFab" aria-label="Add expense">+</button>
+</div>
+
+<div id="sideOverlay" class="side-overlay"></div>
+<aside id="sideMenu" class="side-menu">
+  <div class="side-hdr">
+    <div class="side-logo">+</div>
+    <div class="side-app-name">Expense Tracker</div>
+    <button class="side-close-btn" id="sideCloseBtn">✕</button>
+  </div>
+  <nav class="side-nav">
+    <button class="side-nav-item active" data-side-view="expenses">
+      <span class="side-nav-icon">≡</span>
+      <span>Expenses</span>
     </button>
-    <div class="nav-center">
-      <button class="nav-fab" id="fabBtn" data-view-target="add" aria-label="Add expense">
-        <span class="fab-plus">+</span>
-      </button>
-      <span class="fab-label">Add</span>
-    </div>
-    <button class="nav-tab" data-view-target="analytics">
-      <span class="nav-icon">▥</span>
-      <span class="nav-label">Analytics</span>
+    <button class="side-nav-item" data-side-view="add">
+      <span class="side-nav-icon">+</span>
+      <span>Add Expense</span>
+    </button>
+    <button class="side-nav-item" data-side-view="analytics">
+      <span class="side-nav-icon">▥</span>
+      <span>Analytics</span>
     </button>
   </nav>
-</div>
+  <div class="side-footer">
+    <button class="side-theme-row" id="sideThemeBtn">
+      <span class="side-nav-icon" id="sideThemeIcon">☀</span>
+      <span>Toggle Theme</span>
+    </button>
+  </div>
+</aside>
 
 <div class="toast" id="toast"></div>
 
@@ -1342,6 +1410,7 @@ export const HTML = /* html */ `<!doctype html>
     lastNonDetailView: "analytics",
     lastNonSearchView: "expenses",
     navHidden: false,
+    searchFilter: { categoryId: null, accountId: null, sort: "desc" },
     chosen: {
       categoryId: null, categoryName: null,
       subcategoryId: null, subcategoryName: null,
@@ -1358,11 +1427,10 @@ export const HTML = /* html */ `<!doctype html>
 
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    $("themeBtn").textContent = theme === "dark" ? "☀" : "☾";
-    $("addThemeBtn").textContent = theme === "dark" ? "☀" : "☾";
-    $("analyticsThemeBtn").textContent = theme === "dark" ? "☀" : "☾";
-    $("searchThemeBtn").textContent = theme === "dark" ? "☀" : "☾";
     $("themeColorMeta").content = theme === "dark" ? "#121212" : "#fffdf7";
+    const icon = theme === "dark" ? "☀" : "☾";
+    ["themeBtn","addThemeBtn","analyticsThemeBtn","searchThemeBtn"].forEach(id => { const el = $(id); if (el) el.textContent = icon; });
+    const si = $("sideThemeIcon"); if (si) si.textContent = icon;
     localStorage.setItem(LS_THEME, theme);
   }
 
@@ -1370,10 +1438,8 @@ export const HTML = /* html */ `<!doctype html>
     const saved = localStorage.getItem(LS_THEME);
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     applyTheme(saved || (prefersDark ? "dark" : "light"));
-    $("themeBtn").onclick = () => toggleTheme();
-    $("addThemeBtn").onclick = () => toggleTheme();
-    $("analyticsThemeBtn").onclick = () => toggleTheme();
-    $("searchThemeBtn").onclick = () => toggleTheme();
+    ["themeBtn","addThemeBtn","analyticsThemeBtn","searchThemeBtn"].forEach(id => { const el = $(id); if (el) el.onclick = () => toggleTheme(); });
+    const stb = $("sideThemeBtn"); if (stb) stb.onclick = () => toggleTheme();
   }
 
   function toggleTheme() {
@@ -1479,11 +1545,14 @@ export const HTML = /* html */ `<!doctype html>
       node.classList.toggle("active", key === view);
     });
 
-    document.querySelectorAll(".nav-tab").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.viewTarget === view);
+    // Update side menu active state
+    document.querySelectorAll("[data-side-view]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.sideView === view);
     });
-    $("fabBtn").classList.toggle("active", view === "add");
-    showNav();
+
+    // Float FAB: hide on add, search, categoryDetail
+    const fab = $("floatFab");
+    if (fab) fab.classList.toggle("hidden", view === "add" || view === "search" || view === "categoryDetail");
 
     if (view !== "categoryDetail") state.lastNonDetailView = view;
     if (view !== "search" && view !== "categoryDetail") state.lastNonSearchView = view;
@@ -1498,43 +1567,25 @@ export const HTML = /* html */ `<!doctype html>
         toast("Failed to load analytics: " + err.message, "err");
       });
     }
-  }
-
-  function hideNav() {
-    if (state.currentView === "add" || state.currentView === "categoryDetail" || state.currentView === "search") return;
-    state.navHidden = true;
-    $("bottomNav").classList.add("hidden");
-  }
-
-  function showNav() {
-    // Search view always hides the nav (it has its own back button)
-    if (state.currentView === "search") {
-      $("bottomNav").classList.add("hidden");
-      return;
+    if (view === "search") {
+      populateSearchChips();
     }
-    state.navHidden = false;
-    $("bottomNav").classList.remove("hidden");
+  }
+
+  function openSideMenu() {
+    $("sideMenu").classList.add("open");
+    $("sideOverlay").classList.add("open");
+  }
+
+  function closeSideMenu() {
+    $("sideMenu").classList.remove("open");
+    $("sideOverlay").classList.remove("open");
   }
 
   function attachScrollBehavior() {
     document.querySelectorAll(".view").forEach((viewEl) => {
-      let last = 0;
       viewEl.addEventListener("scroll", () => {
-        const current = viewEl.scrollTop;
-        const viewName = viewEl.dataset.view;
-        state.scrollPositions[viewName] = current;
-        if (viewName !== state.currentView) {
-          last = current;
-          return;
-        }
-        if (current < 18) {
-          showNav();
-        } else if (current > last + 18) {
-          hideNav();
-        } else if (current < last - 10) {
-          showNav();
-        }
-        last = current;
+        state.scrollPositions[viewEl.dataset.view] = viewEl.scrollTop;
       }, { passive: true });
     });
   }
@@ -1567,21 +1618,6 @@ export const HTML = /* html */ `<!doctype html>
     renderChips("cat", "categoryId", "categoryName", state.data.categories, state.data.recent.categories);
     renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories, suggestedSubs());
     renderChips("acct", "accountId", "accountName", state.data.accounts, state.data.recent.accounts);
-    populateSearchFilters();
-  }
-
-  function populateSearchFilters() {
-    if (!state.data) return;
-    $("searchCategory").innerHTML =
-      '<option value="">All categories</option>' +
-      state.data.categories.map((item) =>
-        '<option value="' + item.id + '">' + escapeHtml(item.name) + '</option>'
-      ).join("");
-    $("searchAccount").innerHTML =
-      '<option value="">All accounts</option>' +
-      state.data.accounts.map((item) =>
-        '<option value="' + item.id + '">' + escapeHtml(item.name) + '</option>'
-      ).join("");
   }
 
   function suggestedSubs() {
@@ -1917,12 +1953,47 @@ export const HTML = /* html */ `<!doctype html>
     $("expensesList").innerHTML = renderExpenseGroups(expenses, "No expenses recorded for this " + PERIOD_LABELS[data.period] + " yet.", "desc");
   }
 
+  function populateSearchChips() {
+    if (!state.data) return;
+
+    function buildChips(containerId, items, filterKey, idAttr) {
+      const container = $(containerId);
+      if (!container) return;
+      // Preserve existing selection
+      const currentVal = state.searchFilter[filterKey];
+      container.innerHTML = "";
+
+      const makeChip = (label, val, icon) => {
+        const btn = document.createElement("button");
+        btn.className = "chip" + (val === currentVal ? " selected" : "");
+        btn.dataset[idAttr] = val || "";
+        if (icon) {
+          btn.innerHTML = '<span class="chip-icon">' + renderIcon(icon, initialFor(label)) + "</span>" + escapeHtml(label);
+        } else {
+          btn.textContent = label;
+        }
+        btn.onclick = () => {
+          container.querySelectorAll(".chip").forEach((c) => c.classList.remove("selected"));
+          btn.classList.add("selected");
+          state.searchFilter[filterKey] = val || null;
+        };
+        return btn;
+      };
+
+      container.appendChild(makeChip("All", null, null));
+      items.forEach((item) => container.appendChild(makeChip(item.name, item.id, item.icon)));
+    }
+
+    buildChips("searchCategoryChips", state.data.categories || [], "categoryId", "filterCat");
+    buildChips("searchAccountChips", state.data.accounts || [], "accountId", "filterAcct");
+  }
+
   async function runSearch(hardRefresh) {
     const from = $("searchFrom").value;
     const to = $("searchTo").value;
-    const categoryId = $("searchCategory").value;
-    const accountId = $("searchAccount").value;
-    const sort = $("searchSort").value || "desc";
+    const categoryId = state.searchFilter.categoryId || "";
+    const accountId = state.searchFilter.accountId || "";
+    const sort = state.searchFilter.sort || "desc";
 
     if (!from || !to) return toast("Choose both From and To dates", "err");
     if (from > to) return toast("From date must be before To date", "err");
@@ -2125,10 +2196,28 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   function wireNav() {
-    document.querySelectorAll("[data-view-target]").forEach((btn) => {
+    // Side menu open (hamburger buttons)
+    document.querySelectorAll(".menu-open-btn").forEach((btn) => {
+      btn.addEventListener("click", openSideMenu);
+    });
+    $("sideOverlay").onclick = closeSideMenu;
+    $("sideCloseBtn").onclick = closeSideMenu;
+
+    // Side nav items
+    document.querySelectorAll("[data-side-view]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        setActiveView(btn.dataset.viewTarget);
+        setActiveView(btn.dataset.sideView);
+        closeSideMenu();
       });
+    });
+
+    // Float FAB
+    $("floatFab").onclick = () => setActiveView("add");
+
+    // Old search capsule buttons still work
+    ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromDetailBtn"].forEach((id) => {
+      const el = $(id);
+      if (el) el.onclick = () => setActiveView("search");
     });
   }
 
@@ -2212,17 +2301,21 @@ export const HTML = /* html */ `<!doctype html>
         toast("Search failed: " + err.message, "err");
       }
     };
-    $("searchSort").onchange = async () => {
-      if (!$("searchFrom").value || !$("searchTo").value || !state.searchResults) return;
-      try {
-        await runSearch(false);
-      } catch (err) {
-        toast("Sort update failed: " + err.message, "err");
-      }
+
+    // Sort toggle chips
+    const sortDesc = $("sortDescBtn");
+    const sortAsc = $("sortAscBtn");
+    if (sortDesc) sortDesc.onclick = () => {
+      state.searchFilter.sort = "desc";
+      sortDesc.classList.add("selected");
+      if (sortAsc) sortAsc.classList.remove("selected");
     };
-    ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromDetailBtn"].forEach((id) => {
-      $(id).onclick = () => setActiveView("search");
-    });
+    if (sortAsc) sortAsc.onclick = () => {
+      state.searchFilter.sort = "asc";
+      sortAsc.classList.add("selected");
+      if (sortDesc) sortDesc.classList.remove("selected");
+    };
+
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
 
