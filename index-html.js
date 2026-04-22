@@ -1410,17 +1410,24 @@ export const HTML = /* html */ `<!doctype html>
       </div>
 
       <div class="filter-block">
-        <div class="field-label">Account</div>
-        <select id="searchAccountSelect" class="select-input">
-          <option value="">All accounts</option>
+        <div class="field-label">Category</div>
+        <select id="searchCategorySelect" class="select-input">
+          <option value="">All categories</option>
         </select>
       </div>
 
       <div class="filter-block">
-        <div class="field-label">Category</div>
-        <div class="chips chips-inline" id="searchCategoryChips">
-          <button class="chip selected" data-filter-cat="" type="button">All</button>
-        </div>
+        <div class="field-label">Subcategory</div>
+        <select id="searchSubcategorySelect" class="select-input">
+          <option value="">All subcategories</option>
+        </select>
+      </div>
+
+      <div class="filter-block">
+        <div class="field-label">Account</div>
+        <select id="searchAccountSelect" class="select-input">
+          <option value="">All accounts</option>
+        </select>
       </div>
     </div>
 
@@ -1517,7 +1524,7 @@ export const HTML = /* html */ `<!doctype html>
     lastNonDetailView: "analytics",
     lastNonSearchView: "expenses",
     navHidden: false,
-    searchFilter: { categoryId: null, accountId: null, sort: "desc" },
+    searchFilter: { categoryId: null, subcategoryId: null, accountId: null, sort: "desc" },
     expanded: { cat: false, sub: false, acct: false },
     chosen: {
       categoryId: null, categoryName: null,
@@ -2111,47 +2118,59 @@ export const HTML = /* html */ `<!doctype html>
 
   function populateSearchChips() {
     if (!state.data) return;
+    populateSearchCategorySelect();
+    populateSearchSubcategorySelect();
+    populateSearchAccountSelect();
+  }
 
-    function buildChips(containerId, items, filterKey, idAttr) {
-      const container = $(containerId);
-      if (!container) return;
-      // Preserve existing selection
-      const currentVal = state.searchFilter[filterKey];
-      container.innerHTML = "";
+  function optionsHTML(items, currentVal, placeholder) {
+    return '<option value="">' + escapeHtml(placeholder) + "</option>" +
+      (items || []).map((item) =>
+        '<option value="' + escapeHtml(item.id) + '"' + (item.id === currentVal ? " selected" : "") + ">" + escapeHtml(item.name) + "</option>"
+      ).join("");
+  }
 
-      const makeChip = (label, val, icon) => {
-        const btn = document.createElement("button");
-        btn.className = "chip" + (val === currentVal ? " selected" : "");
-        btn.dataset[idAttr] = val || "";
-        if (icon) {
-          btn.innerHTML = '<span class="chip-icon">' + renderIcon(icon, initialFor(label)) + "</span>" + escapeHtml(label);
-        } else {
-          btn.textContent = label;
-        }
-        btn.onclick = () => {
-          container.querySelectorAll(".chip").forEach((c) => c.classList.remove("selected"));
-          btn.classList.add("selected");
-          state.searchFilter[filterKey] = val || null;
-        };
-        return btn;
-      };
+  function populateSearchCategorySelect() {
+    const sel = $("searchCategorySelect");
+    if (!sel || !state.data) return;
+    const currentVal = state.searchFilter.categoryId || "";
+    sel.innerHTML = optionsHTML(state.data.categories || [], currentVal, "All categories");
+    sel.onchange = () => {
+      state.searchFilter.categoryId = sel.value || null;
+      // Reset subcategory when category changes, then repopulate narrowed list.
+      state.searchFilter.subcategoryId = null;
+      populateSearchSubcategorySelect();
+    };
+  }
 
-      container.appendChild(makeChip("All", null, null));
-      items.forEach((item) => container.appendChild(makeChip(item.name, item.id, item.icon)));
+  function populateSearchSubcategorySelect() {
+    const sel = $("searchSubcategorySelect");
+    if (!sel || !state.data) return;
+    const currentVal = state.searchFilter.subcategoryId || "";
+    const categoryId = state.searchFilter.categoryId;
+    let subs = state.data.subcategories || [];
+
+    // If a category is chosen, narrow subcategories to those used with it.
+    if (categoryId && state.data.subcatByCategory) {
+      const allowed = state.data.subcatByCategory[categoryId];
+      if (allowed) {
+        const allowedIds = new Set(Object.keys(allowed));
+        const narrowed = subs.filter((s) => allowedIds.has(s.id));
+        if (narrowed.length) subs = narrowed;
+      }
     }
 
-    buildChips("searchCategoryChips", state.data.categories || [], "categoryId", "filterCat");
-    populateSearchAccountSelect();
+    sel.innerHTML = optionsHTML(subs, currentVal, "All subcategories");
+    sel.onchange = () => {
+      state.searchFilter.subcategoryId = sel.value || null;
+    };
   }
 
   function populateSearchAccountSelect() {
     const sel = $("searchAccountSelect");
     if (!sel || !state.data) return;
     const currentVal = state.searchFilter.accountId || "";
-    sel.innerHTML = '<option value="">All accounts</option>' +
-      (state.data.accounts || []).map((acct) =>
-        '<option value="' + escapeHtml(acct.id) + '"' + (acct.id === currentVal ? " selected" : "") + ">" + escapeHtml(acct.name) + "</option>"
-      ).join("");
+    sel.innerHTML = optionsHTML(state.data.accounts || [], currentVal, "All accounts");
     sel.onchange = () => {
       state.searchFilter.accountId = sel.value || null;
     };
@@ -2161,6 +2180,7 @@ export const HTML = /* html */ `<!doctype html>
     const from = $("searchFrom").value;
     const to = $("searchTo").value;
     const categoryId = state.searchFilter.categoryId || "";
+    const subcategoryId = state.searchFilter.subcategoryId || "";
     const accountId = state.searchFilter.accountId || "";
     const sort = state.searchFilter.sort || "desc";
 
@@ -2170,6 +2190,15 @@ export const HTML = /* html */ `<!doctype html>
     showLoader("Searching expenses...");
     try {
       const data = await fetchExpenses(null, hardRefresh, { from, to, categoryId, accountId });
+
+      // Subcategory filter applied client-side (backend doesn't support it).
+      if (subcategoryId) {
+        data.expenses = data.expenses.filter((e) => {
+          if (Array.isArray(e.subcategoryIds)) return e.subcategoryIds.includes(subcategoryId);
+          return false;
+        });
+      }
+
       data.expenses.sort((a, b) => {
         const left = a.date || "";
         const right = b.date || "";
