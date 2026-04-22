@@ -15,8 +15,7 @@ export const HTML = /* html */ `<!doctype html>
   [data-theme="dark"] {
     --bg: #111111;
     --bg-accent: radial-gradient(circle at top left, rgba(229, 117, 82, 0.16), transparent 34%),
-                 radial-gradient(circle at top right, rgba(79, 184, 171, 0.1), transparent 26%),
-                 linear-gradient(180deg, #171717 0%, #111111 48%, #0d0d0d 100%);
+                 radial-gradient(circle at top right, rgba(79, 184, 171, 0.1), transparent 26%);
     --surface: rgba(28, 28, 28, 0.9);
     --surface-2: rgba(33, 33, 33, 0.96);
     --surface-3: rgba(40, 40, 40, 0.98);
@@ -40,8 +39,7 @@ export const HTML = /* html */ `<!doctype html>
   [data-theme="light"] {
     --bg: #f6f1e9;
     --bg-accent: radial-gradient(circle at top left, rgba(235, 124, 85, 0.1), transparent 30%),
-                 radial-gradient(circle at top right, rgba(83, 189, 176, 0.1), transparent 26%),
-                 linear-gradient(180deg, #fffdf8 0%, #f6f1e9 50%, #efe7dd 100%);
+                 radial-gradient(circle at top right, rgba(83, 189, 176, 0.1), transparent 26%);
     --surface: rgba(255, 252, 247, 0.92);
     --surface-2: rgba(250, 245, 238, 0.97);
     --surface-3: rgba(242, 235, 226, 0.98);
@@ -73,9 +71,11 @@ export const HTML = /* html */ `<!doctype html>
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    overscroll-behavior: none;
   }
 
   body {
+    background-color: var(--bg);
     background-image: var(--bg-accent);
     background-attachment: fixed;
   }
@@ -90,20 +90,25 @@ export const HTML = /* html */ `<!doctype html>
 
   .app-shell {
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     overflow-x: hidden;
+    background: transparent;
   }
 
   .view {
     display: none;
     min-height: 100vh;
+    min-height: 100dvh;
     padding:
-      max(22px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-top))
       18px
       calc(148px + env(safe-area-inset-bottom));
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    background: transparent;
   }
 
   .view.active {
@@ -118,50 +123,58 @@ export const HTML = /* html */ `<!doctype html>
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 16px;
+    min-height: 44px;
   }
 
   .eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--fg-muted);
-    margin-bottom: 6px;
+    display: none;
   }
 
   .screen-title {
     font-family: "SF Pro Display", "Segoe UI Variable Display", "Inter", system-ui, sans-serif;
-    font-size: 32px;
-    line-height: 1.02;
-    font-weight: 760;
-    letter-spacing: -0.05em;
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.04em;
     margin: 0;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* iOS-style nav: back button + title on the left as a group */
+  .topbar-leading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .topbar-leading .screen-title {
+    font-size: 20px;
+    letter-spacing: -0.03em;
   }
 
   .screen-subtitle {
-    max-width: 24ch;
-    margin: 10px 0 0;
-    color: var(--fg-soft);
-    font-size: 14px;
-    line-height: 1.4;
+    display: none;
   }
 
+  /* Right-side action bar: single horizontal row */
   .topbar-actions {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
     flex-shrink: 0;
-    min-width: 132px;
   }
 
   .topbar-icon-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
+    display: contents; /* dissolve wrapper, children join parent flex row */
   }
 
   .icon-btn {
@@ -184,22 +197,23 @@ export const HTML = /* html */ `<!doctype html>
     border-radius: 999px;
     background: linear-gradient(180deg, var(--surface-2), var(--surface));
     box-shadow: var(--shadow-soft);
-    padding: 11px 14px;
+    padding: 10px 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    color: var(--fg);
+    gap: 7px;
+    color: var(--fg-soft);
     font-size: 13px;
-    font-weight: 760;
+    font-weight: 500;
     letter-spacing: 0.01em;
     cursor: pointer;
     white-space: nowrap;
   }
 
   .search-capsule .sicon {
-    font-size: 14px;
+    font-size: 17px;
     color: var(--accent);
+    line-height: 1;
   }
 
   .hero-card,
@@ -234,8 +248,8 @@ export const HTML = /* html */ `<!doctype html>
 
   .hero-value {
     font-size: 36px;
-    font-weight: 780;
-    letter-spacing: -0.05em;
+    font-weight: 700;
+    letter-spacing: -0.04em;
     margin-top: 6px;
     font-variant-numeric: tabular-nums;
   }
@@ -248,13 +262,14 @@ export const HTML = /* html */ `<!doctype html>
 
   .hero-badge {
     align-self: center;
-    padding: 8px 10px;
+    padding: 6px 10px;
     border-radius: 999px;
     background: rgba(235, 124, 85, 0.12);
     color: var(--accent);
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     white-space: nowrap;
+    letter-spacing: 0.02em;
   }
 
   .period-tabs {
@@ -269,9 +284,9 @@ export const HTML = /* html */ `<!doctype html>
     background: var(--surface-2);
     color: var(--fg-soft);
     border-radius: 16px;
-    padding: 13px 10px;
+    padding: 12px 10px;
     font-size: 13px;
-    font-weight: 720;
+    font-weight: 500;
     cursor: pointer;
   }
 
@@ -290,10 +305,10 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .section-label h2 {
-    font-size: 16px;
-    font-weight: 750;
+    font-size: 15px;
+    font-weight: 600;
     margin: 0;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   .section-label .hint {
@@ -322,17 +337,17 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .day-title {
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     color: var(--fg-muted);
-    font-weight: 800;
+    font-weight: 600;
   }
 
   .day-total {
     font-size: 13px;
     color: var(--fg-soft);
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .expense-card {
@@ -372,8 +387,8 @@ export const HTML = /* html */ `<!doctype html>
 
   .expense-name {
     font-size: 15px;
-    font-weight: 720;
-    letter-spacing: -0.02em;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     margin: 2px 0 0;
   }
 
@@ -388,10 +403,10 @@ export const HTML = /* html */ `<!doctype html>
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 10px;
+    padding: 5px 9px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--fg-soft);
     background: var(--pill);
     border: 1px solid var(--border);
@@ -419,9 +434,9 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .expense-amount {
-    font-size: 16px;
-    font-weight: 760;
-    letter-spacing: -0.03em;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
 
@@ -466,25 +481,27 @@ export const HTML = /* html */ `<!doctype html>
     color: var(--fg-soft);
     box-shadow: var(--shadow-soft);
     border-radius: 14px;
-    padding: 10px 14px;
+    padding: 9px 13px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .summary-kicker {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--fg-muted);
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
 
   .summary-value {
-    margin-top: 8px;
-    font-size: 24px;
-    font-weight: 760;
-    letter-spacing: -0.04em;
+    margin-top: 6px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
   }
 
@@ -511,8 +528,8 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .chart-title {
-    font-size: 16px;
-    font-weight: 750;
+    font-size: 15px;
+    font-weight: 600;
     margin: 0;
   }
 
@@ -532,7 +549,7 @@ export const HTML = /* html */ `<!doctype html>
 
   .chart-svg {
     width: 100%;
-    height: 298px;
+    height: auto;
     display: block;
   }
 
@@ -546,9 +563,17 @@ export const HTML = /* html */ `<!doctype html>
 
   .legend-row {
     display: grid;
-    grid-template-columns: 32px 1fr auto;
+    grid-template-columns: 32px 1fr auto 16px;
     align-items: center;
     gap: 12px;
+    cursor: pointer;
+  }
+
+  .legend-chevron {
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
   }
 
   .legend-swatch {
@@ -566,7 +591,7 @@ export const HTML = /* html */ `<!doctype html>
 
   .legend-name {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .legend-sub {
@@ -577,7 +602,7 @@ export const HTML = /* html */ `<!doctype html>
 
   .legend-value {
     font-size: 14px;
-    font-weight: 760;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
@@ -585,6 +610,13 @@ export const HTML = /* html */ `<!doctype html>
     padding: 18px;
     margin-bottom: 14px;
     background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    position: relative;
+    z-index: 1;
+  }
+
+  /* When a dropdown inside is open, elevate the entire card above siblings */
+  .input-card.dropdown-open {
+    z-index: 50;
   }
 
   .field-label {
@@ -592,11 +624,11 @@ export const HTML = /* html */ `<!doctype html>
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--fg-soft);
-    font-size: 12px;
-    font-weight: 700;
+    color: var(--fg-muted);
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
   }
 
   .required-dot {
@@ -623,8 +655,8 @@ export const HTML = /* html */ `<!doctype html>
     color: var(--fg);
     font-size: 52px;
     line-height: 1;
-    letter-spacing: -0.06em;
-    font-weight: 780;
+    letter-spacing: -0.05em;
+    font-weight: 700;
     outline: none;
     font-variant-numeric: tabular-nums;
   }
@@ -665,13 +697,13 @@ export const HTML = /* html */ `<!doctype html>
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 9px 12px;
     border-radius: 999px;
     background: var(--surface-3);
     border: 1px solid var(--border);
     color: var(--fg-soft);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
   }
 
@@ -712,7 +744,7 @@ export const HTML = /* html */ `<!doctype html>
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    z-index: 10;
+    z-index: 20;
     border: 1px solid var(--border);
     background: var(--surface-2);
     border-radius: 18px;
@@ -739,20 +771,20 @@ export const HTML = /* html */ `<!doctype html>
 
   .dropdown-item.create {
     color: var(--accent);
-    font-weight: 800;
+    font-weight: 600;
   }
 
   .save-btn {
     width: 100%;
-    padding: 17px 18px;
+    padding: 16px 18px;
     border: none;
     border-radius: 22px;
     color: #fff;
     background: linear-gradient(135deg, var(--accent), #f39a63);
-    box-shadow: 0 14px 26px rgba(235, 124, 85, 0.22);
+    box-shadow: 0 10px 22px rgba(235, 124, 85, 0.2);
     font-size: 16px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: 0;
     cursor: pointer;
   }
 
@@ -851,9 +883,9 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .nav-label {
-    font-size: 11px;
-    font-weight: 760;
-    letter-spacing: 0.05em;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     line-height: 1;
   }
@@ -889,9 +921,9 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .fab-label {
-    font-size: 11px;
-    font-weight: 760;
-    letter-spacing: 0.05em;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--fg-muted);
     line-height: 1;
@@ -1007,12 +1039,17 @@ export const HTML = /* html */ `<!doctype html>
       align-items: flex-start;
     }
 
-    .topbar-actions {
-      min-width: 118px;
+    .screen-title {
+      font-size: 24px;
     }
 
-    .screen-title {
-      font-size: 30px;
+    /* On small screens, hide the "Search" text label, keep just the icon */
+    .search-capsule span:not(.sicon) {
+      display: none;
+    }
+
+    .search-capsule {
+      padding: 10px 12px;
     }
 
     .summary-grid {
@@ -1032,7 +1069,7 @@ export const HTML = /* html */ `<!doctype html>
     }
 
     .legend-row {
-      grid-template-columns: 28px 1fr auto;
+      grid-template-columns: 28px 1fr auto 16px;
       gap: 10px;
     }
 
@@ -1052,16 +1089,10 @@ export const HTML = /* html */ `<!doctype html>
 <div class="app-shell">
   <section class="view active" id="expensesView" data-view="expenses">
     <div class="topbar">
-      <div>
-        <div class="eyebrow">Overview</div>
-        <h1 class="screen-title">Expenses</h1>
-        <p class="screen-subtitle">Track every spend across day, weekly, and monthly views.</p>
-      </div>
+      <h1 class="screen-title">Expenses</h1>
       <div class="topbar-actions">
-        <div class="topbar-icon-row">
-          <button class="icon-btn" id="refreshExpensesBtn" title="Refresh">↻</button>
-          <button class="icon-btn" id="themeBtn" title="Toggle theme">☀</button>
-        </div>
+        <button class="icon-btn" id="refreshExpensesBtn" title="Refresh">↻</button>
+        <button class="icon-btn" id="themeBtn" title="Toggle theme">☀</button>
         <button class="search-capsule" id="openSearchBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1094,15 +1125,9 @@ export const HTML = /* html */ `<!doctype html>
 
   <section class="view add-view" id="addView" data-view="add">
     <div class="topbar">
-      <div>
-        <div class="eyebrow">Quick Entry</div>
-        <h1 class="screen-title">Add Expense</h1>
-        <p class="screen-subtitle">Fast capture with Notion-backed categories, accounts, and icons.</p>
-      </div>
+      <h1 class="screen-title">Add Expense</h1>
       <div class="topbar-actions">
-        <div class="topbar-icon-row">
-          <button class="icon-btn" id="addThemeBtn" title="Toggle theme">☀</button>
-        </div>
+        <button class="icon-btn" id="addThemeBtn" title="Toggle theme">☀</button>
         <button class="search-capsule" id="openSearchFromAddBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1161,16 +1186,10 @@ export const HTML = /* html */ `<!doctype html>
 
   <section class="view" id="analyticsView" data-view="analytics">
     <div class="topbar">
-      <div>
-        <div class="eyebrow">Insights</div>
-        <h1 class="screen-title">Breakdown</h1>
-        <p class="screen-subtitle">Category-wise spending with color coding and period snapshots.</p>
-      </div>
+      <h1 class="screen-title">Breakdown</h1>
       <div class="topbar-actions">
-        <div class="topbar-icon-row">
-          <button class="icon-btn" id="refreshAnalyticsBtn" title="Refresh">↻</button>
-          <button class="icon-btn" id="analyticsThemeBtn" title="Toggle theme">☀</button>
-        </div>
+        <button class="icon-btn" id="refreshAnalyticsBtn" title="Refresh">↻</button>
+        <button class="icon-btn" id="analyticsThemeBtn" title="Toggle theme">☀</button>
         <button class="search-capsule" id="openSearchFromAnalyticsBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1202,7 +1221,7 @@ export const HTML = /* html */ `<!doctype html>
         </div>
       </div>
       <div class="chart-shell" id="chartShell">
-        <svg class="chart-svg" id="chartSvg" viewBox="0 0 320 240" preserveAspectRatio="none"></svg>
+        <svg class="chart-svg" id="chartSvg" viewBox="0 0 320 280" preserveAspectRatio="xMidYMid meet"></svg>
       </div>
     </div>
 
@@ -1213,16 +1232,12 @@ export const HTML = /* html */ `<!doctype html>
 
   <section class="view" id="searchView" data-view="search">
     <div class="topbar">
-      <div>
-        <div class="eyebrow">Search</div>
-        <h1 class="screen-title">Date Range</h1>
-        <p class="screen-subtitle">Find expenses between two dates and narrow them by account and category.</p>
+      <div class="topbar-leading">
+        <button class="back-btn" id="searchBackBtn">‹ Back</button>
+        <h1 class="screen-title">Search</h1>
       </div>
       <div class="topbar-actions">
-        <div class="topbar-icon-row">
-          <button class="icon-btn" id="searchThemeBtn" title="Toggle theme">☀</button>
-        </div>
-        <button class="search-capsule" id="openSearchFromSearchBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
+        <button class="icon-btn" id="searchThemeBtn" title="Toggle theme">☀</button>
       </div>
     </div>
 
@@ -1263,15 +1278,11 @@ export const HTML = /* html */ `<!doctype html>
 
   <section class="view" id="categoryDetailView" data-view="categoryDetail">
     <div class="topbar">
-      <div>
-        <div class="eyebrow">Category Detail</div>
+      <div class="topbar-leading">
+        <button class="back-btn" id="categoryDetailBackBtn">‹ Back</button>
         <h1 class="screen-title" id="categoryDetailTitle">Category</h1>
-        <p class="screen-subtitle" id="categoryDetailSubtitle">Expenses for this category</p>
       </div>
       <div class="topbar-actions">
-        <div class="topbar-icon-row">
-          <button class="back-btn" id="categoryDetailBackBtn">Back</button>
-        </div>
         <button class="search-capsule" id="openSearchFromDetailBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
@@ -1329,6 +1340,7 @@ export const HTML = /* html */ `<!doctype html>
     analyticsByPeriod: {},
     searchResults: null,
     lastNonDetailView: "analytics",
+    lastNonSearchView: "expenses",
     navHidden: false,
     chosen: {
       categoryId: null, categoryName: null,
@@ -1474,6 +1486,7 @@ export const HTML = /* html */ `<!doctype html>
     showNav();
 
     if (view !== "categoryDetail") state.lastNonDetailView = view;
+    if (view !== "search" && view !== "categoryDetail") state.lastNonSearchView = view;
 
     if (view === "expenses") {
       ensureExpensesLoaded(state.expensesPeriod).catch((err) => {
@@ -1488,12 +1501,17 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   function hideNav() {
-    if (state.currentView === "add" || state.currentView === "categoryDetail") return;
+    if (state.currentView === "add" || state.currentView === "categoryDetail" || state.currentView === "search") return;
     state.navHidden = true;
     $("bottomNav").classList.add("hidden");
   }
 
   function showNav() {
+    // Search view always hides the nav (it has its own back button)
+    if (state.currentView === "search") {
+      $("bottomNav").classList.add("hidden");
+      return;
+    }
     state.navHidden = false;
     $("bottomNav").classList.remove("hidden");
   }
@@ -1639,10 +1657,12 @@ export const HTML = /* html */ `<!doctype html>
   function wireSearch(prefix, idField, nameField, getList) {
     const input = $(prefix + "Search");
     const dropdown = $(prefix + "Dropdown");
+    const card = input.closest(".input-card");
 
     function close() {
       dropdown.classList.add("hidden");
       dropdown.innerHTML = "";
+      if (card) card.classList.remove("dropdown-open");
     }
 
     function open(items, query) {
@@ -1686,7 +1706,9 @@ export const HTML = /* html */ `<!doctype html>
         dropdown.appendChild(row);
       }
 
-      dropdown.classList.toggle("hidden", !dropdown.children.length);
+      const isOpen = !!dropdown.children.length;
+      dropdown.classList.toggle("hidden", !isOpen);
+      if (card) card.classList.toggle("dropdown-open", isOpen);
     }
 
     input.addEventListener("input", () => open(getList(), input.value));
@@ -1947,44 +1969,56 @@ export const HTML = /* html */ `<!doctype html>
   function buildChart(rows) {
     const svg = $("chartSvg");
     if (!rows.length) {
-      svg.innerHTML = '<text x="160" y="120" text-anchor="middle" fill="currentColor" opacity="0.5" font-size="14">No data for this period</text>';
+      svg.innerHTML = '<text x="160" y="140" text-anchor="middle" fill="currentColor" opacity="0.5" font-size="14">No data for this period</text>';
       return;
     }
 
     const topRows = rows.slice(0, 6);
     const max = Math.max.apply(null, topRows.map((row) => row.total));
+    // viewBox is 320 × 280. Reserve bottom 80px for rotated labels.
     const width = 320;
-    const height = 298;
-    const chartHeight = 148;
-    const chartBottom = 164;
-    const left = 22;
-    const right = 12;
+    const chartHeight = 150;
+    const chartBottom = 180;   // baseline of bars
+    const left = 26;
+    const right = 10;
     const usable = width - left - right;
     const slot = usable / topRows.length;
-    const barWidth = Math.max(20, slot - 16);
+    const barWidth = Math.min(40, Math.max(18, slot - 14));
 
     let svgText = "";
+
+    // Horizontal grid lines
     [0.25, 0.5, 0.75, 1].forEach((fraction) => {
       const y = chartBottom - (chartHeight * fraction);
-      svgText += '<line x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '" stroke="currentColor" opacity="0.12" />';
+      const valAtFraction = max * fraction;
+      const gridLabel = valAtFraction >= 1000
+        ? (valAtFraction / 1000).toFixed(1).replace(/\.0$/, "") + "k"
+        : String(Math.round(valAtFraction));
+      svgText += '<line x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '" stroke="currentColor" opacity="0.1" />';
+      svgText += '<text x="' + (left - 4) + '" y="' + (y + 4) + '" text-anchor="end" fill="currentColor" font-size="8.5" opacity="0.45">' + gridLabel + '</text>';
     });
-    svgText += '<line x1="' + left + '" y1="' + chartBottom + '" x2="' + (width - right) + '" y2="' + chartBottom + '" stroke="currentColor" opacity="0.18" />';
+    // Baseline
+    svgText += '<line x1="' + left + '" y1="' + chartBottom + '" x2="' + (width - right) + '" y2="' + chartBottom + '" stroke="currentColor" opacity="0.2" />';
 
     topRows.forEach((row, index) => {
-      const barHeight = max ? (row.total / max) * chartHeight : 0;
+      const barHeight = max ? (row.total / max) * chartHeight : 4;
       const x = left + (slot * index) + ((slot - barWidth) / 2);
       const y = chartBottom - barHeight;
-      const valueY = Math.max(16, y - 8);
-      const label = escapeHtml(row.name);
       const valueLabel = row.total >= 1000 ? (row.total / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(Math.round(row.total));
       const categoryName = escapeHtml(row.name);
-      const labelX = x + 6;
-      const labelY = 210;
+      // Truncate label at 11 chars to avoid overflow; full name shown in legend
+      const displayLabel = row.name.length > 11 ? row.name.slice(0, 10) + "…" : row.name;
+      const labelX = x + barWidth / 2;
+      const labelY = chartBottom + 8;  // just below baseline
 
       svgText += '<g data-bar-category="' + categoryName + '" style="cursor:pointer">';
-      svgText += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barHeight + '" rx="10" fill="' + row.color + '" />';
-      svgText += '<text x="' + (x + barWidth / 2) + '" y="' + valueY + '" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">' + valueLabel + '</text>';
-      svgText += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="start" fill="currentColor" font-size="10.5" opacity="0.76" transform="rotate(45 ' + labelX + ' ' + labelY + ')">' + label + '</text>';
+      // Bar with rounded top
+      svgText += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barHeight + '" rx="8" fill="' + row.color + '" />';
+      // Value above bar
+      const valueY = Math.max(14, y - 5);
+      svgText += '<text x="' + (x + barWidth / 2) + '" y="' + valueY + '" text-anchor="middle" fill="currentColor" font-size="10" font-weight="700">' + valueLabel + '</text>';
+      // Label rotated 40° below baseline — anchored at start so text goes right-and-down
+      svgText += '<text x="' + labelX + '" y="' + labelY + '" text-anchor="end" fill="currentColor" font-size="10" opacity="0.8" transform="rotate(-40 ' + labelX + ' ' + labelY + ')">' + escapeHtml(displayLabel) + '</text>';
       svgText += '</g>';
     });
 
@@ -2024,6 +2058,7 @@ export const HTML = /* html */ `<!doctype html>
             '<div class="legend-sub">' + row.count + ' expense' + (row.count !== 1 ? "s" : "") + ' - ' + share + '% share</div>' +
           '</div>' +
           '<div class="legend-value">' + formatCurrency(row.total) + '</div>' +
+          '<div class="legend-chevron">›</div>' +
         '</div>';
     }).join("");
   }
@@ -2035,7 +2070,6 @@ export const HTML = /* html */ `<!doctype html>
     const total = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
     $("categoryDetailTitle").textContent = categoryName;
-    $("categoryDetailSubtitle").textContent = "All " + categoryName + " expenses in your " + PERIOD_LABELS[state.analyticsPeriod] + " view";
     $("categoryDetailTotal").textContent = formatCurrency(total);
     $("categoryDetailMeta").textContent = expenses.length + " entries";
     $("categoryDetailList").innerHTML = renderExpenseGroups(expenses, "No expenses in this category.", "desc");
@@ -2186,9 +2220,10 @@ export const HTML = /* html */ `<!doctype html>
         toast("Sort update failed: " + err.message, "err");
       }
     };
-    ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromSearchBtn", "openSearchFromDetailBtn"].forEach((id) => {
+    ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromDetailBtn"].forEach((id) => {
       $(id).onclick = () => setActiveView("search");
     });
+    $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
 
   async function init() {
