@@ -1763,9 +1763,10 @@ export const HTML = /* html */ `<!doctype html>
 
   function suggestedSubs() {
     const selected = state.chosen.categoryId;
-    if (!selected) return (state.data && state.data.recent.subcategories) || [];
+    const fallback = (state.data && state.data.recent && state.data.recent.subcategories) || [];
+    if (!selected) return fallback;
     const map = state.data.subcatByCategory && state.data.subcatByCategory[selected];
-    if (!map) return (state.data && state.data.recent.subcategories) || [];
+    if (!map) return fallback;
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map((entry) => entry[0]);
   }
 
@@ -1864,10 +1865,10 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   function recentFor(prefix) {
-    if (!state.data) return [];
-    if (prefix === "cat") return state.data.recent.categories;
+    if (!state.data || !state.data.recent) return [];
+    if (prefix === "cat") return state.data.recent.categories || [];
     if (prefix === "sub") return suggestedSubs();
-    return state.data.recent.accounts;
+    return state.data.recent.accounts || [];
   }
 
   function wireSearch(prefix, idField, nameField, getList) {
