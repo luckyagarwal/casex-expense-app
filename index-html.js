@@ -13,6 +13,7 @@ export const HTML = /* html */ `<!doctype html>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" id="themeColorMeta" content="#121212" />
+<link rel="manifest" href="/manifest.json" />
 <title>Expense Tracker</title>
 <style>
   :root,
@@ -454,12 +455,9 @@ export const HTML = /* html */ `<!doctype html>
     font-variant-numeric: tabular-nums;
   }
 
-  .delete-btn {
+  .delete-btn, .edit-btn {
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(244, 106, 106, 0.28);
-    background: rgba(244, 106, 106, 0.12);
-    color: var(--danger);
     border-radius: 12px;
     cursor: pointer;
     display: inline-flex;
@@ -468,6 +466,18 @@ export const HTML = /* html */ `<!doctype html>
     font-size: 16px;
     line-height: 1;
     padding: 0;
+  }
+  
+  .delete-btn {
+    border: 1px solid rgba(244, 106, 106, 0.28);
+    background: rgba(244, 106, 106, 0.12);
+    color: var(--danger);
+  }
+
+  .edit-btn {
+    border: 1px solid var(--border);
+    background: var(--surface-3);
+    color: var(--fg-soft);
   }
 
   .empty-state,
@@ -1276,7 +1286,8 @@ export const HTML = /* html */ `<!doctype html>
   <section class="view add-view" id="addView" data-view="add">
     <div class="topbar">
       <div class="topbar-leading">
-        <button class="icon-btn menu-open-btn" title="Menu" aria-label="Menu">☰</button>
+        <button class="icon-btn menu-open-btn" id="addMenuBtn" title="Menu" aria-label="Menu">☰</button>
+        <button class="back-btn" id="cancelEditBtn" style="display: none;">Cancel</button>
         <h1 class="screen-title">Add Expense</h1>
       </div>
       <div class="topbar-actions">
@@ -1532,6 +1543,8 @@ export const HTML = /* html */ `<!doctype html>
     navHidden: false,
     searchFilter: { categoryId: null, subcategoryId: null, accountId: null, sort: "desc" },
     expanded: { cat: false, sub: false, acct: false },
+    editingExpenseId: null,
+    viewBeforeEdit: null,
     chosen: {
       categoryId: null, categoryName: null,
       subcategoryId: null, subcategoryName: null,
@@ -1919,6 +1932,92 @@ export const HTML = /* html */ `<!doctype html>
     input.addEventListener("blur", () => setTimeout(close, 140));
   }
 
+  function findExpenseById(id) {
+    for (const p in state.expensesByPeriod) {
+      const found = state.expensesByPeriod[p]?.expenses?.find(e => e.id === id);
+      if (found) return found;
+    }
+    const foundSearch = state.searchResults?.find(e => e.id === id);
+    if (foundSearch) return foundSearch;
+    const foundDetail = state.categoryDetailExpenses?.find(e => e.id === id);
+    if (foundDetail) return foundDetail;
+    return null;
+  }
+
+  function editExpense(id) {
+    const expense = findExpenseById(id);
+    if (!expense) return toast("Expense not found locally", "err");
+    
+    state.editingExpenseId = id;
+    $("amount").value = expense.amount || "";
+    $("expense").value = expense.name || "";
+    if (expense.date) {
+      const parts = expense.date.split("T");
+      $("date").value = parts[0] || "";
+      if (parts[1]) $("time").value = parts[1].slice(0, 5) || "";
+    }
+    
+    state.chosen.categoryId = expense.categoryId || null;
+    state.chosen.categoryName = expense.category || null;
+    state.chosen.subcategoryId = expense.subcategoryIds?.[0] || null;
+    state.chosen.subcategoryName = expense.subcategory || null;
+    state.chosen.accountId = expense.accountId || null;
+    state.chosen.accountName = expense.account || null;
+
+    const addTitle = $("addView").querySelector(".screen-title");
+    if (addTitle) addTitle.textContent = "Edit Expense";
+    $("addMenuBtn").style.display = "none";
+    $("cancelEditBtn").style.display = "inline-flex";
+    
+    if (state.data) {
+      renderChips("cat", "categoryId", "categoryName", state.data.categories || [], recentFor("cat"));
+      renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories || [], suggestedSubs());
+      renderChips("acct", "accountId", "accountName", state.data.accounts || [], recentFor("acct"));
+    }
+
+    state.viewBeforeEdit = state.currentView;
+    setActiveView("add");
+  }
+
+  async function syncPendingExpenses() {
+    const pendingStr = localStorage.getItem("pendingExpenses");
+    if (!pendingStr) return;
+    const pending = JSON.parse(pendingStr);
+    if (!pending.length) return;
+
+    if (!navigator.onLine) return;
+
+    toast("Syncing " + pending.length + " pending offline expenses...", "ok");
+    const failed = [];
+    let synced = 0;
+
+    for (const payload of pending) {
+      try {
+        const sendPayload = { ...payload };
+        delete sendPayload._tempId;
+        await api("/api/expense", {
+          method: "POST",
+          body: JSON.stringify(sendPayload),
+        });
+        synced++;
+      } catch (err) {
+        failed.push(payload);
+      }
+    }
+
+    if (failed.length) {
+      localStorage.setItem("pendingExpenses", JSON.stringify(failed));
+      if (synced > 0) toast("Synced " + synced + " expenses. " + failed.length + " failed.", "err");
+    } else {
+      localStorage.removeItem("pendingExpenses");
+      toast("All offline expenses synced!", "ok");
+      state.expensesByPeriod = {};
+      state.analyticsByPeriod = {};
+      ensureExpensesLoaded(state.expensesPeriod, true).catch(() => {});
+      ensureAnalyticsLoaded(state.analyticsPeriod, true).catch(() => {});
+    }
+  }
+
   async function saveExpense() {
     const amountText = $("amount").value.trim();
     const expense = $("expense").value.trim();
@@ -1942,46 +2041,113 @@ export const HTML = /* html */ `<!doctype html>
     $("saveBtn").disabled = true;
     $("saveBtn").textContent = "Saving...";
 
+    const payload = {
+      expense: expense,
+      amount: amount,
+      date: date,
+      categoryId: state.chosen.categoryId,
+      categoryName: state.chosen.categoryName,
+      subcategoryId: state.chosen.subcategoryId,
+      subcategoryName: state.chosen.subcategoryName,
+      accountId: state.chosen.accountId,
+      accountName: state.chosen.accountName,
+    };
+
+    const isEditing = !!state.editingExpenseId;
+    const endpoint = isEditing ? "/api/expense/" + state.editingExpenseId : "/api/expense";
+    const method = isEditing ? "PATCH" : "POST";
+
+    let offlineQueued = false;
     try {
-      await api("/api/expense", {
-        method: "POST",
-        body: JSON.stringify({
-          expense: expense,
-          amount: amount,
-          date: date,
-          categoryId: state.chosen.categoryId,
-          categoryName: state.chosen.categoryName,
-          subcategoryId: state.chosen.subcategoryId,
-          subcategoryName: state.chosen.subcategoryName,
-          accountId: state.chosen.accountId,
-          accountName: state.chosen.accountName,
-        }),
+      if (!navigator.onLine) throw new Error("Offline");
+      
+      await api(endpoint, {
+        method: method,
+        body: JSON.stringify(payload),
       });
 
-      toast("Expense saved", "ok");
-      $("amount").value = "";
-      $("expense").value = "";
-      $("lastSaved").textContent = "Saved at " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+      toast(isEditing ? "Expense updated" : "Expense saved", "ok");
+    } catch (err) {
+      if (!navigator.onLine || err.message.includes("Offline") || err.message.includes("fetch")) {
+        if (isEditing) {
+          toast("Cannot edit while offline.", "err");
+          $("saveBtn").disabled = false;
+          $("saveBtn").textContent = "Save Expense";
+          return;
+        } else {
+          const pending = JSON.parse(localStorage.getItem("pendingExpenses") || "[]");
+          const tempId = "offline_" + Date.now();
+          payload._tempId = tempId;
+          pending.push(payload);
+          localStorage.setItem("pendingExpenses", JSON.stringify(pending));
+          toast("Offline mode: Expense queued for sync", "ok");
+          offlineQueued = true;
+          
+          const optimisticExpense = {
+            id: tempId,
+            name: payload.expense || "Expense",
+            amount: payload.amount,
+            date: payload.date || new Date().toISOString(),
+            categoryId: payload.categoryId,
+            category: payload.categoryName || "",
+            subcategoryIds: payload.subcategoryId ? [payload.subcategoryId] : [],
+            subcategory: payload.subcategoryName || "",
+            accountId: payload.accountId,
+            account: payload.accountName || "",
+            isOffline: true
+          };
+          
+          if (state.expensesByPeriod[state.expensesPeriod]) {
+            state.expensesByPeriod[state.expensesPeriod].expenses.unshift(optimisticExpense);
+          } else {
+            state.expensesByPeriod[state.expensesPeriod] = { expenses: [optimisticExpense], total: optimisticExpense.amount };
+          }
+        }
+      } else {
+        toast("Save failed: " + err.message, "err");
+        $("saveBtn").disabled = false;
+        $("saveBtn").textContent = "Save Expense";
+        return;
+      }
+    }
 
-      // Invalidate caches and navigate immediately — user doesn't wait for network.
+    $("amount").value = "";
+    $("expense").value = "";
+    $("lastSaved").textContent = "Saved at " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    
+    state.editingExpenseId = null;
+    const addTitle = $("addView").querySelector(".screen-title");
+    if (addTitle) addTitle.textContent = "Add Expense";
+    $("addMenuBtn").style.display = "inline-flex";
+    $("cancelEditBtn").style.display = "none";
+
+    const nextView = state.viewBeforeEdit || "expenses";
+    state.viewBeforeEdit = null;
+
+    if (!offlineQueued) {
+      // Invalidate caches and navigate immediately
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
-      setActiveView("expenses");
-
-      // Background refresh — no await, no blocking UI.
-      ensureExpensesLoaded(state.expensesPeriod, true).catch(() => {});
-      ensureAnalyticsLoaded(state.analyticsPeriod, true).catch(() => {});
-
-      // Only refresh the suggestions/categories/accounts payload once per 24h.
-      if (suggestionsStale()) {
-        bootstrap(false).catch(() => {});
-      }
-    } catch (err) {
-      toast("Save failed: " + err.message, "err");
-    } finally {
-      $("saveBtn").disabled = false;
-      $("saveBtn").textContent = "Save Expense";
     }
+    
+    setActiveView(nextView);
+
+    if (!offlineQueued && navigator.onLine) {
+      Promise.all([
+        ensureExpensesLoaded(state.expensesPeriod, true),
+        ensureAnalyticsLoaded(state.analyticsPeriod, true)
+      ]).then(() => {
+        if (nextView === "categoryDetail") {
+          openCategoryDetail($("categoryDetailTitle").textContent);
+        } else if (nextView === "search" && $("searchFrom").value && $("searchTo").value) {
+          runSearch(true).catch(() => {});
+        }
+      }).catch(() => {});
+      if (suggestionsStale()) bootstrap(false).catch(() => {});
+    }
+    
+    $("saveBtn").disabled = false;
+    $("saveBtn").textContent = "Save Expense";
   }
 
   async function fetchExpenses(period, hardRefresh, extraParams) {
@@ -2062,6 +2228,7 @@ export const HTML = /* html */ `<!doctype html>
     const icon = expense.categoryIcon || (expense.accountIcon ? expense.accountIcon : null);
     const title = expense.name || expense.subcategory || expense.category || "Expense";
     const time = formatTime(expense.date);
+    const offlineIndicator = expense.isOffline ? '<span class="pill" style="border: 1px dashed var(--fg-soft); color: var(--fg-soft);">⏳ Syncing</span>' : '';
     const categoryPill = expense.category
       ? '<span class="pill category-pill">' + escapeHtml(expense.category) + '</span>'
       : "";
@@ -2073,16 +2240,19 @@ export const HTML = /* html */ `<!doctype html>
       : "";
 
     return '' +
-      '<div class="expense-card" data-expense-id="' + expense.id + '">' +
+      '<div class="expense-card" data-expense-id="' + expense.id + '"' + (expense.isOffline ? ' style="opacity: 0.7;"' : '') + '>' +
         '<div class="expense-icon">' + renderIcon(icon, initialFor(title)) + '</div>' +
         '<div>' +
           '<div class="expense-name">' + escapeHtml(title) + '</div>' +
-          '<div class="expense-meta">' + categoryPill + subcategoryPill + accountPill + '</div>' +
+          '<div class="expense-meta">' + offlineIndicator + categoryPill + subcategoryPill + accountPill + '</div>' +
           '<div class="expense-date">' + escapeHtml(formatDay(expense.date)) + (time ? " - " + escapeHtml(time) : "") + '</div>' +
         '</div>' +
         '<div class="expense-right">' +
           '<div class="expense-amount">' + formatCurrencyParts(expense.amount) + '</div>' +
-          '<button class="delete-btn" data-delete-id="' + expense.id + '" title="Delete" aria-label="Delete">🗑️</button>' +
+          '<div style="display: flex; gap: 6px;">' +
+            '<button class="edit-btn" data-edit-id="' + expense.id + '" title="Edit" aria-label="Edit">✏️</button>' +
+            '<button class="delete-btn" data-delete-id="' + expense.id + '" title="Delete" aria-label="Delete">🗑️</button>' +
+          '</div>' +
         '</div>' +
       '</div>';
   }
@@ -2374,9 +2544,16 @@ export const HTML = /* html */ `<!doctype html>
 
   function wireExpenseActions() {
     ["expensesList", "searchResults", "categoryDetailList"].forEach((id) => $(id).addEventListener("click", (event) => {
-      const btn = event.target.closest("[data-delete-id]");
-      if (!btn) return;
-      const id = btn.getAttribute("data-delete-id");
+      const editBtn = event.target.closest("[data-edit-id]");
+      if (editBtn) {
+        const id = editBtn.getAttribute("data-edit-id");
+        if (id) editExpense(id);
+        return;
+      }
+      
+      const delBtn = event.target.closest("[data-delete-id]");
+      if (!delBtn) return;
+      const id = delBtn.getAttribute("data-delete-id");
       if (!id) return;
       if (!window.confirm("Delete this expense from Notion?")) return;
       deleteExpense(id);
@@ -2416,7 +2593,40 @@ export const HTML = /* html */ `<!doctype html>
     });
 
     // Float FAB
-    $("floatFab").onclick = () => setActiveView("add");
+    $("floatFab").onclick = () => {
+      state.viewBeforeEdit = state.currentView;
+      state.editingExpenseId = null;
+      const addTitle = $("addView").querySelector(".screen-title");
+      if (addTitle) addTitle.textContent = "Add Expense";
+      $("addMenuBtn").style.display = "inline-flex";
+      $("cancelEditBtn").style.display = "none";
+      $("amount").value = "";
+      $("expense").value = "";
+      state.chosen = {
+        categoryId: null, categoryName: null,
+        subcategoryId: null, subcategoryName: null,
+        accountId: null, accountName: null,
+      };
+      if (state.data) {
+        renderChips("cat", "categoryId", "categoryName", state.data.categories || [], recentFor("cat"));
+        renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories || [], suggestedSubs());
+        renderChips("acct", "accountId", "accountName", state.data.accounts || [], recentFor("acct"));
+      }
+      setActiveView("add");
+    };
+
+    $("cancelEditBtn").onclick = () => {
+      const nextView = state.viewBeforeEdit || "expenses";
+      state.viewBeforeEdit = null;
+      state.editingExpenseId = null;
+      const addTitle = $("addView").querySelector(".screen-title");
+      if (addTitle) addTitle.textContent = "Add Expense";
+      $("addMenuBtn").style.display = "inline-flex";
+      $("cancelEditBtn").style.display = "none";
+      $("amount").value = "";
+      $("expense").value = "";
+      setActiveView(nextView);
+    };
 
     // Old search capsule buttons still work
     ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromDetailBtn"].forEach((id) => {
@@ -2548,9 +2758,18 @@ export const HTML = /* html */ `<!doctype html>
     } catch (err) {
       toast("Failed to load expense views: " + err.message, "err");
     }
+    
+    syncPendingExpenses();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(err => console.error("SW failed:", err));
+    }
+  });
+
+  window.addEventListener("online", syncPendingExpenses);
 })();
 </script>
 </body>

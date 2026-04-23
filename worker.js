@@ -446,6 +446,50 @@ async function handleCreateExpense(env, body) {
   };
 }
 
+async function handleUpdateExpense(env, pageId, body) {
+  if (!pageId) return { error: "Page ID required", status: 400 };
+
+  const { expense, amount, date, categoryId, categoryName,
+          subcategoryId, subcategoryName, accountId, accountName } = body || {};
+
+  if (amount === undefined || amount === null || isNaN(Number(amount)))
+    return { error: "Amount required and must be a number", status: 400 };
+
+  const [catId, subId, acctId] = await Promise.all([
+    resolveOrCreate(env, env.CATEGORIES_DB_ID,    "Category",    categoryId,    categoryName),
+    resolveOrCreate(env, env.SUBCATEGORIES_DB_ID, "Subcategory", subcategoryId, subcategoryName),
+    resolveOrCreate(env, env.ACCOUNTS_DB_ID,      "Account",     accountId,     accountName),
+  ]);
+
+  const properties = {
+    Expense: { title: [{ text: { content: (expense || "").trim() } }] },
+    Amount:  { number: Number(amount) },
+  };
+  if (date)   properties.Date        = { date:     { start: date } };
+  if (catId)  properties.Category    = { relation: [{ id: catId  }] };
+  if (subId)  properties.Subcategory = { relation: [{ id: subId  }] };
+  if (acctId) properties.Account     = { relation: [{ id: acctId }] };
+
+  const page = await notion(env, "PATCH", `/pages/${pageId}`, {
+    properties,
+  });
+
+  // Bust all cached periods
+  await kvDel(env,
+    periodKey("today"), periodKey("week"), periodKey("month"),
+    "bootstrap",
+  );
+
+  return {
+    ok: true, pageId: page.id, url: page.url,
+    created: {
+      categoryId:    catId  && !categoryId    ? catId  : null,
+      subcategoryId: subId  && !subcategoryId ? subId  : null,
+      accountId:     acctId && !accountId     ? acctId : null,
+    },
+  };
+}
+
 // ----------------------------------------------------------------------------
 // Delete expense — archive in Notion, bust KV
 // ----------------------------------------------------------------------------
@@ -623,11 +667,91 @@ const json = (data, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
+const MANIFEST_JSON = JSON.stringify({
+  name: "Notion Expense Tracker",
+  short_name: "Expenses",
+  start_url: "/",
+  display: "standalone",
+  background_color: "#191919",
+  theme_color: "#121212",
+  icons: [{
+    src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+PHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIGZpbGw9IiMxOTE5MTkiIHJ4PSI0OCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjE1ZW0iIGZpbGw9IiNmZmYiIGZvbnQtc2l6ZT0iOTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfkLg8L3RleHQ+PC9zdmc+",
+    sizes: "192x192",
+    type: "image/svg+xml",
+    purpose: "any maskable"
+  }]
+});
+
+const SW_JS = `
+const CACHE_NAME = "ne-pwa-v1";
+const OFFLINE_URLS = ["/"];
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS))
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+
+  // API Requests: Network First, fallback to cache
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      }).catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        // If no cache, return a fallback JSON
+        return new Response(JSON.stringify({ error: "Offline mode", cached: true, offline: true }), {
+          status: 200, headers: { "Content-Type": "application/json" }
+        });
+      })
+    );
+    return;
+  }
+
+  // App Shell: Cache First, fallback to network (or Stale-While-Revalidate)
+  if (url.pathname === "/") {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
+          }
+          return networkResponse;
+        }).catch(() => null);
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
+});
+`;
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/healthz") return new Response("ok");
+    
+    // ── PWA Assets (No Auth Required) ──
+    if (url.pathname === "/manifest.json") {
+      return new Response(MANIFEST_JSON, { headers: { "Content-Type": "application/manifest+json; charset=utf-8" } });
+    }
+    if (url.pathname === "/sw.js") {
+      return new Response(SW_JS, { headers: { "Content-Type": "application/javascript; charset=utf-8", "Service-Worker-Allowed": "/" } });
+    }
 
     // ── PIN login ──
     if (url.pathname === "/login") {
@@ -684,6 +808,13 @@ export default {
         if (url.pathname.startsWith("/api/expense/") && request.method === "DELETE") {
           const pageId = url.pathname.slice("/api/expense/".length);
           const result = await handleDeleteExpense(env, pageId);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        if (url.pathname.startsWith("/api/expense/") && request.method === "PATCH") {
+          const pageId = url.pathname.slice("/api/expense/".length);
+          const body = await request.json().catch(() => null);
+          const result = await handleUpdateExpense(env, pageId, body);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }
