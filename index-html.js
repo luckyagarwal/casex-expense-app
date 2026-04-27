@@ -1852,8 +1852,8 @@ export const HTML = /* html */ `<!doctype html>
     // Toggle + search row visibility.
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
-      expandBtn.hidden = !hasMore && !expanded;
-      expandBtn.textContent = expanded ? "Show less ⌃" : "Show all ⌄";
+      expandBtn.hidden = false;
+      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search / Add ⌄";
       expandBtn.onclick = () => {
         state.expanded[prefix] = !state.expanded[prefix];
         renderChips(prefix, idField, nameField, fullList, recentIds);
@@ -2037,7 +2037,14 @@ export const HTML = /* html */ `<!doctype html>
     }
 
     let date = dateVal || null;
-    if (date && timeVal) date = date + "T" + timeVal + ":00";
+    if (date && timeVal) {
+      const off = -new Date().getTimezoneOffset();
+      const sign = off >= 0 ? "+" : "-";
+      const absOff = Math.abs(off);
+      const tzHH = String(Math.floor(absOff / 60)).padStart(2, "0");
+      const tzMM = String(absOff % 60).padStart(2, "0");
+      date = date + "T" + timeVal + ":00" + sign + tzHH + ":" + tzMM;
+    }
 
     $("saveBtn").disabled = true;
     $("saveBtn").textContent = "Saving...";
