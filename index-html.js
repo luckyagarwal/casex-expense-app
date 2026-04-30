@@ -1503,6 +1503,19 @@ export const HTML = /* html */ `<!doctype html>
       </div>
     </div>
 
+    <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
+      <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
+      <select id="catDetailSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
+        <option value="desc">Date ↓</option>
+        <option value="asc">Date ↑</option>
+      </select>
+      <select id="catDetailSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
+        <option value="">Amount</option>
+        <option value="amount-desc">Amount ↓</option>
+        <option value="amount-asc">Amount ↑</option>
+      </select>
+    </div>
+
     <div class="list-stack" id="categoryDetailList">
       <div class="empty-state"><div class="big">#</div>No expenses in this category.</div>
     </div>
@@ -1566,6 +1579,7 @@ export const HTML = /* html */ `<!doctype html>
     lastNonSearchView: "expenses",
     navHidden: false,
     expensesSort: "desc",
+    categoryDetailSort: "desc",
     searchFilter: { categoryId: null, subcategoryId: null, accountId: null, sort: "desc" },
     expanded: { cat: false, sub: false, acct: false },
     editingExpenseId: null,
@@ -2633,7 +2647,7 @@ export const HTML = /* html */ `<!doctype html>
     $("categoryDetailTitle").textContent = categoryName;
     $("categoryDetailTotal").textContent = formatCurrency(total);
     $("categoryDetailMeta").textContent = expenses.length + " entries";
-    $("categoryDetailList").innerHTML = renderExpenseGroups(expenses, "No expenses in this category.", "desc");
+    $("categoryDetailList").innerHTML = renderExpenseGroups(expenses, "No expenses in this category.", state.categoryDetailSort);
     setActiveView("categoryDetail");
   }
 
@@ -2875,6 +2889,19 @@ export const HTML = /* html */ `<!doctype html>
     }
     if (expSortDate) expSortDate.onchange = updateExpSort;
     if (expSortAmt)  expSortAmt.onchange  = updateExpSort;
+
+    // Category detail sort dropdowns
+    const catDetailSortDate = $("catDetailSortDate");
+    const catDetailSortAmt  = $("catDetailSortAmt");
+    function updateCatDetailSort() {
+      state.categoryDetailSort = catDetailSortAmt && catDetailSortAmt.value
+        ? catDetailSortAmt.value
+        : (catDetailSortDate ? catDetailSortDate.value : "desc");
+      const name = $("categoryDetailTitle") && $("categoryDetailTitle").textContent;
+      if (name) openCategoryDetail(name);
+    }
+    if (catDetailSortDate) catDetailSortDate.onchange = updateCatDetailSort;
+    if (catDetailSortAmt)  catDetailSortAmt.onchange  = updateCatDetailSort;
 
     await bootstrap();
     try {
