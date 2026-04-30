@@ -1236,47 +1236,56 @@ export const HTML = /* html */ `<!doctype html>
     }
   }
 
-  /* ── Sort picker ── */
-  .sp-wrap { position: relative; }
-  .sp-btn {
-    width: 100%;
+  /* ── Sort box ── */
+  .sort-box {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sort-box-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.38);
+  }
+  .sort-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-    background: var(--surface-2);
+    gap: 8px;
+  }
+  .sort-axis {
+    font-size: 11px;
+    color: rgba(255,255,255,.5);
+    width: 46px;
+    flex-shrink: 0;
+  }
+  .sort-opts {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .sort-opt {
+    background: transparent;
     border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 10px;
-    padding: 7px 10px;
-    font-size: 12px;
+    color: rgba(255,255,255,.45);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
     cursor: pointer;
     white-space: nowrap;
+    line-height: 1.5;
   }
-  .sp-btn .sp-arrow { opacity: .55; font-size: 10px; }
-  .sp-menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    min-width: 100%;
-    z-index: 50;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
+  .sort-opt.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
   }
-  .sp-menu.hidden { display: none; }
-  .sp-opt {
-    padding: 10px 14px;
-    font-size: 12px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  .sp-opt:last-child { border-bottom: none; }
-  .sp-opt.active { color: var(--accent); font-weight: 600; }
-  .sp-opt:hover { background: rgba(255,255,255,.04); }
 </style>
 </head>
 <body>
@@ -1316,11 +1325,7 @@ export const HTML = /* html */ `<!doctype html>
       <button class="period-tab" data-scope="expenses" data-period="month">Monthly</button>
     </div>
 
-    <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
-      <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
-      <div id="expSortDate" class="sp-wrap" style="flex:1;"></div>
-      <div id="expSortAmt" class="sp-wrap" style="flex:1;"></div>
-    </div>
+    <div id="expSortBox" class="sort-box" style="margin: 8px 16px 0;"></div>
 
     <div class="section-label">
       <h2>Recent activity</h2>
@@ -1467,11 +1472,7 @@ export const HTML = /* html */ `<!doctype html>
       </div>
 
       <div class="filter-block">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="field-label" style="margin:0; white-space:nowrap;">Sort by</span>
-          <div id="searchSortDate" class="sp-wrap" style="flex:1;"></div>
-          <div id="searchSortAmt" class="sp-wrap" style="flex:1;"></div>
-        </div>
+        <div id="searchSortBox" class="sort-box"></div>
       </div>
 
       <div class="filter-block">
@@ -1531,11 +1532,7 @@ export const HTML = /* html */ `<!doctype html>
       </div>
     </div>
 
-    <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
-      <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
-      <div id="catDetailSortDate" class="sp-wrap" style="flex:1;"></div>
-      <div id="catDetailSortAmt" class="sp-wrap" style="flex:1;"></div>
-    </div>
+    <div id="catDetailSortBox" class="sort-box" style="margin: 8px 16px 0;"></div>
 
     <div class="list-stack" id="categoryDetailList">
       <div class="empty-state"><div class="big">#</div>No expenses in this category.</div>
@@ -2859,58 +2856,41 @@ export const HTML = /* html */ `<!doctype html>
     };
   }
 
-  // ── Custom sort picker (module-level so all functions can use it) ──
-  function makeSortPicker(id, label, opts, defaultVal, onChange) {
-    const wrap = $(id);
-    if (!wrap) return;
-    let cur = defaultVal;
+  // ── Sort box (inline pill buttons, module-level) ──────────────────────
+  function makeSortBox(id, onDateChange, onAmtChange) {
+    const el = $(id);
+    if (!el) return;
 
-    // Show active option's label; fall back to axis label when val is "" (no sort)
-    const activeLabel = (val) => {
-      if (!val) return label;
-      const o = opts.find((x) => x.val === val);
-      return o ? o.label : label;
-    };
+    el.innerHTML =
+      '<div class="sort-box-title">Sort By</div>' +
+      '<div class="sort-row">' +
+        '<span class="sort-axis">Date</span>' +
+        '<div class="sort-opts">' +
+          '<button type="button" class="sort-opt active" data-val="desc">New → Old</button>' +
+          '<button type="button" class="sort-opt" data-val="asc">Old → New</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sort-row">' +
+        '<span class="sort-axis">Amount</span>' +
+        '<div class="sort-opts">' +
+          '<button type="button" class="sort-opt active" data-val="">Default</button>' +
+          '<button type="button" class="sort-opt" data-val="amount-desc">High → Low</button>' +
+          '<button type="button" class="sort-opt" data-val="amount-asc">Low → High</button>' +
+        '</div>' +
+      '</div>';
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "sp-btn";
-    const btnText = document.createElement("span");
-    btnText.textContent = activeLabel(cur);
-    btn.appendChild(btnText);
-    const arrow = document.createElement("span");
-    arrow.className = "sp-arrow";
-    arrow.textContent = "▾";
-    btn.appendChild(arrow);
-
-    const menu = document.createElement("div");
-    menu.className = "sp-menu hidden";
-
-    opts.forEach((o) => {
-      const div = document.createElement("div");
-      div.className = "sp-opt" + (o.val === cur ? " active" : "");
-      div.textContent = o.label;
-      div.onclick = () => {
-        cur = o.val;
-        btnText.textContent = activeLabel(cur);
-        menu.querySelectorAll(".sp-opt").forEach((el) =>
-          el.classList.toggle("active", el === div)
-        );
-        menu.classList.add("hidden");
-        onChange(cur);
-      };
-      menu.appendChild(div);
-    });
-
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      menu.classList.toggle("hidden");
-    };
-
-    wrap.appendChild(btn);
-    wrap.appendChild(menu);
-
-    document.addEventListener("click", () => menu.classList.add("hidden"));
+    const [dateRow, amtRow] = el.querySelectorAll(".sort-opts");
+    function wireRow(row, onChange) {
+      row.querySelectorAll(".sort-opt").forEach((btn) => {
+        btn.onclick = () => {
+          row.querySelectorAll(".sort-opt").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          onChange(btn.dataset.val);
+        };
+      });
+    }
+    wireRow(dateRow, onDateChange);
+    wireRow(amtRow, onAmtChange);
   }
 
   function initSearchControls() {
@@ -2922,20 +2902,12 @@ export const HTML = /* html */ `<!doctype html>
       }
     };
 
-    // Search sort pickers
     const sSearch = { date: "desc", amt: "" };
-    function applySearchSort() {
-      state.searchFilter.sort = sSearch.amt || sSearch.date;
-    }
-    makeSortPicker("searchSortDate", "Date", [
-      { val: "desc", label: "New → Old" },
-      { val: "asc",  label: "Old → New" },
-    ], "desc", (v) => { sSearch.date = v; applySearchSort(); });
-    makeSortPicker("searchSortAmt", "Amount", [
-      { val: "",             label: "None" },
-      { val: "amount-desc", label: "High → Low" },
-      { val: "amount-asc",  label: "Low → High" },
-    ], "", (v) => { sSearch.amt = v; applySearchSort(); });
+    function applySearchSort() { state.searchFilter.sort = sSearch.amt || sSearch.date; }
+    makeSortBox("searchSortBox",
+      (v) => { sSearch.date = v; applySearchSort(); },
+      (v) => { sSearch.amt  = v; applySearchSort(); }
+    );
 
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
@@ -2956,39 +2928,29 @@ export const HTML = /* html */ `<!doctype html>
     wireSearch("sub", "subcategoryId", "subcategoryName", () => state.data ? state.data.subcategories : []);
     wireSearch("acct", "accountId", "accountName", () => state.data ? state.data.accounts : []);
 
-    // Expenses sort pickers
+    // Expenses sort box
     const sExp = { date: "desc", amt: "" };
     function applyExpSort() {
       state.expensesSort = sExp.amt || sExp.date;
       const cur = state.expensesByPeriod[state.expensesPeriod];
       if (cur) renderExpenses(cur);
     }
-    makeSortPicker("expSortDate", "Date", [
-      { val: "desc", label: "New → Old" },
-      { val: "asc",  label: "Old → New" },
-    ], "desc", (v) => { sExp.date = v; applyExpSort(); });
-    makeSortPicker("expSortAmt", "Amount", [
-      { val: "",             label: "None" },
-      { val: "amount-desc", label: "High → Low" },
-      { val: "amount-asc",  label: "Low → High" },
-    ], "", (v) => { sExp.amt = v; applyExpSort(); });
+    makeSortBox("expSortBox",
+      (v) => { sExp.date = v; applyExpSort(); },
+      (v) => { sExp.amt  = v; applyExpSort(); }
+    );
 
-    // Category detail sort pickers
+    // Category detail sort box
     const sCat = { date: "desc", amt: "" };
     function applyCatSort() {
       state.categoryDetailSort = sCat.amt || sCat.date;
       const name = $("categoryDetailTitle") && $("categoryDetailTitle").textContent;
       if (name) openCategoryDetail(name);
     }
-    makeSortPicker("catDetailSortDate", "Date", [
-      { val: "desc", label: "New → Old" },
-      { val: "asc",  label: "Old → New" },
-    ], "desc", (v) => { sCat.date = v; applyCatSort(); });
-    makeSortPicker("catDetailSortAmt", "Amount", [
-      { val: "",             label: "None" },
-      { val: "amount-desc", label: "High → Low" },
-      { val: "amount-asc",  label: "Low → High" },
-    ], "", (v) => { sCat.amt = v; applyCatSort(); });
+    makeSortBox("catDetailSortBox",
+      (v) => { sCat.date = v; applyCatSort(); },
+      (v) => { sCat.amt  = v; applyCatSort(); }
+    );
 
     await bootstrap();
     try {
