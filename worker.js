@@ -683,7 +683,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v1";
+const CACHE_NAME = "ne-pwa-v2";
 const OFFLINE_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
@@ -694,13 +694,31 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // API Requests: Network First, fallback to cache
+  // Bootstrap: stale-while-revalidate — return cached immediately, refresh in background
+  if (url.pathname === "/api/bootstrap" && !url.searchParams.has("refresh")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(event.request);
+      const networkFetch = fetch(event.request).then((res) => {
+        if (res.ok) cache.put(event.request, res.clone());
+        return res;
+      }).catch(() => null);
+      return cached || networkFetch;
+    })());
+    return;
+  }
+
+  // Other API Requests: Network First, fallback to cache
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
@@ -712,7 +730,6 @@ self.addEventListener("fetch", (event) => {
       }).catch(async () => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
-        // If no cache, return a fallback JSON
         return new Response(JSON.stringify({ error: "Offline mode", cached: true, offline: true }), {
           status: 200, headers: { "Content-Type": "application/json" }
         });
@@ -721,7 +738,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // App Shell: Cache First, fallback to network (or Stale-While-Revalidate)
+  // App Shell: Stale-While-Revalidate
   if (url.pathname === "/") {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
@@ -794,7 +811,13 @@ export default {
       try {
         if (url.pathname === "/api/bootstrap" && request.method === "GET") {
           const refresh = url.searchParams.get("refresh") === "1";
-          return json(await handleBootstrap(env, refresh));
+          const data = await handleBootstrap(env, refresh);
+          return new Response(JSON.stringify(data), {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "private, max-age=300, stale-while-revalidate=1800",
+            },
+          });
         }
         if (url.pathname === "/api/expenses" && request.method === "GET") {
           return json(await handleGetExpenses(env, url));

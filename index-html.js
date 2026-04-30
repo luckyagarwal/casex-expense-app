@@ -1274,6 +1274,13 @@ export const HTML = /* html */ `<!doctype html>
       <button class="period-tab" data-scope="expenses" data-period="month">Monthly</button>
     </div>
 
+    <div class="chips chips-inline" style="padding: 4px 16px 0;">
+      <button class="chip selected" id="expSortDateDesc" type="button">Newest</button>
+      <button class="chip" id="expSortDateAsc" type="button">Oldest</button>
+      <button class="chip" id="expSortAmtDesc" type="button">₹ High</button>
+      <button class="chip" id="expSortAmtAsc" type="button">₹ Low</button>
+    </div>
+
     <div class="section-label">
       <h2>Recent activity</h2>
       <div class="hint" id="expensesCount">0 entries</div>
@@ -1421,8 +1428,10 @@ export const HTML = /* html */ `<!doctype html>
       <div class="filter-block">
         <div class="field-label">Sort</div>
         <div class="chips chips-inline">
-          <button class="chip selected" id="sortDescBtn" type="button">Newest first</button>
-          <button class="chip" id="sortAscBtn" type="button">Oldest first</button>
+          <button class="chip selected" id="sortDescBtn" type="button">Newest</button>
+          <button class="chip" id="sortAscBtn" type="button">Oldest</button>
+          <button class="chip" id="sortAmtDescBtn" type="button">₹ High</button>
+          <button class="chip" id="sortAmtAscBtn" type="button">₹ Low</button>
         </div>
       </div>
 
@@ -1452,7 +1461,10 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="section-label">
       <h2>Results</h2>
-      <div class="hint" id="searchCount">0 entries</div>
+      <div style="text-align:right;">
+        <div class="hint" id="searchCount">0 entries</div>
+        <div id="searchTotal" style="display:none; font-size:15px; font-weight:700; color:var(--c-text, rgba(255,255,255,.87));"></div>
+      </div>
     </div>
     <div class="list-stack" id="searchResults">
       <div class="empty-state"><div class="big">⌕</div>Choose a range to begin.</div>
@@ -1525,6 +1537,7 @@ export const HTML = /* html */ `<!doctype html>
   const LS_CACHE_AT = "notion_expense_cache_at_v2";
   const LS_THEME = "notion_expense_theme_v2";
   const SUGGESTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+  const EXP_LS_TTL = { today: 2 * 60 * 1000, week: 10 * 60 * 1000, month: 20 * 60 * 1000 };
   const PERIOD_LABELS = { today: "day", week: "weekly", month: "monthly" };
   const COLOR_PALETTE = ["#ff7a59", "#5ad6c9", "#f2c14e", "#7f8cff", "#c46cff", "#ff5f9e", "#58b368", "#ff9f43"];
   const USER_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -1541,6 +1554,7 @@ export const HTML = /* html */ `<!doctype html>
     lastNonDetailView: "analytics",
     lastNonSearchView: "expenses",
     navHidden: false,
+    expensesSort: "desc",
     searchFilter: { categoryId: null, subcategoryId: null, accountId: null, sort: "desc" },
     expanded: { cat: false, sub: false, acct: false },
     editingExpenseId: null,
@@ -1724,26 +1738,31 @@ export const HTML = /* html */ `<!doctype html>
     });
   }
 
-  async function bootstrap(fromCache) {
-    if (fromCache) {
-      const cached = localStorage.getItem(LS_CACHE);
-      if (cached) {
-        try {
-          state.data = JSON.parse(cached);
-          renderFormChips();
-        } catch {}
-      }
+  async function bootstrap() {
+    // Render from localStorage immediately (instant on return visits)
+    const cached = localStorage.getItem(LS_CACHE);
+    let hadCache = false;
+    if (cached) {
+      try {
+        state.data = JSON.parse(cached);
+        renderFormChips();
+        hadCache = true;
+      } catch {}
     }
 
-    try {
-      const data = await api("/api/bootstrap");
+    const netFetch = api("/api/bootstrap").then((data) => {
       state.data = data;
       localStorage.setItem(LS_CACHE, JSON.stringify(data));
       localStorage.setItem(LS_CACHE_AT, String(Date.now()));
       renderFormChips();
-    } catch (err) {
+    }).catch((err) => {
       if (!state.data) toast("Failed to load Notion data: " + err.message, "err");
-    } finally {
+    });
+
+    if (hadCache) {
+      hideLoader(); // cached data ready — don't block on network
+    } else {
+      await netFetch; // first visit: must wait for network
       hideLoader();
     }
   }
@@ -1752,6 +1771,33 @@ export const HTML = /* html */ `<!doctype html>
     const at = parseInt(localStorage.getItem(LS_CACHE_AT) || "0", 10);
     if (!at) return true;
     return (Date.now() - at) > SUGGESTIONS_TTL_MS;
+  }
+
+  function lsExpKey(period) { return "ne_exp_v1_" + period; }
+  function lsExpAtKey(period) { return "ne_exp_at_v1_" + period; }
+
+  function saveExpCache(period, data) {
+    try {
+      localStorage.setItem(lsExpKey(period), JSON.stringify(data));
+      localStorage.setItem(lsExpAtKey(period), String(Date.now()));
+    } catch {}
+  }
+
+  function loadExpCache(period) {
+    try {
+      const at = parseInt(localStorage.getItem(lsExpAtKey(period)) || "0", 10);
+      const ttl = EXP_LS_TTL[period] || 2 * 60 * 1000;
+      if (!at || (Date.now() - at) > ttl) return null;
+      const raw = localStorage.getItem(lsExpKey(period));
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function clearExpCache() {
+    ["today", "week", "month"].forEach((p) => {
+      localStorage.removeItem(lsExpKey(p));
+      localStorage.removeItem(lsExpAtKey(p));
+    });
   }
 
   function renderFormChips() {
@@ -2014,6 +2060,7 @@ export const HTML = /* html */ `<!doctype html>
       toast("All offline expenses synced!", "ok");
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
+      clearExpCache();
       ensureExpensesLoaded(state.expensesPeriod, true).catch(() => {});
       ensureAnalyticsLoaded(state.analyticsPeriod, true).catch(() => {});
     }
@@ -2136,6 +2183,7 @@ export const HTML = /* html */ `<!doctype html>
       // Invalidate caches and navigate immediately
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
+      clearExpCache();
     }
     
     setActiveView(nextView);
@@ -2175,10 +2223,32 @@ export const HTML = /* html */ `<!doctype html>
       return state.expensesByPeriod[period];
     }
 
+    // Stale-while-revalidate: serve LS cache instantly, refresh in background
+    if (!hardRefresh) {
+      const cached = loadExpCache(period);
+      if (cached) {
+        state.expensesByPeriod[period] = cached;
+        if (!state.analyticsByPeriod[period]) state.analyticsByPeriod[period] = cached;
+        renderExpenses(cached);
+        fetchExpenses(period, false).then((data) => {
+          state.expensesByPeriod[period] = data;
+          state.analyticsByPeriod[period] = data;
+          saveExpCache(period, data);
+          renderExpenses(data);
+          if (state.currentView === "analytics" && state.analyticsPeriod === period) {
+            renderAnalytics(data);
+          }
+        }).catch(() => {});
+        return cached;
+      }
+    }
+
     showLoader("Loading " + PERIOD_LABELS[period] + " expenses...");
     try {
       const data = await fetchExpenses(period, hardRefresh);
       state.expensesByPeriod[period] = data;
+      if (!state.analyticsByPeriod[period]) state.analyticsByPeriod[period] = data;
+      saveExpCache(period, data);
       renderExpenses(data);
       return data;
     } finally {
@@ -2192,10 +2262,22 @@ export const HTML = /* html */ `<!doctype html>
       return state.analyticsByPeriod[period];
     }
 
+    // Reuse already-fetched expenses data for same period (avoid duplicate network call)
+    if (!hardRefresh && state.expensesByPeriod[period]) {
+      const data = state.expensesByPeriod[period];
+      state.analyticsByPeriod[period] = data;
+      renderAnalytics(data);
+      return data;
+    }
+
     showLoader("Loading " + PERIOD_LABELS[period] + " analytics...");
     try {
       const data = await fetchExpenses(period, hardRefresh);
       state.analyticsByPeriod[period] = data;
+      if (!state.expensesByPeriod[period]) {
+        state.expensesByPeriod[period] = data;
+        saveExpCache(period, data);
+      }
       renderAnalytics(data);
       return data;
     } finally {
@@ -2266,26 +2348,40 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   function renderExpenseGroups(expenses, emptyMessage, sortOrder) {
-    const order = sortOrder === "asc" ? "asc" : "desc";
     if (!expenses.length) {
       return '<div class="empty-state"><div class="big">+</div>' + escapeHtml(emptyMessage) + '</div>';
     }
 
-    const grouped = groupByDay(expenses);
-    const days = Object.keys(grouped).sort((a, b) => order === "asc" ? a.localeCompare(b) : b.localeCompare(a));
+    const isAmt = sortOrder === "amount-desc" || sortOrder === "amount-asc";
+
+    // Sort expenses first, then re-group preserving sorted order (so day order follows sort)
+    const sorted = expenses.slice().sort((a, b) => {
+      if (isAmt) {
+        return sortOrder === "amount-desc"
+          ? Number(b.amount || 0) - Number(a.amount || 0)
+          : Number(a.amount || 0) - Number(b.amount || 0);
+      }
+      const left = a.date || "";
+      const right = b.date || "";
+      return sortOrder === "asc" ? left.localeCompare(right) : right.localeCompare(left);
+    });
+
+    // Group preserving sorted insertion order (first seen = first rendered)
+    const dayOrder = [];
+    const grouped = {};
+    sorted.forEach((expense) => {
+      const day = (expense.date || "").split("T")[0] || "undated";
+      if (!grouped[day]) { grouped[day] = []; dayOrder.push(day); }
+      grouped[day].push(expense);
+    });
+
     let html = "";
-    days.forEach((day) => {
-      const dayExpenses = grouped[day].slice().sort((a, b) => {
-        const left = a.date || "";
-        const right = b.date || "";
-        return order === "asc" ? left.localeCompare(right) : right.localeCompare(left);
-      });
-      const dayTotal = dayExpenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+    dayOrder.forEach((day) => {
+      const dayExpenses = grouped[day];
+      const dayTotal = dayExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
       html += '<div class="day-group">';
       html += '<div class="day-header"><div class="day-title">' + escapeHtml(formatDay(day)) + '</div><div class="day-total">' + formatCurrency(dayTotal) + '</div></div>';
-      dayExpenses.forEach((expense) => {
-        html += renderExpenseCard(expense);
-      });
+      dayExpenses.forEach((expense) => { html += renderExpenseCard(expense); });
       html += '</div>';
     });
     return html;
@@ -2297,7 +2393,7 @@ export const HTML = /* html */ `<!doctype html>
     $("expensesHeroMeta").textContent = expenses.length + " entries in your " + PERIOD_LABELS[data.period] + " view";
     $("expensesHeroBadge").textContent = data.cached ? "Cached" : "Live";
     $("expensesCount").textContent = expenses.length + " entries";
-    $("expensesList").innerHTML = renderExpenseGroups(expenses, "No expenses recorded for this " + PERIOD_LABELS[data.period] + " yet.", "desc");
+    $("expensesList").innerHTML = renderExpenseGroups(expenses, "No expenses recorded for this " + PERIOD_LABELS[data.period] + " yet.", state.expensesSort);
   }
 
   function populateSearchChips() {
@@ -2383,13 +2479,14 @@ export const HTML = /* html */ `<!doctype html>
         });
       }
 
-      data.expenses.sort((a, b) => {
-        const left = a.date || "";
-        const right = b.date || "";
-        return sort === "asc" ? left.localeCompare(right) : right.localeCompare(left);
-      });
       state.searchResults = data;
+      const filteredTotal = data.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
       $("searchCount").textContent = data.expenses.length + " entries";
+      const totalEl = $("searchTotal");
+      if (totalEl) {
+        totalEl.textContent = formatCurrency(filteredTotal);
+        totalEl.style.display = data.expenses.length ? "" : "none";
+      }
       $("searchResults").innerHTML = renderExpenseGroups(data.expenses, "No expenses matched this search.", sort);
     } finally {
       hideLoader();
@@ -2535,6 +2632,7 @@ export const HTML = /* html */ `<!doctype html>
       toast("Expense deleted", "ok");
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
+      clearExpCache();
       await Promise.all([
         ensureExpensesLoaded(state.expensesPeriod, true),
         ensureAnalyticsLoaded(state.analyticsPeriod, true),
@@ -2724,19 +2822,20 @@ export const HTML = /* html */ `<!doctype html>
       }
     };
 
-    // Sort toggle chips
-    const sortDesc = $("sortDescBtn");
-    const sortAsc = $("sortAscBtn");
-    if (sortDesc) sortDesc.onclick = () => {
-      state.searchFilter.sort = "desc";
-      sortDesc.classList.add("selected");
-      if (sortAsc) sortAsc.classList.remove("selected");
-    };
-    if (sortAsc) sortAsc.onclick = () => {
-      state.searchFilter.sort = "asc";
-      sortAsc.classList.add("selected");
-      if (sortDesc) sortDesc.classList.remove("selected");
-    };
+    // Sort toggle chips (search view)
+    const searchSortBtns = ["sortDescBtn", "sortAscBtn", "sortAmtDescBtn", "sortAmtAscBtn"];
+    const searchSortVals = { sortDescBtn: "desc", sortAscBtn: "asc", sortAmtDescBtn: "amount-desc", sortAmtAscBtn: "amount-asc" };
+    searchSortBtns.forEach((id) => {
+      const btn = $(id);
+      if (!btn) return;
+      btn.onclick = () => {
+        state.searchFilter.sort = searchSortVals[id];
+        searchSortBtns.forEach((sid) => {
+          const sb = $(sid);
+          if (sb) sb.classList.toggle("selected", sid === id);
+        });
+      };
+    });
 
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
@@ -2757,7 +2856,24 @@ export const HTML = /* html */ `<!doctype html>
     wireSearch("sub", "subcategoryId", "subcategoryName", () => state.data ? state.data.subcategories : []);
     wireSearch("acct", "accountId", "accountName", () => state.data ? state.data.accounts : []);
 
-    await bootstrap(true);
+    // Expenses view sort chips
+    const expSortBtns = ["expSortDateDesc", "expSortDateAsc", "expSortAmtDesc", "expSortAmtAsc"];
+    const expSortVals = { expSortDateDesc: "desc", expSortDateAsc: "asc", expSortAmtDesc: "amount-desc", expSortAmtAsc: "amount-asc" };
+    expSortBtns.forEach((id) => {
+      const btn = $(id);
+      if (!btn) return;
+      btn.onclick = () => {
+        state.expensesSort = expSortVals[id];
+        expSortBtns.forEach((sid) => {
+          const sb = $(sid);
+          if (sb) sb.classList.toggle("selected", sid === id);
+        });
+        const cur = state.expensesByPeriod[state.expensesPeriod];
+        if (cur) renderExpenses(cur);
+      };
+    });
+
+    await bootstrap();
     try {
       await Promise.all([
         ensureExpensesLoaded(state.expensesPeriod, false),
