@@ -2865,10 +2865,23 @@ export const HTML = /* html */ `<!doctype html>
     if (!wrap) return;
     let cur = defaultVal;
 
+    // Show active option's label; fall back to axis label when val is "" (no sort)
+    const activeLabel = (val) => {
+      if (!val) return label;
+      const o = opts.find((x) => x.val === val);
+      return o ? o.label : label;
+    };
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "sp-btn";
-    btn.innerHTML = '<span>' + label + '</span><span class="sp-arrow">▾</span>';
+    const btnText = document.createElement("span");
+    btnText.textContent = activeLabel(cur);
+    btn.appendChild(btnText);
+    const arrow = document.createElement("span");
+    arrow.className = "sp-arrow";
+    arrow.textContent = "▾";
+    btn.appendChild(arrow);
 
     const menu = document.createElement("div");
     menu.className = "sp-menu hidden";
@@ -2879,6 +2892,7 @@ export const HTML = /* html */ `<!doctype html>
       div.textContent = o.label;
       div.onclick = () => {
         cur = o.val;
+        btnText.textContent = activeLabel(cur);
         menu.querySelectorAll(".sp-opt").forEach((el) =>
           el.classList.toggle("active", el === div)
         );
@@ -2918,7 +2932,7 @@ export const HTML = /* html */ `<!doctype html>
       { val: "asc",  label: "Old → New" },
     ], "desc", (v) => { sSearch.date = v; applySearchSort(); });
     makeSortPicker("searchSortAmt", "Amount", [
-      { val: "",             label: "Default" },
+      { val: "",             label: "None" },
       { val: "amount-desc", label: "High → Low" },
       { val: "amount-asc",  label: "Low → High" },
     ], "", (v) => { sSearch.amt = v; applySearchSort(); });
@@ -2954,7 +2968,7 @@ export const HTML = /* html */ `<!doctype html>
       { val: "asc",  label: "Old → New" },
     ], "desc", (v) => { sExp.date = v; applyExpSort(); });
     makeSortPicker("expSortAmt", "Amount", [
-      { val: "",             label: "Default" },
+      { val: "",             label: "None" },
       { val: "amount-desc", label: "High → Low" },
       { val: "amount-asc",  label: "Low → High" },
     ], "", (v) => { sExp.amt = v; applyExpSort(); });
@@ -2971,7 +2985,7 @@ export const HTML = /* html */ `<!doctype html>
       { val: "asc",  label: "Old → New" },
     ], "desc", (v) => { sCat.date = v; applyCatSort(); });
     makeSortPicker("catDetailSortAmt", "Amount", [
-      { val: "",             label: "Default" },
+      { val: "",             label: "None" },
       { val: "amount-desc", label: "High → Low" },
       { val: "amount-asc",  label: "Low → High" },
     ], "", (v) => { sCat.amt = v; applyCatSort(); });
