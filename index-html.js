@@ -2859,6 +2859,46 @@ export const HTML = /* html */ `<!doctype html>
     };
   }
 
+  // ── Custom sort picker (module-level so all functions can use it) ──
+  function makeSortPicker(id, label, opts, defaultVal, onChange) {
+    const wrap = $(id);
+    if (!wrap) return;
+    let cur = defaultVal;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sp-btn";
+    btn.innerHTML = '<span>' + label + '</span><span class="sp-arrow">▾</span>';
+
+    const menu = document.createElement("div");
+    menu.className = "sp-menu hidden";
+
+    opts.forEach((o) => {
+      const div = document.createElement("div");
+      div.className = "sp-opt" + (o.val === cur ? " active" : "");
+      div.textContent = o.label;
+      div.onclick = () => {
+        cur = o.val;
+        menu.querySelectorAll(".sp-opt").forEach((el) =>
+          el.classList.toggle("active", el === div)
+        );
+        menu.classList.add("hidden");
+        onChange(cur);
+      };
+      menu.appendChild(div);
+    });
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("hidden");
+    };
+
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+
+    document.addEventListener("click", () => menu.classList.add("hidden"));
+  }
+
   function initSearchControls() {
     $("runSearchBtn").onclick = async () => {
       try {
@@ -2867,46 +2907,6 @@ export const HTML = /* html */ `<!doctype html>
         toast("Search failed: " + err.message, "err");
       }
     };
-
-    // ── Custom sort picker ──────────────────────────────────────────────
-    function makeSortPicker(id, label, opts, defaultVal, onChange) {
-      const wrap = $(id);
-      if (!wrap) return;
-      let cur = defaultVal;
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "sp-btn";
-      btn.innerHTML = '<span>' + label + '</span><span class="sp-arrow">▾</span>';
-
-      const menu = document.createElement("div");
-      menu.className = "sp-menu hidden";
-
-      opts.forEach((o) => {
-        const div = document.createElement("div");
-        div.className = "sp-opt" + (o.val === cur ? " active" : "");
-        div.textContent = o.label;
-        div.onclick = () => {
-          cur = o.val;
-          menu.querySelectorAll(".sp-opt").forEach((el) =>
-            el.classList.toggle("active", el === div)
-          );
-          menu.classList.add("hidden");
-          onChange(cur);
-        };
-        menu.appendChild(div);
-      });
-
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        menu.classList.toggle("hidden");
-      };
-
-      wrap.appendChild(btn);
-      wrap.appendChild(menu);
-
-      document.addEventListener("click", () => menu.classList.add("hidden"));
-    }
 
     // Search sort pickers
     const sSearch = { date: "desc", amt: "" };
