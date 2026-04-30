@@ -1275,15 +1275,15 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
-      <span style="font-size:12px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
-      <select id="expSortDate" class="select-input" style="flex:1;">
-        <option value="desc">Date: Newest</option>
-        <option value="asc">Date: Oldest</option>
+      <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
+      <select id="expSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
+        <option value="desc">Date ↓</option>
+        <option value="asc">Date ↑</option>
       </select>
-      <select id="expSortAmt" class="select-input" style="flex:1;">
+      <select id="expSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
         <option value="">Amount</option>
-        <option value="amount-desc">Amount: High → Low</option>
-        <option value="amount-asc">Amount: Low → High</option>
+        <option value="amount-desc">Amount ↓</option>
+        <option value="amount-asc">Amount ↑</option>
       </select>
     </div>
 
@@ -1434,14 +1434,14 @@ export const HTML = /* html */ `<!doctype html>
       <div class="filter-block">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="field-label" style="margin:0; white-space:nowrap;">Sort by</span>
-          <select id="searchSortDate" class="select-input" style="flex:1;">
-            <option value="desc">Date: Newest</option>
-            <option value="asc">Date: Oldest</option>
+          <select id="searchSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
+            <option value="desc">Date ↓</option>
+            <option value="asc">Date ↑</option>
           </select>
-          <select id="searchSortAmt" class="select-input" style="flex:1;">
+          <select id="searchSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
             <option value="">Amount</option>
-            <option value="amount-desc">Amount: High → Low</option>
-            <option value="amount-asc">Amount: Low → High</option>
+            <option value="amount-desc">Amount ↓</option>
+            <option value="amount-asc">Amount ↑</option>
           </select>
         </div>
       </div>
