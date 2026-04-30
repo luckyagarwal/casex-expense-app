@@ -1274,11 +1274,16 @@ export const HTML = /* html */ `<!doctype html>
       <button class="period-tab" data-scope="expenses" data-period="month">Monthly</button>
     </div>
 
-    <div class="chips chips-inline" style="padding: 4px 16px 0;">
-      <button class="chip selected" id="expSortDateDesc" type="button">Newest</button>
-      <button class="chip" id="expSortDateAsc" type="button">Oldest</button>
-      <button class="chip" id="expSortAmtDesc" type="button">₹ High</button>
-      <button class="chip" id="expSortAmtAsc" type="button">₹ Low</button>
+    <div style="display:flex; gap:8px; padding: 6px 16px 0;">
+      <select id="expSortDate" class="select-input" style="flex:1;">
+        <option value="desc">Date: Newest first</option>
+        <option value="asc">Date: Oldest first</option>
+      </select>
+      <select id="expSortAmt" class="select-input" style="flex:1;">
+        <option value="">Amount: default</option>
+        <option value="amount-desc">Amount: High → Low</option>
+        <option value="amount-asc">Amount: Low → High</option>
+      </select>
     </div>
 
     <div class="section-label">
@@ -1427,11 +1432,16 @@ export const HTML = /* html */ `<!doctype html>
 
       <div class="filter-block">
         <div class="field-label">Sort</div>
-        <div class="chips chips-inline">
-          <button class="chip selected" id="sortDescBtn" type="button">Newest</button>
-          <button class="chip" id="sortAscBtn" type="button">Oldest</button>
-          <button class="chip" id="sortAmtDescBtn" type="button">₹ High</button>
-          <button class="chip" id="sortAmtAscBtn" type="button">₹ Low</button>
+        <div style="display:flex; gap:8px;">
+          <select id="searchSortDate" class="select-input" style="flex:1;">
+            <option value="desc">Date: Newest first</option>
+            <option value="asc">Date: Oldest first</option>
+          </select>
+          <select id="searchSortAmt" class="select-input" style="flex:1;">
+            <option value="">Amount: default</option>
+            <option value="amount-desc">Amount: High → Low</option>
+            <option value="amount-asc">Amount: Low → High</option>
+          </select>
         </div>
       </div>
 
@@ -2822,20 +2832,16 @@ export const HTML = /* html */ `<!doctype html>
       }
     };
 
-    // Sort toggle chips (search view)
-    const searchSortBtns = ["sortDescBtn", "sortAscBtn", "sortAmtDescBtn", "sortAmtAscBtn"];
-    const searchSortVals = { sortDescBtn: "desc", sortAscBtn: "asc", sortAmtDescBtn: "amount-desc", sortAmtAscBtn: "amount-asc" };
-    searchSortBtns.forEach((id) => {
-      const btn = $(id);
-      if (!btn) return;
-      btn.onclick = () => {
-        state.searchFilter.sort = searchSortVals[id];
-        searchSortBtns.forEach((sid) => {
-          const sb = $(sid);
-          if (sb) sb.classList.toggle("selected", sid === id);
-        });
-      };
-    });
+    // Sort dropdowns (search view) — amount wins over date when set
+    const searchSortDate = $("searchSortDate");
+    const searchSortAmt  = $("searchSortAmt");
+    function updateSearchSort() {
+      state.searchFilter.sort = searchSortAmt && searchSortAmt.value
+        ? searchSortAmt.value
+        : (searchSortDate ? searchSortDate.value : "desc");
+    }
+    if (searchSortDate) searchSortDate.onchange = updateSearchSort;
+    if (searchSortAmt)  searchSortAmt.onchange  = updateSearchSort;
 
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
@@ -2856,22 +2862,18 @@ export const HTML = /* html */ `<!doctype html>
     wireSearch("sub", "subcategoryId", "subcategoryName", () => state.data ? state.data.subcategories : []);
     wireSearch("acct", "accountId", "accountName", () => state.data ? state.data.accounts : []);
 
-    // Expenses view sort chips
-    const expSortBtns = ["expSortDateDesc", "expSortDateAsc", "expSortAmtDesc", "expSortAmtAsc"];
-    const expSortVals = { expSortDateDesc: "desc", expSortDateAsc: "asc", expSortAmtDesc: "amount-desc", expSortAmtAsc: "amount-asc" };
-    expSortBtns.forEach((id) => {
-      const btn = $(id);
-      if (!btn) return;
-      btn.onclick = () => {
-        state.expensesSort = expSortVals[id];
-        expSortBtns.forEach((sid) => {
-          const sb = $(sid);
-          if (sb) sb.classList.toggle("selected", sid === id);
-        });
-        const cur = state.expensesByPeriod[state.expensesPeriod];
-        if (cur) renderExpenses(cur);
-      };
-    });
+    // Expenses view sort dropdowns — amount wins over date when set
+    const expSortDate = $("expSortDate");
+    const expSortAmt  = $("expSortAmt");
+    function updateExpSort() {
+      state.expensesSort = expSortAmt && expSortAmt.value
+        ? expSortAmt.value
+        : (expSortDate ? expSortDate.value : "desc");
+      const cur = state.expensesByPeriod[state.expensesPeriod];
+      if (cur) renderExpenses(cur);
+    }
+    if (expSortDate) expSortDate.onchange = updateExpSort;
+    if (expSortAmt)  expSortAmt.onchange  = updateExpSort;
 
     await bootstrap();
     try {
