@@ -1235,6 +1235,48 @@ export const HTML = /* html */ `<!doctype html>
       font-size: 13px;
     }
   }
+
+  /* ── Sort picker ── */
+  .sp-wrap { position: relative; }
+  .sp-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sp-btn .sp-arrow { opacity: .55; font-size: 10px; }
+  .sp-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    z-index: 50;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .sp-menu.hidden { display: none; }
+  .sp-opt {
+    padding: 10px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .sp-opt:last-child { border-bottom: none; }
+  .sp-opt.active { color: var(--accent); font-weight: 600; }
+  .sp-opt:hover { background: rgba(255,255,255,.04); }
 </style>
 </head>
 <body>
@@ -1276,15 +1318,8 @@ export const HTML = /* html */ `<!doctype html>
 
     <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
       <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
-      <select id="expSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-        <option value="desc">Date ↓</option>
-        <option value="asc">Date ↑</option>
-      </select>
-      <select id="expSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-        <option value="">Amount</option>
-        <option value="amount-desc">Amount ↓</option>
-        <option value="amount-asc">Amount ↑</option>
-      </select>
+      <div id="expSortDate" class="sp-wrap" style="flex:1;"></div>
+      <div id="expSortAmt" class="sp-wrap" style="flex:1;"></div>
     </div>
 
     <div class="section-label">
@@ -1434,15 +1469,8 @@ export const HTML = /* html */ `<!doctype html>
       <div class="filter-block">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="field-label" style="margin:0; white-space:nowrap;">Sort by</span>
-          <select id="searchSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-            <option value="desc">Date ↓</option>
-            <option value="asc">Date ↑</option>
-          </select>
-          <select id="searchSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-            <option value="">Amount</option>
-            <option value="amount-desc">Amount ↓</option>
-            <option value="amount-asc">Amount ↑</option>
-          </select>
+          <div id="searchSortDate" class="sp-wrap" style="flex:1;"></div>
+          <div id="searchSortAmt" class="sp-wrap" style="flex:1;"></div>
         </div>
       </div>
 
@@ -1505,15 +1533,8 @@ export const HTML = /* html */ `<!doctype html>
 
     <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
       <span style="font-size:11px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
-      <select id="catDetailSortDate" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-        <option value="desc">Date ↓</option>
-        <option value="asc">Date ↑</option>
-      </select>
-      <select id="catDetailSortAmt" class="select-input" style="flex:1; font-size:12px; padding:8px 10px;">
-        <option value="">Amount</option>
-        <option value="amount-desc">Amount ↓</option>
-        <option value="amount-asc">Amount ↑</option>
-      </select>
+      <div id="catDetailSortDate" class="sp-wrap" style="flex:1;"></div>
+      <div id="catDetailSortAmt" class="sp-wrap" style="flex:1;"></div>
     </div>
 
     <div class="list-stack" id="categoryDetailList">
@@ -2847,16 +2868,60 @@ export const HTML = /* html */ `<!doctype html>
       }
     };
 
-    // Sort dropdowns (search view) — amount wins over date when set
-    const searchSortDate = $("searchSortDate");
-    const searchSortAmt  = $("searchSortAmt");
-    function updateSearchSort() {
-      state.searchFilter.sort = searchSortAmt && searchSortAmt.value
-        ? searchSortAmt.value
-        : (searchSortDate ? searchSortDate.value : "desc");
+    // ── Custom sort picker ──────────────────────────────────────────────
+    function makeSortPicker(id, label, opts, defaultVal, onChange) {
+      const wrap = $(id);
+      if (!wrap) return;
+      let cur = defaultVal;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "sp-btn";
+      btn.innerHTML = '<span>' + label + '</span><span class="sp-arrow">▾</span>';
+
+      const menu = document.createElement("div");
+      menu.className = "sp-menu hidden";
+
+      opts.forEach((o) => {
+        const div = document.createElement("div");
+        div.className = "sp-opt" + (o.val === cur ? " active" : "");
+        div.textContent = o.label;
+        div.onclick = () => {
+          cur = o.val;
+          menu.querySelectorAll(".sp-opt").forEach((el) =>
+            el.classList.toggle("active", el === div)
+          );
+          menu.classList.add("hidden");
+          onChange(cur);
+        };
+        menu.appendChild(div);
+      });
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        menu.classList.toggle("hidden");
+      };
+
+      wrap.appendChild(btn);
+      wrap.appendChild(menu);
+
+      document.addEventListener("click", () => menu.classList.add("hidden"));
     }
-    if (searchSortDate) searchSortDate.onchange = updateSearchSort;
-    if (searchSortAmt)  searchSortAmt.onchange  = updateSearchSort;
+
+    // Search sort pickers
+    const sSearch = { date: "desc", amt: "" };
+    function applySearchSort() {
+      state.searchFilter.sort = sSearch.amt || sSearch.date;
+    }
+    makeSortPicker("searchSortDate", "Date", [
+      { val: "desc", label: "New → Old" },
+      { val: "asc",  label: "Old → New" },
+    ], "desc", (v) => { sSearch.date = v; applySearchSort(); });
+    makeSortPicker("searchSortAmt", "Amount", [
+      { val: "",             label: "Default" },
+      { val: "amount-desc", label: "High → Low" },
+      { val: "amount-asc",  label: "Low → High" },
+    ], "", (v) => { sSearch.amt = v; applySearchSort(); });
 
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
   }
@@ -2877,31 +2942,39 @@ export const HTML = /* html */ `<!doctype html>
     wireSearch("sub", "subcategoryId", "subcategoryName", () => state.data ? state.data.subcategories : []);
     wireSearch("acct", "accountId", "accountName", () => state.data ? state.data.accounts : []);
 
-    // Expenses view sort dropdowns — amount wins over date when set
-    const expSortDate = $("expSortDate");
-    const expSortAmt  = $("expSortAmt");
-    function updateExpSort() {
-      state.expensesSort = expSortAmt && expSortAmt.value
-        ? expSortAmt.value
-        : (expSortDate ? expSortDate.value : "desc");
+    // Expenses sort pickers
+    const sExp = { date: "desc", amt: "" };
+    function applyExpSort() {
+      state.expensesSort = sExp.amt || sExp.date;
       const cur = state.expensesByPeriod[state.expensesPeriod];
       if (cur) renderExpenses(cur);
     }
-    if (expSortDate) expSortDate.onchange = updateExpSort;
-    if (expSortAmt)  expSortAmt.onchange  = updateExpSort;
+    makeSortPicker("expSortDate", "Date", [
+      { val: "desc", label: "New → Old" },
+      { val: "asc",  label: "Old → New" },
+    ], "desc", (v) => { sExp.date = v; applyExpSort(); });
+    makeSortPicker("expSortAmt", "Amount", [
+      { val: "",             label: "Default" },
+      { val: "amount-desc", label: "High → Low" },
+      { val: "amount-asc",  label: "Low → High" },
+    ], "", (v) => { sExp.amt = v; applyExpSort(); });
 
-    // Category detail sort dropdowns
-    const catDetailSortDate = $("catDetailSortDate");
-    const catDetailSortAmt  = $("catDetailSortAmt");
-    function updateCatDetailSort() {
-      state.categoryDetailSort = catDetailSortAmt && catDetailSortAmt.value
-        ? catDetailSortAmt.value
-        : (catDetailSortDate ? catDetailSortDate.value : "desc");
+    // Category detail sort pickers
+    const sCat = { date: "desc", amt: "" };
+    function applyCatSort() {
+      state.categoryDetailSort = sCat.amt || sCat.date;
       const name = $("categoryDetailTitle") && $("categoryDetailTitle").textContent;
       if (name) openCategoryDetail(name);
     }
-    if (catDetailSortDate) catDetailSortDate.onchange = updateCatDetailSort;
-    if (catDetailSortAmt)  catDetailSortAmt.onchange  = updateCatDetailSort;
+    makeSortPicker("catDetailSortDate", "Date", [
+      { val: "desc", label: "New → Old" },
+      { val: "asc",  label: "Old → New" },
+    ], "desc", (v) => { sCat.date = v; applyCatSort(); });
+    makeSortPicker("catDetailSortAmt", "Amount", [
+      { val: "",             label: "Default" },
+      { val: "amount-desc", label: "High → Low" },
+      { val: "amount-asc",  label: "Low → High" },
+    ], "", (v) => { sCat.amt = v; applyCatSort(); });
 
     await bootstrap();
     try {
