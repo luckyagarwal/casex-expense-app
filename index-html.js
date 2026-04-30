@@ -1274,13 +1274,14 @@ export const HTML = /* html */ `<!doctype html>
       <button class="period-tab" data-scope="expenses" data-period="month">Monthly</button>
     </div>
 
-    <div style="display:flex; gap:8px; padding: 6px 16px 0;">
+    <div style="display:flex; align-items:center; gap:8px; padding: 6px 16px 0;">
+      <span style="font-size:12px; color:rgba(255,255,255,.44); white-space:nowrap;">Sort by</span>
       <select id="expSortDate" class="select-input" style="flex:1;">
-        <option value="desc">Date: Newest first</option>
-        <option value="asc">Date: Oldest first</option>
+        <option value="desc">Date: Newest</option>
+        <option value="asc">Date: Oldest</option>
       </select>
       <select id="expSortAmt" class="select-input" style="flex:1;">
-        <option value="">Amount: default</option>
+        <option value="">Amount</option>
         <option value="amount-desc">Amount: High → Low</option>
         <option value="amount-asc">Amount: Low → High</option>
       </select>
@@ -1431,14 +1432,14 @@ export const HTML = /* html */ `<!doctype html>
       </div>
 
       <div class="filter-block">
-        <div class="field-label">Sort</div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="field-label" style="margin:0; white-space:nowrap;">Sort by</span>
           <select id="searchSortDate" class="select-input" style="flex:1;">
-            <option value="desc">Date: Newest first</option>
-            <option value="asc">Date: Oldest first</option>
+            <option value="desc">Date: Newest</option>
+            <option value="asc">Date: Oldest</option>
           </select>
           <select id="searchSortAmt" class="select-input" style="flex:1;">
-            <option value="">Amount: default</option>
+            <option value="">Amount</option>
             <option value="amount-desc">Amount: High → Low</option>
             <option value="amount-asc">Amount: Low → High</option>
           </select>
