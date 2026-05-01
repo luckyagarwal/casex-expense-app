@@ -198,6 +198,7 @@ function relationIdsOf(page, prop) {
 }
 function numberOf(page, prop)    { return page.properties?.[prop]?.number  ?? null; }
 function dateStartOf(page, prop) { return page.properties?.[prop]?.date?.start ?? null; }
+function selectOf(page, prop)    { return page.properties?.[prop]?.select?.name ?? null; }
 
 async function createRowInDb(env, dbId, titleProp, title) {
   return notion(env, "POST", "/pages", {
@@ -369,6 +370,7 @@ async function handleGetExpenses(env, url) {
         accountId:   relationIdsOf(p, "Account").filter(Boolean)[0] || "",
         account:     relationIdsOf(p, "Account").map((id) => accById[id]?.name).filter(Boolean)[0] || "",
         accountIcon: relationIdsOf(p, "Account").map((id) => accById[id]?.icon).filter(Boolean)[0] || null,
+        txnType:     selectOf(p, "Type") || "expense",
       };
     })
     .filter((e) => e.date)
@@ -405,7 +407,7 @@ async function resolveOrCreate(env, dbId, titleProp, id, name) {
 
 async function handleCreateExpense(env, body) {
   const { expense, amount, date, categoryId, categoryName,
-          subcategoryId, subcategoryName, accountId, accountName } = body || {};
+          subcategoryId, subcategoryName, accountId, accountName, txnType } = body || {};
 
   if (amount === undefined || amount === null || isNaN(Number(amount)))
     return { error: "Amount required and must be a number", status: 400 };
@@ -420,10 +422,11 @@ async function handleCreateExpense(env, body) {
     Expense: { title: [{ text: { content: (expense || "").trim() } }] },
     Amount:  { number: Number(amount) },
   };
-  if (date)   properties.Date        = { date:     { start: date } };
-  if (catId)  properties.Category    = { relation: [{ id: catId  }] };
-  if (subId)  properties.Subcategory = { relation: [{ id: subId  }] };
-  if (acctId) properties.Account     = { relation: [{ id: acctId }] };
+  if (date)              properties.Date        = { date:     { start: date } };
+  if (catId)             properties.Category    = { relation: [{ id: catId  }] };
+  if (subId)             properties.Subcategory = { relation: [{ id: subId  }] };
+  if (acctId)            properties.Account     = { relation: [{ id: acctId }] };
+  if (txnType === "income") properties.Type     = { select:   { name: "income" } };
 
   const page = await notion(env, "POST", "/pages", {
     parent: { database_id: env.EXPENSES_DB_ID },
@@ -450,7 +453,7 @@ async function handleUpdateExpense(env, pageId, body) {
   if (!pageId) return { error: "Page ID required", status: 400 };
 
   const { expense, amount, date, categoryId, categoryName,
-          subcategoryId, subcategoryName, accountId, accountName } = body || {};
+          subcategoryId, subcategoryName, accountId, accountName, txnType } = body || {};
 
   if (amount === undefined || amount === null || isNaN(Number(amount)))
     return { error: "Amount required and must be a number", status: 400 };
@@ -465,10 +468,11 @@ async function handleUpdateExpense(env, pageId, body) {
     Expense: { title: [{ text: { content: (expense || "").trim() } }] },
     Amount:  { number: Number(amount) },
   };
-  if (date)   properties.Date        = { date:     { start: date } };
-  if (catId)  properties.Category    = { relation: [{ id: catId  }] };
-  if (subId)  properties.Subcategory = { relation: [{ id: subId  }] };
-  if (acctId) properties.Account     = { relation: [{ id: acctId }] };
+  if (date)              properties.Date        = { date:     { start: date } };
+  if (catId)             properties.Category    = { relation: [{ id: catId  }] };
+  if (subId)             properties.Subcategory = { relation: [{ id: subId  }] };
+  if (acctId)            properties.Account     = { relation: [{ id: acctId }] };
+  if (txnType)           properties.Type        = { select:   { name: txnType } };
 
   const page = await notion(env, "PATCH", `/pages/${pageId}`, {
     properties,

@@ -1,0 +1,429 @@
+/**
+ * DESIGN TOKENS — Warm Ledger
+ * Expense App Redesign
+ *
+ * Philosophy: Warm Ledger
+ * Warm neutrals on deep dark surfaces. Like a well-kept physical ledger —
+ * premium without being cold, personal without being playful.
+ *
+ * Base unit: 4px
+ * Stack: CSS custom properties, single HTML file, Cloudflare Workers
+ * Modes: dark (default), light (via [data-theme="light"])
+ *
+ * Migration from existing tokens:
+ *   --bg           → --color-bg-primary
+ *   --surface      → --color-bg-surface
+ *   --surface-2    → --color-bg-surface-2
+ *   --fg           → --color-text-primary
+ *   --fg-soft      → --color-text-secondary
+ *   --fg-muted     → --color-text-tertiary
+ *   --border       → --color-border-primary
+ *   --accent       → --color-accent-expense (orange)
+ *   --positive     → --color-income (green)
+ *   --danger       → --color-status-error
+ *   --accent-2     → --color-accent-teal
+ *   --accent-3     → --color-accent-gold
+ *   Old tokens kept as aliases for backward compatibility during migration.
+ */
+
+/* ─── DARK MODE (default) ────────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+
+  /* ── Primitive palette (raw values, not for direct use in components) ── */
+  --primitive-warm-black:     #111111;
+  --primitive-warm-surface:   #1c1c1c;
+  --primitive-warm-surface-2: #212121;
+  --primitive-warm-surface-3: #282828;
+  --primitive-cream:          #f9f6f2;
+  --primitive-cream-soft:     #e8e3dd;
+  --primitive-cream-muted:    #dad4cd;
+  --primitive-orange:         #eb7c55;
+  --primitive-orange-hover:   #f08d69;
+  --primitive-orange-active:  #d96d46;
+  --primitive-teal:           #53bdb0;
+  --primitive-teal-hover:     #64cbbf;
+  --primitive-teal-active:    #3fada0;
+  --primitive-gold:           #d8af54;
+  --primitive-green:          #66c68c;
+  --primitive-green-hover:    #7ad49f;
+  --primitive-green-active:   #52b47a;
+  --primitive-red:            #f46a6a;
+  --primitive-red-hover:      #f77f7f;
+  --primitive-red-active:     #e05555;
+
+  /* ── Background ── */
+  --color-bg-primary:         #111111;
+  --color-bg-accent:          radial-gradient(circle at top left, rgba(229, 117, 82, 0.16), transparent 34%),
+                               radial-gradient(circle at top right, rgba(79, 184, 171, 0.1), transparent 26%);
+  --color-bg-surface:         rgba(28, 28, 28, 0.90);
+  --color-bg-surface-2:       rgba(33, 33, 33, 0.96);
+  --color-bg-surface-3:       rgba(40, 40, 40, 0.98);
+  --color-bg-surface-raised:  rgba(255, 255, 255, 0.05);
+  --color-bg-inverse:         rgba(249, 246, 242, 0.94);
+
+  /* ── Text ── */
+  --color-text-primary:       rgba(249, 246, 242, 0.94);
+  --color-text-secondary:     rgba(232, 227, 221, 0.76);
+  --color-text-tertiary:      rgba(218, 212, 205, 0.50);
+  --color-text-inverse:       #201c18;
+  --color-text-link:          #eb7c55;
+
+  /* ── Borders ── */
+  --color-border-primary:     rgba(255, 255, 255, 0.07);
+  --color-border-secondary:   rgba(255, 255, 255, 0.04);
+  --color-border-focus:       rgba(235, 124, 85, 0.60);
+
+  /* ── Accent — Expense (orange) ── */
+  --color-accent-expense:         #eb7c55;
+  --color-accent-expense-hover:   #f08d69;
+  --color-accent-expense-active:  #d96d46;
+  --color-accent-expense-subtle:  rgba(235, 124, 85, 0.12);
+
+  /* ── Accent — Income (green) ── */
+  --color-income:                 #66c68c;
+  --color-income-hover:           #7ad49f;
+  --color-income-active:          #52b47a;
+  --color-income-subtle:          rgba(102, 198, 140, 0.12);
+
+  /* ── Accent — Supporting ── */
+  --color-accent-teal:        #53bdb0;
+  --color-accent-gold:        #d8af54;
+
+  /* ── Status ── */
+  --color-status-success:     #66c68c;
+  --color-status-warning:     #d8af54;
+  --color-status-error:       #f46a6a;
+  --color-status-info:        #53bdb0;
+
+  /* ── Surfaces / Overlays ── */
+  --color-pill:               rgba(255, 255, 255, 0.055);
+  --color-pill-active:        rgba(235, 124, 85, 0.18);
+  --color-overlay:            rgba(5, 5, 5, 0.60);
+  --color-backdrop:           rgba(5, 5, 5, 0.38);
+  --color-sheet-bg:           rgba(22, 22, 22, 0.98);
+
+  /* ── Navigation (bottom tab bar) ── */
+  --color-nav-bg:             rgba(18, 18, 18, 0.92);
+  --color-nav-border:         rgba(255, 255, 255, 0.06);
+  --color-nav-item:           rgba(218, 212, 205, 0.45);
+  --color-nav-item-active:    #eb7c55;
+  --color-nav-add-bg:         #eb7c55;
+  --color-nav-add-fg:         #ffffff;
+
+  /* ── Chart palette (8 categories) ── */
+  --color-chart-1: #ff7a59;
+  --color-chart-2: #5ad6c9;
+  --color-chart-3: #f2c14e;
+  --color-chart-4: #7f8cff;
+  --color-chart-5: #c46cff;
+  --color-chart-6: #ff5f9e;
+  --color-chart-7: #58b368;
+  --color-chart-8: #ff9f43;
+
+  /* ── Shadows ── */
+  --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.20);
+  --shadow-md:    0 8px 22px rgba(0, 0, 0, 0.28);
+  --shadow-lg:    0 14px 36px rgba(0, 0, 0, 0.36);
+  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.40);
+  --shadow-focus: 0 0 0 3px rgba(235, 124, 85, 0.30);
+
+  /* ── Legacy aliases (remove after migration) ── */
+  --bg:         var(--color-bg-primary);
+  --bg-accent:  var(--color-bg-accent);
+  --surface:    var(--color-bg-surface);
+  --surface-2:  var(--color-bg-surface-2);
+  --surface-3:  var(--color-bg-surface-3);
+  --surface-4:  var(--color-bg-surface-raised);
+  --fg:         var(--color-text-primary);
+  --fg-soft:    var(--color-text-secondary);
+  --fg-muted:   var(--color-text-tertiary);
+  --border:     var(--color-border-primary);
+  --shadow:     var(--shadow-lg);
+  --shadow-soft:var(--shadow-md);
+  --accent:     var(--color-accent-expense);
+  --accent-2:   var(--color-accent-teal);
+  --accent-3:   var(--color-accent-gold);
+  --positive:   var(--color-income);
+  --danger:     var(--color-status-error);
+  --pill:       var(--color-pill);
+  --nav-bg:     var(--color-nav-bg);
+  --backdrop:   var(--color-backdrop);
+}
+
+/* ─── LIGHT MODE ─────────────────────────────────────────────────────────── */
+
+[data-theme="light"] {
+
+  /* ── Primitive palette ── */
+  --primitive-warm-black:     #201c18;
+  --primitive-cream:          #f6f1e9;
+
+  /* ── Background ── */
+  --color-bg-primary:         #f6f1e9;
+  --color-bg-accent:          radial-gradient(circle at top left, rgba(235, 124, 85, 0.10), transparent 30%),
+                               radial-gradient(circle at top right, rgba(83, 189, 176, 0.10), transparent 26%);
+  --color-bg-surface:         rgba(255, 252, 247, 0.92);
+  --color-bg-surface-2:       rgba(250, 245, 238, 0.97);
+  --color-bg-surface-3:       rgba(242, 235, 226, 0.98);
+  --color-bg-surface-raised:  rgba(22, 20, 18, 0.04);
+  --color-bg-inverse:         #201c18;
+
+  /* ── Text ── */
+  --color-text-primary:       #201c18;
+  --color-text-secondary:     #5f564c;
+  --color-text-tertiary:      #8e8478;
+  --color-text-inverse:       rgba(249, 246, 242, 0.94);
+  --color-text-link:          #e87750;
+
+  /* ── Borders ── */
+  --color-border-primary:     rgba(31, 26, 23, 0.07);
+  --color-border-secondary:   rgba(31, 26, 23, 0.04);
+  --color-border-focus:       rgba(232, 119, 80, 0.50);
+
+  /* ── Accent — Expense (orange) ── */
+  --color-accent-expense:         #e87750;
+  --color-accent-expense-hover:   #d96640;
+  --color-accent-expense-active:  #c85830;
+  --color-accent-expense-subtle:  rgba(232, 119, 80, 0.10);
+
+  /* ── Accent — Income (green) ── */
+  --color-income:                 #2a9d68;
+  --color-income-hover:           #238d5a;
+  --color-income-active:          #1d7d4f;
+  --color-income-subtle:          rgba(42, 157, 104, 0.10);
+
+  /* ── Accent — Supporting ── */
+  --color-accent-teal:        #1d9d90;
+  --color-accent-gold:        #c49a3c;
+
+  /* ── Status ── */
+  --color-status-success:     #2a9d68;
+  --color-status-warning:     #c49a3c;
+  --color-status-error:       #d64f4f;
+  --color-status-info:        #1d9d90;
+
+  /* ── Surfaces / Overlays ── */
+  --color-pill:               rgba(31, 26, 23, 0.045);
+  --color-pill-active:        rgba(232, 119, 80, 0.12);
+  --color-overlay:            rgba(20, 16, 12, 0.50);
+  --color-backdrop:           rgba(255, 255, 255, 0.34);
+  --color-sheet-bg:           rgba(255, 252, 247, 0.99);
+
+  /* ── Navigation ── */
+  --color-nav-bg:             rgba(255, 252, 247, 0.92);
+  --color-nav-border:         rgba(31, 26, 23, 0.07);
+  --color-nav-item:           rgba(94, 84, 72, 0.50);
+  --color-nav-item-active:    #e87750;
+  --color-nav-add-bg:         #e87750;
+  --color-nav-add-fg:         #ffffff;
+
+  /* ── Shadows ── */
+  --shadow-sm:    0 2px 6px rgba(67, 51, 36, 0.08);
+  --shadow-md:    0 8px 18px rgba(67, 51, 36, 0.10);
+  --shadow-lg:    0 14px 32px rgba(67, 51, 36, 0.12);
+  --shadow-sheet: 0 -8px 28px rgba(67, 51, 36, 0.14);
+  --shadow-focus: 0 0 0 3px rgba(232, 119, 80, 0.25);
+
+  /* ── Legacy aliases ── */
+  --bg:         var(--color-bg-primary);
+  --bg-accent:  var(--color-bg-accent);
+  --surface:    var(--color-bg-surface);
+  --surface-2:  var(--color-bg-surface-2);
+  --surface-3:  var(--color-bg-surface-3);
+  --surface-4:  var(--color-bg-surface-raised);
+  --fg:         var(--color-text-primary);
+  --fg-soft:    var(--color-text-secondary);
+  --fg-muted:   var(--color-text-tertiary);
+  --border:     var(--color-border-primary);
+  --shadow:     var(--shadow-lg);
+  --shadow-soft:var(--shadow-md);
+  --accent:     var(--color-accent-expense);
+  --accent-2:   var(--color-accent-teal);
+  --accent-3:   var(--color-accent-gold);
+  --positive:   var(--color-income);
+  --danger:     var(--color-status-error);
+  --pill:       var(--color-pill);
+  --nav-bg:     var(--color-nav-bg);
+  --backdrop:   var(--color-backdrop);
+}
+
+/* ─── SYSTEM DARK MODE (respects OS preference unless user chose light) ──── */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Inherits :root dark values above — no duplication needed */
+  }
+}
+
+/* ─── SPACING SCALE (4px base) ──────────────────────────────────────────── */
+
+:root {
+  --space-0:    0px;
+  --space-1:    2px;    /* 4 * 0.5  — hairline gap */
+  --space-2:    4px;    /* 4 * 1    — base unit */
+  --space-3:    6px;    /* 4 * 1.5  */
+  --space-4:    8px;    /* 4 * 2    — tight padding */
+  --space-5:    12px;   /* 4 * 3    */
+  --space-6:    16px;   /* 4 * 4    — standard padding */
+  --space-7:    20px;   /* 4 * 5    */
+  --space-8:    24px;   /* 4 * 6    — section gap */
+  --space-9:    32px;   /* 4 * 8    — card padding */
+  --space-10:   40px;   /* 4 * 10   — screen margin */
+  --space-11:   48px;   /* 4 * 12   — large section */
+  --space-12:   64px;   /* 4 * 16   — hero spacing */
+  --space-13:   80px;   /* 4 * 20   — bottom nav clearance */
+  --space-14:   96px;   /* 4 * 24   — page top clearance */
+}
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────────────────────── */
+
+:root {
+  --font-family-display: "SF Pro Display", "Segoe UI Variable Display", "Inter", system-ui, sans-serif;
+  --font-family-body:    "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Inter", "Avenir Next", system-ui, sans-serif;
+  --font-family-mono:    "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+
+  --font-size-xs:    11px;
+  --font-size-sm:    13px;
+  --font-size-base:  15px;
+  --font-size-md:    16px;   /* iOS input minimum — never go below */
+  --font-size-lg:    18px;
+  --font-size-xl:    22px;
+  --font-size-2xl:   28px;
+  --font-size-3xl:   36px;
+  --font-size-4xl:   48px;   /* Balance hero */
+  --font-size-hero:  56px;   /* Full-screen hero (future use) */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:    1.15;   /* Display headings, hero numbers */
+  --line-height-snug:     1.30;   /* Card titles, section headers */
+  --line-height-normal:   1.50;   /* Body text */
+  --line-height-relaxed:  1.65;   /* Helper text, descriptions */
+
+  --letter-spacing-tight:  -0.03em;   /* Hero numbers, large display */
+  --letter-spacing-snug:   -0.01em;   /* Headings */
+  --letter-spacing-normal:  0em;
+  --letter-spacing-wide:    0.04em;   /* Labels, all-caps, period tabs */
+  --letter-spacing-wider:   0.08em;   /* Badge text, tiny labels */
+}
+
+/* ─── LAYOUT ─────────────────────────────────────────────────────────────── */
+
+:root {
+  --max-width-content:  480px;   /* Content max-width on tablet+ */
+  --max-width-wide:     640px;
+  --max-width-page:     960px;
+
+  --border-radius-xs:   4px;
+  --border-radius-sm:   8px;
+  --border-radius-md:   12px;
+  --border-radius-lg:   16px;
+  --border-radius-xl:   20px;
+  --border-radius-2xl:  24px;
+  --border-radius-full: 9999px;
+}
+
+/* ─── COMPONENT TOKENS ───────────────────────────────────────────────────── */
+
+:root {
+  /* Topbar */
+  --topbar-height:        52px;
+  --topbar-padding-x:     var(--space-6);
+
+  /* Bottom tab bar */
+  --nav-height:           64px;
+  --nav-padding-bottom:   env(safe-area-inset-bottom, 0px);
+  --nav-item-size:        44px;
+  --nav-add-btn-size:     52px;
+
+  /* Cards / surfaces */
+  --card-padding:         var(--space-6);
+  --card-radius:          var(--border-radius-lg);
+  --card-gap:             var(--space-3);
+
+  /* Inputs */
+  --input-height:         48px;
+  --input-radius:         var(--border-radius-md);
+  --input-padding-x:      var(--space-6);
+
+  /* Chips */
+  --chip-height:          32px;
+  --chip-padding-x:       var(--space-5);
+  --chip-radius:          var(--border-radius-full);
+  --chip-gap:             var(--space-2);
+
+  /* Period tabs */
+  --period-tab-height:    36px;
+  --period-tab-radius:    var(--border-radius-full);
+
+  /* Type tabs (All / Income / Expenses) */
+  --type-tab-height:      40px;
+
+  /* Hero balance */
+  --hero-size:            var(--font-size-4xl);
+  --hero-weight:          var(--font-weight-bold);
+  --hero-tracking:        var(--letter-spacing-tight);
+
+  /* Transaction card */
+  --txn-card-height:      64px;
+  --txn-card-radius:      var(--border-radius-md);
+  --txn-card-padding-x:   var(--space-5);
+
+  /* Day group header */
+  --day-header-height:    32px;
+
+  /* Bottom sheet */
+  --sheet-radius-top:     var(--border-radius-2xl);
+  --sheet-max-height:     90vh;
+
+  /* Toast */
+  --toast-radius:         var(--border-radius-full);
+
+  /* Focus ring */
+  --focus-ring:           var(--shadow-focus);
+
+  /* Safe area insets */
+  --safe-top:             env(safe-area-inset-top, 0px);
+  --safe-bottom:          env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── MOTION ─────────────────────────────────────────────────────────────── */
+
+:root {
+  --duration-instant:  50ms;
+  --duration-fast:     150ms;
+  --duration-normal:   250ms;
+  --duration-slow:     380ms;
+  --duration-slower:   520ms;
+
+  --easing-default:    cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-in:         cubic-bezier(0.4, 0, 1, 1);
+  --easing-out:        cubic-bezier(0, 0, 0.2, 1);
+  --easing-bounce:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --easing-spring:     cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ─── REDUCED MOTION ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant:  0ms;
+    --duration-fast:     0ms;
+    --duration-normal:   0ms;
+    --duration-slow:     0ms;
+    --duration-slower:   0ms;
+  }
+}
+
+/* ─── BREAKPOINTS (reference only — use in media queries, not var()) ──────── */
+
+/*
+  --breakpoint-sm:   375px   Mobile (primary target)
+  --breakpoint-md:   768px   Tablet
+  --breakpoint-lg:   1024px  Small desktop (not a target)
+*/
