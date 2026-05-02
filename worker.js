@@ -574,6 +574,349 @@ async function handleCreateTransfer(env, body) {
 }
 
 // ----------------------------------------------------------------------------
+// D1 helpers
+// ----------------------------------------------------------------------------
+
+async function d1Run(db, sql, params = []) {
+  return db.prepare(sql).bind(...params).run();
+}
+
+async function d1All(db, sql, params = []) {
+  const { results } = await db.prepare(sql).bind(...params).all();
+  return results;
+}
+
+async function d1First(db, sql, params = []) {
+  return db.prepare(sql).bind(...params).first();
+}
+
+// A2: Notion → D1 migration (last 3 months, idempotent via INSERT OR IGNORE)
+async function handleMigrate(env) {
+  if (!env.DB) return { error: "D1 database not configured", status: 500 };
+
+  const threeMonthsAgo = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return d.toISOString().split("T")[0];
+  })();
+
+  const dateSorts   = [{ property: "Date", direction: "descending" }];
+  const fallback    = [{ timestamp: "created_time", direction: "descending" }];
+  const dateFilter  = { property: "Date", date: { on_or_after: threeMonthsAgo } };
+
+  const [categories, subcategories, accounts, expensesRaw, incomeRaw] = await Promise.all([
+    queryAll(env, env.CATEGORIES_DB_ID,    { sorts: [{ property: "Category",    direction: "ascending" }] }),
+    queryAll(env, env.SUBCATEGORIES_DB_ID, { sorts: [{ property: "Subcategory", direction: "ascending" }] }),
+    queryAll(env, env.ACCOUNTS_DB_ID,      { sorts: [{ property: "Account",     direction: "ascending" }] }),
+    queryAll(env, env.EXPENSES_DB_ID, { filter: dateFilter, sorts: dateSorts }, 200)
+      .catch(() => queryAll(env, env.EXPENSES_DB_ID, { sorts: fallback }, 200)),
+    env.INCOME_DB_ID
+      ? queryAll(env, env.INCOME_DB_ID, { filter: dateFilter, sorts: dateSorts }, 200)
+          .catch(() => queryAll(env, env.INCOME_DB_ID, { sorts: fallback }, 200))
+      : Promise.resolve([]),
+  ]);
+
+  let transfersRaw = [];
+  if (env.ACCOUNT_TRANSFERS_DB_ID) {
+    transfersRaw = await queryAll(env, env.ACCOUNT_TRANSFERS_DB_ID, { sorts: dateSorts }, 200).catch(() => []);
+  }
+
+  const counts = { categories: 0, subcategories: 0, accounts: 0, expenses: 0, income: 0, transfers: 0 };
+  const errors = [];
+
+  // Helper: run a list of prepared statements in batches, catch errors per batch
+  async function runBatch(stmts) {
+    const BATCH = 100;
+    for (let i = 0; i < stmts.length; i += BATCH) {
+      await env.DB.batch(stmts.slice(i, i + BATCH)).catch(e => errors.push(e.message));
+    }
+  }
+
+  // 1. Insert lookup tables first (no FK dependencies)
+  const lookupStmts = [];
+  for (const p of categories) {
+    const name = titleOf(p, "Category"); if (!name) continue;
+    lookupStmts.push(env.DB.prepare("INSERT OR IGNORE INTO categories (id,name,emoji,type) VALUES (?,?,?,?)")
+      .bind(p.id, name, iconOf(p)?.value || "", "expense"));
+    counts.categories++;
+  }
+  for (const p of subcategories) {
+    const name = titleOf(p, "Subcategory"); if (!name) continue;
+    lookupStmts.push(env.DB.prepare("INSERT OR IGNORE INTO subcategories (id,name,category_id) VALUES (?,?,?)")
+      .bind(p.id, name, relationIdsOf(p, "Category")[0] || null));
+    counts.subcategories++;
+  }
+  for (const p of accounts) {
+    const name = titleOf(p, "Account"); if (!name) continue;
+    lookupStmts.push(env.DB.prepare("INSERT OR IGNORE INTO accounts (id,name,emoji) VALUES (?,?,?)")
+      .bind(p.id, name, iconOf(p)?.value || ""));
+    counts.accounts++;
+  }
+  await runBatch(lookupStmts);
+
+  // Build set of valid IDs now in D1 (for FK safety)
+  const validCatIds  = new Set((await d1All(env.DB, "SELECT id FROM categories")).map(r => r.id));
+  const validSubIds  = new Set((await d1All(env.DB, "SELECT id FROM subcategories")).map(r => r.id));
+  const validAcctIds = new Set((await d1All(env.DB, "SELECT id FROM accounts")).map(r => r.id));
+
+  // 2. Expenses — null-out any FK that doesn't exist in D1
+  const expStmts = [];
+  for (const p of expensesRaw) {
+    const date = dateStartOf(p, "Date"); if (!date) continue;
+    const catId  = relationIdsOf(p, "Category")[0]    || null;
+    const subId  = relationIdsOf(p, "Subcategory")[0]  || null;
+    const acctId = relationIdsOf(p, "Account")[0]      || null;
+    expStmts.push(env.DB.prepare(
+      "INSERT OR IGNORE INTO expenses (id,date,amount,note,category_id,subcategory_id,account_id) VALUES (?,?,?,?,?,?,?)"
+    ).bind(p.id, date, numberOf(p, "Amount") || 0, titleOf(p, "Expense") || "",
+      catId  && validCatIds.has(catId)   ? catId  : null,
+      subId  && validSubIds.has(subId)   ? subId  : null,
+      acctId && validAcctIds.has(acctId) ? acctId : null));
+    counts.expenses++;
+  }
+  await runBatch(expStmts);
+
+  // 3. Income
+  const incStmts = [];
+  for (const p of incomeRaw) {
+    const date = dateStartOf(p, "Date"); if (!date) continue;
+    const note   = titleOf(p, "Income") || titleOf(p, "Name") || "";
+    const acctId = relationIdsOf(p, "Account")[0] || null;
+    incStmts.push(env.DB.prepare(
+      "INSERT OR IGNORE INTO income (id,date,amount,note,source,account_id) VALUES (?,?,?,?,?,?)"
+    ).bind(p.id, date, numberOf(p, "Amount") || 0, note, note,
+      acctId && validAcctIds.has(acctId) ? acctId : null));
+    counts.income++;
+  }
+  await runBatch(incStmts);
+
+  // 4. Transfers
+  const xferStmts = [];
+  for (const p of transfersRaw) {
+    const date   = dateStartOf(p, "Date"); if (!date) continue;
+    const fromId = relationIdsOf(p, "From")[0] || null;
+    const toId   = relationIdsOf(p, "To")[0]   || null;
+    xferStmts.push(env.DB.prepare(
+      "INSERT OR IGNORE INTO transfers (id,date,amount,note,from_account_id,to_account_id) VALUES (?,?,?,?,?,?)"
+    ).bind(p.id, date, numberOf(p, "Amount") || 0,
+      titleOf(p, "Note") || titleOf(p, "Name") || "",
+      fromId && validAcctIds.has(fromId) ? fromId : null,
+      toId   && validAcctIds.has(toId)   ? toId   : null));
+    counts.transfers++;
+  }
+  await runBatch(xferStmts);
+
+  return { ok: true, counts, errors, since: threeMonthsAgo };
+}
+
+// A3: Bootstrap from D1
+async function handleD1Bootstrap(env) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+
+  const [categories, subcategories, accounts] = await Promise.all([
+    d1All(env.DB, "SELECT id,name,emoji FROM categories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,category_id FROM subcategories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,emoji FROM accounts ORDER BY name"),
+  ]);
+
+  const mkIcon = (emoji) => emoji ? { type: "emoji", value: emoji } : null;
+  return {
+    categories:   categories.map(c => ({ id: c.id, name: c.name, icon: mkIcon(c.emoji) })),
+    subcategories: subcategories.map(s => ({ id: s.id, name: s.name, categoryId: s.category_id })),
+    accounts:     accounts.map(a => ({ id: a.id, name: a.name, icon: mkIcon(a.emoji) })),
+    recent:       { categories: [], subcategories: [], accounts: [] },
+    subcatByCategory: {},
+  };
+}
+
+// A4: Read transactions from D1
+async function handleD1Expenses(env, url) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+
+  const period    = url.searchParams.get("period") || "month";
+  const type      = url.searchParams.get("type") || "";
+  const catFilter = url.searchParams.get("category") || "";
+  const from      = url.searchParams.get("from") || "";
+  const to        = url.searchParams.get("to") || "";
+  const q         = url.searchParams.get("q") || "";
+  const timeZone  = url.searchParams.get("timeZone") || "";
+
+  const filteredQuery = Boolean(from || to || catFilter || q);
+  const range = filteredQuery
+    ? { startDate: from || "0000-01-01", endDate: to || "9999-12-31" }
+    : rangeForPeriod(period, timeZone);
+  const { startDate, endDate } = range;
+
+  const mkIcon = (emoji) => emoji ? { type: "emoji", value: emoji } : null;
+  let expenses = [], incomeRows = [];
+
+  if (!type || type === "expense") {
+    let sql = `SELECT e.*,c.name as cat_name,c.emoji as cat_emoji,
+      s.name as sub_name,a.name as acct_name,a.emoji as acct_emoji
+      FROM expenses e
+      LEFT JOIN categories c ON e.category_id=c.id
+      LEFT JOIN subcategories s ON e.subcategory_id=s.id
+      LEFT JOIN accounts a ON e.account_id=a.id
+      WHERE e.date>=? AND e.date<=?`;
+    const p = [startDate, endDate];
+    if (catFilter) { sql += " AND e.category_id=?"; p.push(catFilter); }
+    if (q) {
+      sql += " AND (LOWER(e.note) LIKE ? OR LOWER(c.name) LIKE ? OR LOWER(a.name) LIKE ?)";
+      const lq = `%${q.toLowerCase()}%`; p.push(lq, lq, lq);
+    }
+    sql += " ORDER BY e.date DESC";
+    expenses = await d1All(env.DB, sql, p);
+  }
+
+  if (!type || type === "income") {
+    let sql = `SELECT i.*,a.name as acct_name,a.emoji as acct_emoji
+      FROM income i
+      LEFT JOIN accounts a ON i.account_id=a.id
+      WHERE i.date>=? AND i.date<=?`;
+    const p = [startDate, endDate];
+    if (q) {
+      sql += " AND (LOWER(i.note) LIKE ? OR LOWER(i.source) LIKE ? OR LOWER(a.name) LIKE ?)";
+      const lq = `%${q.toLowerCase()}%`; p.push(lq, lq, lq);
+    }
+    sql += " ORDER BY i.date DESC";
+    incomeRows = await d1All(env.DB, sql, p);
+  }
+
+  const mapExp = (r) => ({
+    id: r.id, name: r.note || "", amount: r.amount, date: r.date,
+    categoryId: r.category_id || "", category: r.cat_name || "",
+    categoryIcon: mkIcon(r.cat_emoji),
+    subcategoryIds: r.subcategory_id ? [r.subcategory_id] : [],
+    subcategory: r.sub_name || "", subcategoryIcons: [],
+    accountId: r.account_id || "", account: r.acct_name || "",
+    accountIcon: mkIcon(r.acct_emoji), txnType: "expense",
+  });
+
+  const mapInc = (r) => ({
+    id: r.id, name: r.note || r.source || "", amount: r.amount, date: r.date,
+    categoryId: "", category: "", categoryIcon: null,
+    subcategoryIds: [], subcategory: "", subcategoryIcons: [],
+    accountId: r.account_id || "", account: r.acct_name || "",
+    accountIcon: mkIcon(r.acct_emoji), txnType: "income",
+  });
+
+  const all = [...expenses.map(mapExp), ...incomeRows.map(mapInc)]
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  return {
+    expenses: all,
+    total: all.reduce((s, e) => s + e.amount, 0),
+    period: filteredQuery ? "range" : period,
+    startDate, endDate, cached: false,
+  };
+}
+
+async function handleD1Summary(env, url) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+
+  const period   = url.searchParams.get("period") || "month";
+  const timeZone = url.searchParams.get("timeZone") || "";
+  const { startDate, endDate } = rangeForPeriod(period, timeZone);
+
+  const [expSum, incSum] = await Promise.all([
+    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE date>=? AND date<=?", [startDate, endDate]),
+    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM income WHERE date>=? AND date<=?",   [startDate, endDate]),
+  ]);
+
+  const totalExpenses = expSum?.total || 0;
+  const totalIncome   = incSum?.total || 0;
+  return { balance: totalIncome - totalExpenses, totalIncome, totalExpenses, startDate, endDate };
+}
+
+// A5: Write routes for D1
+async function handleD1CreateTransaction(env, body) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  const { note, amount, date, categoryId, subcategoryId, accountId, txnType,
+          fromAccountId, toAccountId } = body || {};
+  if (amount === undefined || isNaN(Number(amount))) return { error: "Amount required", status: 400 };
+
+  const id = crypto.randomUUID();
+  const d  = date || new Date().toISOString().split("T")[0];
+
+  if (txnType === "income") {
+    await d1Run(env.DB,
+      "INSERT INTO income (id,date,amount,note,source,account_id) VALUES (?,?,?,?,?,?)",
+      [id, d, Number(amount), note || "", note || "", accountId || null]);
+  } else if (txnType === "transfer") {
+    if (!fromAccountId || !toAccountId) return { error: "From and To accounts required", status: 400 };
+    await d1Run(env.DB,
+      "INSERT INTO transfers (id,date,amount,note,from_account_id,to_account_id) VALUES (?,?,?,?,?,?)",
+      [id, d, Number(amount), note || "", fromAccountId, toAccountId]);
+  } else {
+    await d1Run(env.DB,
+      "INSERT INTO expenses (id,date,amount,note,category_id,subcategory_id,account_id) VALUES (?,?,?,?,?,?,?)",
+      [id, d, Number(amount), note || "", categoryId || null, subcategoryId || null, accountId || null]);
+  }
+  return { ok: true, id };
+}
+
+async function handleD1UpdateTransaction(env, id, body) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  if (!id) return { error: "ID required", status: 400 };
+  const { note, amount, date, categoryId, subcategoryId, accountId, txnType } = body || {};
+  if (amount === undefined || isNaN(Number(amount))) return { error: "Amount required", status: 400 };
+
+  if (txnType === "income") {
+    await d1Run(env.DB,
+      "UPDATE income SET date=?,amount=?,note=?,source=?,account_id=? WHERE id=?",
+      [date, Number(amount), note || "", note || "", accountId || null, id]);
+  } else {
+    await d1Run(env.DB,
+      "UPDATE expenses SET date=?,amount=?,note=?,category_id=?,subcategory_id=?,account_id=? WHERE id=?",
+      [date, Number(amount), note || "", categoryId || null, subcategoryId || null, accountId || null, id]);
+  }
+  return { ok: true, id };
+}
+
+async function handleD1DeleteTransaction(env, id, txnType) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  if (!id) return { error: "ID required", status: 400 };
+  const table = txnType === "income" ? "income" : "expenses";
+  await d1Run(env.DB, `DELETE FROM ${table} WHERE id=?`, [id]);
+  return { ok: true, id };
+}
+
+// A6: CSV export from D1
+async function handleD1Export(env, url) {
+  if (!env.DB) return new Response(JSON.stringify({ error: "D1 not configured" }), { status: 500 });
+
+  const type     = url.searchParams.get("type") || "expense";
+  const period   = url.searchParams.get("period") || "month";
+  const timeZone = url.searchParams.get("timeZone") || "";
+  const { startDate, endDate } = rangeForPeriod(period, timeZone);
+
+  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+
+  let csv;
+  if (type === "income") {
+    const rows = await d1All(env.DB,
+      "SELECT i.date,i.note,i.source,i.amount,a.name as account FROM income i LEFT JOIN accounts a ON i.account_id=a.id WHERE i.date>=? AND i.date<=? ORDER BY i.date DESC",
+      [startDate, endDate]);
+    csv = "Date,Source,Amount,Account\n" +
+      rows.map(r => [r.date, r.note || r.source, r.amount, r.account].map(esc).join(",")).join("\n");
+  } else {
+    const rows = await d1All(env.DB,
+      "SELECT e.date,e.note,e.amount,c.name as category,s.name as subcategory,a.name as account FROM expenses e LEFT JOIN categories c ON e.category_id=c.id LEFT JOIN subcategories s ON e.subcategory_id=s.id LEFT JOIN accounts a ON e.account_id=a.id WHERE e.date>=? AND e.date<=? ORDER BY e.date DESC",
+      [startDate, endDate]);
+    csv = "Date,Note,Amount,Category,Subcategory,Account\n" +
+      rows.map(r => [r.date, r.note, r.amount, r.category, r.subcategory, r.account].map(esc).join(",")).join("\n");
+  }
+
+  const filename = `${type === "income" ? "income" : "expenses"}-${period}-${startDate}.csv`;
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
+
+// ----------------------------------------------------------------------------
 // Cloudflare Access JWT auth
 // CF_ACCESS_TEAM = your Zero Trust team name (e.g. "casex")
 // CF_ACCESS_AUD  = Application ID from Access app details page
@@ -720,6 +1063,7 @@ const LOGIN_HTML = (err) => `<!doctype html>
 // ----------------------------------------------------------------------------
 
 import { HTML } from "./index-html.js";
+import { DESKTOP_HTML } from "./desktop-html.js";
 
 // ----------------------------------------------------------------------------
 // Router
@@ -865,9 +1209,12 @@ export default {
       return new Response(null, { status: 302, headers: { Location: "/login" } });
     }
 
-    // ── App shell ──
+    // ── App shells ──
     if (url.pathname === "/") {
       return new Response(HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+    if (url.pathname === "/desktop" || url.pathname === "/desktop/") {
+      return new Response(DESKTOP_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
     // ── API routes ──
@@ -911,6 +1258,52 @@ export default {
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }
+
+        // ── D1 routes ──
+        if (url.pathname === "/api/migrate" && request.method === "GET") {
+          const result = await handleMigrate(env);
+          if (result.error) return json(result, result.status || 500);
+          return json(result);
+        }
+        if (url.pathname === "/api/d1/bootstrap" && request.method === "GET") {
+          const result = await handleD1Bootstrap(env);
+          if (result.error) return json(result, result.status || 500);
+          return json(result);
+        }
+        if (url.pathname === "/api/d1/expenses" && request.method === "GET") {
+          const result = await handleD1Expenses(env, url);
+          if (result.error) return json(result, result.status || 500);
+          return json(result);
+        }
+        if (url.pathname === "/api/d1/summary" && request.method === "GET") {
+          const result = await handleD1Summary(env, url);
+          if (result.error) return json(result, result.status || 500);
+          return json(result);
+        }
+        if (url.pathname === "/api/d1/expense" && request.method === "POST") {
+          const body = await request.json().catch(() => null);
+          const result = await handleD1CreateTransaction(env, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        if (url.pathname.startsWith("/api/d1/expense/") && request.method === "PUT") {
+          const id = url.pathname.slice("/api/d1/expense/".length);
+          const body = await request.json().catch(() => null);
+          const result = await handleD1UpdateTransaction(env, id, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        if (url.pathname.startsWith("/api/d1/expense/") && request.method === "DELETE") {
+          const id = url.pathname.slice("/api/d1/expense/".length);
+          const txnType = url.searchParams.get("type") || "expense";
+          const result = await handleD1DeleteTransaction(env, id, txnType);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        if (url.pathname === "/api/d1/export" && request.method === "GET") {
+          return handleD1Export(env, url);
+        }
+
         return json({ error: "not found" }, 404);
       } catch (err) {
         return json({ error: err.message || "server error", details: err.body || null }, err.status || 500);
