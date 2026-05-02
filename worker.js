@@ -299,39 +299,31 @@ async function handleGetExpenses(env, url) {
     if (cached) return { ...cached, cached: true };
   }
 
-  // Try with date filter; fall back to unfiltered if the Date property doesn't exist yet
-  let expensesRaw;
+  // Build Notion query filters
+  const andFilters = [{ property: "Date", date: { on_or_after: range.startDate } }];
+  if (range.endDate)  andFilters.push({ property: "Date",     date:     { on_or_before: range.endDate } });
+  if (categoryId)     andFilters.push({ property: "Category", relation: { contains: categoryId } });
+  if (accountId)      andFilters.push({ property: "Account",  relation: { contains: accountId  } });
+  const notionFilter = andFilters.length === 1 ? andFilters[0] : { and: andFilters };
+  const dateSorts    = [{ property: "Date", direction: "descending" }];
+  const fallbackSort = [{ timestamp: "created_time", direction: "descending" }];
+
+  // Fetch expenses and (if configured) income in parallel
+  let expensesRaw, incomeRaw;
   try {
-    const andFilters = [{
-      property: "Date",
-      date: { on_or_after: range.startDate },
-    }];
-    if (range.endDate) {
-      andFilters.push({
-        property: "Date",
-        date: { on_or_before: range.endDate },
-      });
-    }
-    if (categoryId) {
-      andFilters.push({
-        property: "Category",
-        relation: { contains: categoryId },
-      });
-    }
-    if (accountId) {
-      andFilters.push({
-        property: "Account",
-        relation: { contains: accountId },
-      });
-    }
-    expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
-      filter: andFilters.length === 1 ? andFilters[0] : { and: andFilters },
-      sorts:  [{ property: "Date", direction: "descending" }],
-    }, 200);
+    [expensesRaw, incomeRaw] = await Promise.all([
+      queryAll(env, env.EXPENSES_DB_ID, { filter: notionFilter, sorts: dateSorts }, 200),
+      env.INCOME_DB_ID
+        ? queryAll(env, env.INCOME_DB_ID, { filter: notionFilter, sorts: dateSorts }, 200)
+        : Promise.resolve([]),
+    ]);
   } catch {
-    expensesRaw = await queryAll(env, env.EXPENSES_DB_ID, {
-      sorts: [{ timestamp: "created_time", direction: "descending" }],
-    }, 200);
+    [expensesRaw, incomeRaw] = await Promise.all([
+      queryAll(env, env.EXPENSES_DB_ID, { sorts: fallbackSort }, 200),
+      env.INCOME_DB_ID
+        ? queryAll(env, env.INCOME_DB_ID, { sorts: fallbackSort }, 200)
+        : Promise.resolve([]),
+    ]);
   }
 
   const [categories, subcategories, accounts] = await Promise.all([
@@ -353,33 +345,54 @@ async function handleGetExpenses(env, url) {
     icon: iconOf(p),
   }]));
 
-  const expenses = expensesRaw
-    .map((p) => {
-      const date = dateStartOf(p, "Date") || "";
-      return {
-        id:          p.id,
-        name:        titleOf(p, "Expense") || "",
-        amount:      numberOf(p, "Amount") || 0,
-        date,
-        categoryId:  relationIdsOf(p, "Category").filter(Boolean)[0] || "",
-        category:    relationIdsOf(p, "Category").map((id) => catById[id]?.name).filter(Boolean)[0] || "",
-        categoryIcon: relationIdsOf(p, "Category").map((id) => catById[id]?.icon).filter(Boolean)[0] || null,
-        subcategoryIds: relationIdsOf(p, "Subcategory").filter(Boolean),
-        subcategory: relationIdsOf(p, "Subcategory").map((id) => subById[id]?.name).filter(Boolean).join(", "),
-        subcategoryIcons: relationIdsOf(p, "Subcategory").map((id) => subById[id]?.icon).filter(Boolean),
-        accountId:   relationIdsOf(p, "Account").filter(Boolean)[0] || "",
-        account:     relationIdsOf(p, "Account").map((id) => accById[id]?.name).filter(Boolean)[0] || "",
-        accountIcon: relationIdsOf(p, "Account").map((id) => accById[id]?.icon).filter(Boolean)[0] || null,
-        txnType:     selectOf(p, "Type") || "expense",
-      };
-    })
+  const mapExpense = (p) => {
+    const date = dateStartOf(p, "Date") || "";
+    return {
+      id:              p.id,
+      name:            titleOf(p, "Expense") || "",
+      amount:          numberOf(p, "Amount") || 0,
+      date,
+      categoryId:      relationIdsOf(p, "Category").filter(Boolean)[0] || "",
+      category:        relationIdsOf(p, "Category").map((id) => catById[id]?.name).filter(Boolean)[0] || "",
+      categoryIcon:    relationIdsOf(p, "Category").map((id) => catById[id]?.icon).filter(Boolean)[0] || null,
+      subcategoryIds:  relationIdsOf(p, "Subcategory").filter(Boolean),
+      subcategory:     relationIdsOf(p, "Subcategory").map((id) => subById[id]?.name).filter(Boolean).join(", "),
+      subcategoryIcons:relationIdsOf(p, "Subcategory").map((id) => subById[id]?.icon).filter(Boolean),
+      accountId:       relationIdsOf(p, "Account").filter(Boolean)[0] || "",
+      account:         relationIdsOf(p, "Account").map((id) => accById[id]?.name).filter(Boolean)[0] || "",
+      accountIcon:     relationIdsOf(p, "Account").map((id) => accById[id]?.icon).filter(Boolean)[0] || null,
+      txnType:         selectOf(p, "Type") || "expense",
+    };
+  };
+
+  const mapIncome = (p) => {
+    const date = dateStartOf(p, "Date") || "";
+    return {
+      id:              p.id,
+      name:            titleOf(p, "Income") || titleOf(p, "Name") || "",
+      amount:          numberOf(p, "Amount") || 0,
+      date,
+      categoryId:      relationIdsOf(p, "Category").filter(Boolean)[0] || "",
+      category:        relationIdsOf(p, "Category").map((id) => catById[id]?.name).filter(Boolean)[0] || "",
+      categoryIcon:    relationIdsOf(p, "Category").map((id) => catById[id]?.icon).filter(Boolean)[0] || null,
+      subcategoryIds:  [],
+      subcategory:     "",
+      subcategoryIcons:[],
+      accountId:       relationIdsOf(p, "Account").filter(Boolean)[0] || "",
+      account:         relationIdsOf(p, "Account").map((id) => accById[id]?.name).filter(Boolean)[0] || "",
+      accountIcon:     relationIdsOf(p, "Account").map((id) => accById[id]?.icon).filter(Boolean)[0] || null,
+      txnType:         "income",
+    };
+  };
+
+  const filters = { from: range.startDate, to: range.endDate, categoryId, accountId };
+  const expenses = [
+    ...expensesRaw.map(mapExpense),
+    ...incomeRaw.map(mapIncome),
+  ]
     .filter((e) => e.date)
-    .filter((e) => expenseMatches(e, {
-      from: range.startDate,
-      to: range.endDate,
-      categoryId,
-      accountId,
-    }));
+    .filter((e) => expenseMatches(e, filters))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   const total  = expenses.reduce((s, e) => s + e.amount, 0);
   const result = {
@@ -412,24 +425,30 @@ async function handleCreateExpense(env, body) {
   if (amount === undefined || amount === null || isNaN(Number(amount)))
     return { error: "Amount required and must be a number", status: 400 };
 
+  const isIncome = txnType === "income";
+  const targetDbId = isIncome && env.INCOME_DB_ID ? env.INCOME_DB_ID : env.EXPENSES_DB_ID;
+  const titleProp  = isIncome && env.INCOME_DB_ID ? "Income" : "Expense";
+
   const [catId, subId, acctId] = await Promise.all([
     resolveOrCreate(env, env.CATEGORIES_DB_ID,    "Category",    categoryId,    categoryName),
-    resolveOrCreate(env, env.SUBCATEGORIES_DB_ID, "Subcategory", subcategoryId, subcategoryName),
+    isIncome ? Promise.resolve(null)
+             : resolveOrCreate(env, env.SUBCATEGORIES_DB_ID, "Subcategory", subcategoryId, subcategoryName),
     resolveOrCreate(env, env.ACCOUNTS_DB_ID,      "Account",     accountId,     accountName),
   ]);
 
   const properties = {
-    Expense: { title: [{ text: { content: (expense || "").trim() } }] },
-    Amount:  { number: Number(amount) },
+    [titleProp]: { title: [{ text: { content: (expense || "").trim() } }] },
+    Amount:      { number: Number(amount) },
   };
   if (date)              properties.Date        = { date:     { start: date } };
   if (catId)             properties.Category    = { relation: [{ id: catId  }] };
   if (subId)             properties.Subcategory = { relation: [{ id: subId  }] };
   if (acctId)            properties.Account     = { relation: [{ id: acctId }] };
-  if (txnType === "income") properties.Type     = { select:   { name: "income" } };
+  // Only set Type select when saving to the shared expenses DB (income DB implies type)
+  if (isIncome && !env.INCOME_DB_ID) properties.Type = { select: { name: "income" } };
 
   const page = await notion(env, "POST", "/pages", {
-    parent: { database_id: env.EXPENSES_DB_ID },
+    parent: { database_id: targetDbId },
     properties,
   });
 
@@ -511,6 +530,47 @@ async function handleDeleteExpense(env, pageId) {
   );
 
   return { ok: true, pageId };
+}
+
+// ----------------------------------------------------------------------------
+// Create account transfer — saves to ACCOUNT_TRANSFERS_DB_ID
+// ----------------------------------------------------------------------------
+
+async function handleCreateTransfer(env, body) {
+  if (!env.ACCOUNT_TRANSFERS_DB_ID)
+    return { error: "ACCOUNT_TRANSFERS_DB_ID not configured in wrangler.toml", status: 400 };
+
+  const { note, amount, date, fromAccountId, fromAccountName, toAccountId, toAccountName } = body || {};
+
+  if (amount === undefined || amount === null || isNaN(Number(amount)))
+    return { error: "Amount required and must be a number", status: 400 };
+  if ((!fromAccountId && !fromAccountName) || (!toAccountId && !toAccountName))
+    return { error: "From and To accounts required", status: 400 };
+
+  const [fromId, toId] = await Promise.all([
+    resolveOrCreate(env, env.ACCOUNTS_DB_ID, "Account", fromAccountId, fromAccountName),
+    resolveOrCreate(env, env.ACCOUNTS_DB_ID, "Account", toAccountId,   toAccountName),
+  ]);
+
+  const properties = {
+    Note:   { title: [{ text: { content: (note || "").trim() } }] },
+    Amount: { number: Number(amount) },
+  };
+  if (date)   properties.Date = { date:     { start: date } };
+  if (fromId) properties.From = { relation: [{ id: fromId }] };
+  if (toId)   properties.To   = { relation: [{ id: toId   }] };
+
+  const page = await notion(env, "POST", "/pages", {
+    parent: { database_id: env.ACCOUNT_TRANSFERS_DB_ID },
+    properties,
+  });
+
+  await kvDel(env,
+    periodKey("today"), periodKey("week"), periodKey("month"),
+    "bootstrap",
+  );
+
+  return { ok: true, pageId: page.id, url: page.url };
 }
 
 // ----------------------------------------------------------------------------
@@ -842,6 +902,12 @@ export default {
           const pageId = url.pathname.slice("/api/expense/".length);
           const body = await request.json().catch(() => null);
           const result = await handleUpdateExpense(env, pageId, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        if (url.pathname === "/api/transfer" && request.method === "POST") {
+          const body = await request.json().catch(() => null);
+          const result = await handleCreateTransfer(env, body);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }

@@ -8,6 +8,8 @@ EXPENSES_DB_ID = "6184b5c9-ab71-824d-99d5-81978e54930c"
 CATEGORIES_DB_ID = "90f4b5c9-ab71-8284-bb89-014c64d367e0"
 SUBCATEGORIES_DB_ID = "d40c7df3-394b-4e30-9c97-36a1ba8172c4"
 ACCOUNTS_DB_ID = "cfb4b5c9-ab71-8396-a0b1-814e4ee0d56c"
+INCOME_DB_ID = "68b4b5c9-ab71-8268-a672-818f0e89de34"
+ACCOUNT_TRANSFERS_DB_ID = "17b4b5c9-ab71-8236-b9a0-81b4c8e1bbe0"
 
 # KV cache for expense history snapshots.
 # Create with: npx wrangler kv namespace create EXPENSE_CACHE

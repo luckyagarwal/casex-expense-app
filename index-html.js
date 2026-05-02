@@ -558,13 +558,16 @@ export const HTML = /* html */ `<!doctype html>
   }
   .home-balance-amount {
     font-family: var(--font-display);
-    font-size: var(--text-4xl);
+    font-size: clamp(1.25rem, 6.5vw, var(--text-4xl));
     font-weight: var(--weight-bold);
     letter-spacing: var(--tracking-tight);
     line-height: var(--leading-tight);
     color: var(--color-text-primary);
     font-variant-numeric: tabular-nums;
     margin-bottom: var(--space-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .home-balance-meta {
     font-size: var(--text-sm);
@@ -597,6 +600,8 @@ export const HTML = /* html */ `<!doctype html>
     cursor: pointer;
     transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
     -webkit-tap-highlight-color: transparent;
+    min-width: 0;
+    overflow: hidden;
   }
   .home-summary-card:active { background: var(--color-bg-surface-2); }
   .home-summary-type {
@@ -610,11 +615,15 @@ export const HTML = /* html */ `<!doctype html>
   .home-summary-card.expense .home-summary-type  { color: var(--color-accent-expense); }
   .home-summary-amount {
     font-family: var(--font-display);
-    font-size: var(--text-xl);
+    font-size: clamp(0.75rem, 3.8vw, var(--text-xl));
     font-weight: var(--weight-bold);
     letter-spacing: var(--tracking-snug);
     color: var(--color-text-primary);
     font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
   .home-summary-card.income .home-summary-amount  { color: var(--color-income); }
   .home-summary-card.expense .home-summary-amount { color: var(--color-accent-expense); }
@@ -1425,6 +1434,10 @@ export const HTML = /* html */ `<!doctype html>
   .form-type-badge.income-badge {
     background: var(--color-income-subtle);
     color: var(--color-income);
+  }
+  .form-type-badge.transfer-badge {
+    background: var(--color-accent-subtle, rgba(99,102,241,0.12));
+    color: var(--color-accent, #6366f1);
   }
 
   .helper-text {
@@ -2252,11 +2265,16 @@ export const HTML = /* html */ `<!doctype html>
     <div class="topbar">
       <div class="topbar-leading">
         <button class="back-btn" id="cancelIncomeBtn">‹ Back</button>
-        <h1 class="screen-title">Add Income</h1>
+        <h1 class="screen-title" id="incomeViewTitle">Add Income</h1>
       </div>
       <div class="topbar-actions">
-        <span class="form-type-badge income-badge">↓ Income</span>
+        <span class="form-type-badge income-badge" id="incomeFormBadge">↓ Income</span>
       </div>
+    </div>
+
+    <div class="type-tabs" id="incomeModeTabs">
+      <button class="type-tab active" data-mode="income">Income</button>
+      <button class="type-tab" data-mode="transfer">Transfer</button>
     </div>
 
     <div class="input-card">
@@ -2268,8 +2286,18 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <div class="input-card">
-      <div class="field-label">Income Source</div>
+      <div class="field-label" id="incomeSourceLabel">Income Source</div>
       <input id="incomeSource" class="text-input" type="text" placeholder="Salary, Freelance, Dividends..." autocomplete="off" />
+    </div>
+
+    <div class="input-card" id="transferFromAcctCard" hidden>
+      <div class="field-label">From Account <span class="required-dot">*</span></div>
+      <div class="chips" id="transferFromAcctChips"></div>
+      <button type="button" class="expand-toggle" id="transferFromAcctExpandBtn" hidden>Show all ⌄</button>
+      <div class="search-row" id="transferFromAcctSearchRow" hidden>
+        <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <div id="transferFromAcctDropdown" class="dropdown hidden"></div>
+      </div>
     </div>
 
     <div class="input-card" id="incomeCatCard">
@@ -2283,7 +2311,7 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <div class="input-card" id="incomeAcctCard">
-      <div class="field-label">Account <span class="required-dot">*</span></div>
+      <div class="field-label" id="incomeAcctLabel">Account <span class="required-dot">*</span></div>
       <div class="chips" id="incomeAcctChips"></div>
       <button type="button" class="expand-toggle" id="incomeAcctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="incomeAcctSearchRow" hidden>
@@ -2580,8 +2608,10 @@ export const HTML = /* html */ `<!doctype html>
     incomeChosen: {
       categoryId: null, categoryName: null,
       accountId: null, accountName: null,
+      transferFromAcctId: null, transferFromAcctName: null,
     },
     incomeExpanded: { incomeCat: false, incomeAcct: false },
+    incomeFormMode: "income",
     viewBeforeIncome: null,
     scrollPositions: {
       expenses: 0,
@@ -3428,7 +3458,8 @@ export const HTML = /* html */ `<!doctype html>
     if (!offlineQueued && navigator.onLine) {
       Promise.all([
         ensureExpensesLoaded(state.expensesPeriod, true),
-        ensureAnalyticsLoaded(state.analyticsPeriod, true)
+        ensureAnalyticsLoaded(state.analyticsPeriod, true),
+        ensureHomeLoaded(state.homePeriod, true),
       ]).then(() => {
         if (nextView === "categoryDetail") {
           openCategoryDetail($("categoryDetailTitle").textContent);
@@ -3444,6 +3475,8 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   async function saveIncome() {
+    if (state.incomeFormMode === "transfer") return saveTransfer();
+
     const amountText = $("incomeAmount").value.trim();
     const source = $("incomeSource").value.trim();
     const dateVal = $("incomeDate").value;
@@ -3510,11 +3543,86 @@ export const HTML = /* html */ `<!doctype html>
     Promise.all([
       ensureExpensesLoaded(state.expensesPeriod, true),
       ensureAnalyticsLoaded(state.analyticsPeriod, true),
+      ensureHomeLoaded(state.homePeriod, true),
     ]).catch(() => {});
     if (suggestionsStale()) bootstrap(false).catch(() => {});
 
     $("incomeSaveBtn").disabled = false;
     $("incomeSaveBtn").textContent = "Save Income";
+  }
+
+  async function saveTransfer() {
+    const amountText = $("incomeAmount").value.trim();
+    const note = $("incomeSource").value.trim();
+    const dateVal = $("incomeDate").value;
+    const timeVal = $("incomeTime").value;
+    const amount = parseFloat(amountText);
+
+    if (!amountText || isNaN(amount) || amount <= 0) {
+      return toast("Enter a valid amount", "err");
+    }
+    if (!state.incomeChosen.transferFromAcctId && !state.incomeChosen.transferFromAcctName) {
+      return toast("Select a From account", "err");
+    }
+    if (!state.incomeChosen.accountId && !state.incomeChosen.accountName) {
+      return toast("Select a To account", "err");
+    }
+
+    let date = dateVal || null;
+    if (date && timeVal) {
+      const off = -new Date().getTimezoneOffset();
+      const sign = off >= 0 ? "+" : "-";
+      const absOff = Math.abs(off);
+      const tzHH = String(Math.floor(absOff / 60)).padStart(2, "0");
+      const tzMM = String(absOff % 60).padStart(2, "0");
+      date = date + "T" + timeVal + ":00" + sign + tzHH + ":" + tzMM;
+    }
+
+    $("incomeSaveBtn").disabled = true;
+    $("incomeSaveBtn").textContent = "Saving...";
+
+    const payload = {
+      note,
+      amount,
+      date,
+      fromAccountId:   state.incomeChosen.transferFromAcctId,
+      fromAccountName: state.incomeChosen.transferFromAcctName,
+      toAccountId:     state.incomeChosen.accountId,
+      toAccountName:   state.incomeChosen.accountName,
+    };
+
+    try {
+      await api("/api/transfer", { method: "POST", body: JSON.stringify(payload) });
+      toast("Transfer saved", "ok");
+    } catch (err) {
+      toast("Save failed: " + err.message, "err");
+      $("incomeSaveBtn").disabled = false;
+      $("incomeSaveBtn").textContent = "Save Transfer";
+      return;
+    }
+
+    $("incomeAmount").value = "";
+    $("incomeSource").value = "";
+    $("incomeLastSaved").textContent = "Saved at " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+    state.expensesByPeriod = {};
+    state.analyticsByPeriod = {};
+    state.homeByPeriod = {};
+    clearExpCache();
+
+    const nextView = state.viewBeforeIncome || "home";
+    state.viewBeforeIncome = null;
+    setActiveView(nextView);
+
+    Promise.all([
+      ensureExpensesLoaded(state.expensesPeriod, true),
+      ensureAnalyticsLoaded(state.analyticsPeriod, true),
+      ensureHomeLoaded(state.homePeriod, true),
+    ]).catch(() => {});
+    if (suggestionsStale()) bootstrap(false).catch(() => {});
+
+    $("incomeSaveBtn").disabled = false;
+    $("incomeSaveBtn").textContent = "Save Transfer";
   }
 
   async function fetchExpenses(period, hardRefresh, extraParams) {
@@ -3590,6 +3698,10 @@ export const HTML = /* html */ `<!doctype html>
           renderExpenses(data);
           if (state.currentView === "analytics" && state.analyticsPeriod === period) {
             renderAnalytics(data);
+          }
+          if (state.homePeriod === period) {
+            state.homeByPeriod[period] = data;
+            if (state.currentView === "home") renderHome(data);
           }
         }).catch(() => {});
         return cached;
@@ -4209,7 +4321,26 @@ export const HTML = /* html */ `<!doctype html>
       state.viewBeforeIncome = state.currentView;
       $("incomeAmount").value = "";
       $("incomeSource").value = "";
-      state.incomeChosen = { categoryId: null, categoryName: null, accountId: null, accountName: null };
+      state.incomeChosen = {
+        categoryId: null, categoryName: null,
+        accountId: null, accountName: null,
+        transferFromAcctId: null, transferFromAcctName: null,
+      };
+      // Reset to income mode
+      state.incomeFormMode = "income";
+      document.querySelectorAll("#incomeModeTabs .type-tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.mode === "income");
+      });
+      $("incomeCatCard").hidden = false;
+      $("transferFromAcctCard").hidden = true;
+      const title = $("incomeViewTitle"); if (title) title.textContent = "Add Income";
+      const badge = $("incomeFormBadge");
+      if (badge) { badge.textContent = "↓ Income"; badge.className = "form-type-badge income-badge"; }
+      const srcLabel = $("incomeSourceLabel"); if (srcLabel) srcLabel.textContent = "Income Source";
+      const acctLabel = $("incomeAcctLabel");
+      if (acctLabel) acctLabel.innerHTML = 'Account <span class="required-dot">*</span>';
+      const saveBtn = $("incomeSaveBtn"); if (saveBtn) saveBtn.textContent = "Save Income";
+      $("incomeSource").placeholder = "Salary, Freelance, Dividends...";
       if (state.data) {
         renderIncomeChips("incomeCat", "categoryId", "categoryName", state.data.categories || [], recentFor("cat"));
         renderIncomeChips("incomeAcct", "accountId", "accountName", state.data.accounts || [], recentFor("acct"));
@@ -4447,6 +4578,43 @@ export const HTML = /* html */ `<!doctype html>
 
     wireIncomeSearch("incomeCat", "categoryId", "categoryName", () => state.data ? state.data.categories : []);
     wireIncomeSearch("incomeAcct", "accountId", "accountName", () => state.data ? state.data.accounts : []);
+    wireIncomeSearch("transferFromAcct", "transferFromAcctId", "transferFromAcctName", () => state.data ? state.data.accounts : []);
+
+    document.querySelectorAll("#incomeModeTabs .type-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#incomeModeTabs .type-tab").forEach((t) => {
+          t.classList.remove("active");
+          t.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        const mode = btn.dataset.mode;
+        state.incomeFormMode = mode;
+        const isTransfer = mode === "transfer";
+        $("incomeCatCard").hidden = isTransfer;
+        $("transferFromAcctCard").hidden = !isTransfer;
+        const title = $("incomeViewTitle");
+        if (title) title.textContent = isTransfer ? "Add Transfer" : "Add Income";
+        const badge = $("incomeFormBadge");
+        if (badge) {
+          badge.textContent = isTransfer ? "⇄ Transfer" : "↓ Income";
+          badge.className = "form-type-badge " + (isTransfer ? "transfer-badge" : "income-badge");
+        }
+        const srcLabel = $("incomeSourceLabel");
+        if (srcLabel) srcLabel.textContent = isTransfer ? "Note (optional)" : "Income Source";
+        const acctLabel = $("incomeAcctLabel");
+        if (acctLabel) acctLabel.innerHTML = (isTransfer ? "To Account" : "Account") + ' <span class="required-dot">*</span>';
+        const saveBtn = $("incomeSaveBtn");
+        if (saveBtn) saveBtn.textContent = isTransfer ? "Save Transfer" : "Save Income";
+        $("incomeSource").placeholder = isTransfer
+          ? "Transfer note..."
+          : "Salary, Freelance, Dividends...";
+        if (state.data) {
+          renderIncomeChips("transferFromAcct", "transferFromAcctId", "transferFromAcctName", state.data.accounts || [], recentFor("acct"));
+          renderIncomeChips("incomeAcct", "accountId", "accountName", state.data.accounts || [], recentFor("acct"));
+        }
+      });
+    });
 
     // Expenses sort box
     const sExp = { date: "desc", amt: "" };
