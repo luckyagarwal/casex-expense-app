@@ -1876,7 +1876,7 @@ function renderSearch(area) {
     const updateSubcatDropdown = () => {
       const sel = document.getElementById('search-subcat-sel');
       if (!sel) return;
-      const filtered = subcats.filter(s => s.category_id === searchCategory);
+      const filtered = subcats.filter(s => (s.categoryId || s.category_id) === searchCategory);
       sel.innerHTML = '<option value="">All subcategories</option>' +
         filtered.map(s => \`<option value="\${s.id}">\${s.name}</option>\`).join('');
       searchSubcat = '';
