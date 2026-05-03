@@ -1,6 +1,1 @@
-# Copy to .dev.vars (which is gitignored) and fill in with real values.
-# This file is only for local development via `npx wrangler dev` —
-# production values are set via `wrangler secret put ...`.
-
-NOTION_TOKEN="ntn_your_rotated_integration_token_here"
-SHARED_SECRET="letmein123"
+# No secrets required. D1 binding is configured via wrangler.toml.

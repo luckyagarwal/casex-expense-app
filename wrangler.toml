@@ -2,24 +2,6 @@ name = "notion-expense"
 main = "worker.js"
 compatibility_date = "2024-12-30"
 
-# Your Notion database IDs — safe to commit, these are just IDs.
-[vars]
-EXPENSES_DB_ID = "6184b5c9-ab71-824d-99d5-81978e54930c"
-CATEGORIES_DB_ID = "90f4b5c9-ab71-8284-bb89-014c64d367e0"
-SUBCATEGORIES_DB_ID = "d40c7df3-394b-4e30-9c97-36a1ba8172c4"
-ACCOUNTS_DB_ID = "cfb4b5c9-ab71-8396-a0b1-814e4ee0d56c"
-INCOME_DB_ID = "2294b5c9-ab71-825f-8e10-015f62d8b1f7"
-ACCOUNT_TRANSFERS_DB_ID = "4624b5c9-ab71-8368-bfb8-81fee6396329"
-
-# KV cache for expense history snapshots.
-# Create with: npx wrangler kv namespace create EXPENSE_CACHE
-# Then paste the returned id below (and preview_id for local dev).
-[[kv_namespaces]]
-binding = "EXPENSE_CACHE"
-id = "31d79c5b7556417aa765a1c4acdb3071"
-preview_id = "30b4dbb96d674b6a93f56b9d97711920"
-
-# D1 database for desktop app
 [[d1_databases]]
 binding = "DB"
 database_name = "notion-expense-db"

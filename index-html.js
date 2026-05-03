@@ -2377,18 +2377,19 @@ export const HTML = /* html */ `<!doctype html>
       </div>
     </div>
 
-    <!-- Section 3: Category breakdown -->
-    <div class="chart-card">
-      <div class="chart-head">
-        <div>
-          <h2 class="chart-title">By Category</h2>
-          <p class="chart-subtitle" id="analyticsSubtitle">Loading distribution...</p>
-        </div>
-      </div>
-      <div class="chart-shell" id="chartShell">
-        <svg class="chart-svg" id="chartSvg" viewBox="0 0 320 280" preserveAspectRatio="xMidYMid meet"></svg>
-      </div>
+    <!-- Section 3a: Income by source -->
+    <div class="section-label">
+      <h2>Income by Source</h2>
+      <div class="hint" id="analyticsIncSrcSubtitle"></div>
     </div>
+    <div class="legend-card" id="incomeSrcList"></div>
+
+    <!-- Section 3b: Spending by account -->
+    <div class="section-label">
+      <h2>Spending by Account</h2>
+      <div class="hint" id="analyticsAcctSubtitle"></div>
+    </div>
+    <div class="legend-card" id="acctSpendList"></div>
 
     <!-- Section 4: Top categories list -->
     <div class="section-label">
@@ -2825,13 +2826,13 @@ export const HTML = /* html */ `<!doctype html>
       } catch {}
     }
 
-    const netFetch = api("/api/bootstrap").then((data) => {
+    const netFetch = api("/api/d1/bootstrap").then((data) => {
       state.data = data;
       localStorage.setItem(LS_CACHE, JSON.stringify(data));
       localStorage.setItem(LS_CACHE_AT, String(Date.now()));
       renderFormChips();
     }).catch((err) => {
-      if (!state.data) toast("Failed to load Notion data: " + err.message, "err");
+      if (!state.data) toast("Failed to load data: " + err.message, "err");
     });
 
     if (hadCache) {
@@ -3309,7 +3310,7 @@ export const HTML = /* html */ `<!doctype html>
       try {
         const sendPayload = { ...payload };
         delete sendPayload._tempId;
-        await api("/api/expense", {
+        await api("/api/d1/expense", {
           method: "POST",
           body: JSON.stringify(sendPayload),
         });
@@ -3377,8 +3378,8 @@ export const HTML = /* html */ `<!doctype html>
     };
 
     const isEditing = !!state.editingExpenseId;
-    const endpoint = isEditing ? "/api/expense/" + state.editingExpenseId : "/api/expense";
-    const method = isEditing ? "PATCH" : "POST";
+    const endpoint = isEditing ? "/api/d1/expense/" + state.editingExpenseId : "/api/d1/expense";
+    const method = isEditing ? "PUT" : "POST";
 
     let offlineQueued = false;
     try {
@@ -3518,7 +3519,7 @@ export const HTML = /* html */ `<!doctype html>
     };
 
     try {
-      await api("/api/expense", { method: "POST", body: JSON.stringify(payload) });
+      await api("/api/d1/expense", { method: "POST", body: JSON.stringify(payload) });
       toast("Income saved", "ok");
     } catch (err) {
       toast("Save failed: " + err.message, "err");
@@ -3592,7 +3593,7 @@ export const HTML = /* html */ `<!doctype html>
     };
 
     try {
-      await api("/api/transfer", { method: "POST", body: JSON.stringify(payload) });
+      await api("/api/d1/expense", { method: "POST", body: JSON.stringify({ ...payload, txnType: "transfer" }) });
       toast("Transfer saved", "ok");
     } catch (err) {
       toast("Save failed: " + err.message, "err");
@@ -3633,7 +3634,7 @@ export const HTML = /* html */ `<!doctype html>
     Object.entries(extraParams || {}).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") params.set(key, value);
     });
-    return api("/api/expenses?" + params.toString());
+    return api("/api/d1/expenses?" + params.toString());
   }
 
   function renderHome(data) {
@@ -4099,8 +4100,9 @@ export const HTML = /* html */ `<!doctype html>
     svg.innerHTML = out;
   }
 
-  function buildChart(rows) {
-    const svg = $("chartSvg");
+  function buildChart(rows, svgId) {
+    const svg = $(svgId || "incomeSrcSvg");
+    if (!svg) return;
     if (!rows.length) {
       svg.innerHTML = '<text x="160" y="140" text-anchor="middle" fill="currentColor" opacity="0.5" font-size="14">No data for this period</text>';
       return;
@@ -4179,11 +4181,58 @@ export const HTML = /* html */ `<!doctype html>
     const trendSub = $("analyticsTrendSubtitle");
     if (trendSub) trendSub.textContent = data.period === "today" ? "Hourly spending" : data.period === "week" ? "Daily spending this week" : "Weekly spending this month";
 
-    // Section 3: Category breakdown chart
-    $("analyticsSubtitle").textContent = rows.length
-      ? rows.length + " categor" + (rows.length !== 1 ? "ies" : "y") + " this " + periodLabel
-      : "No expenses yet for this period.";
-    buildChart(rows);
+    // ── Inline list renderer (reused for source + account) ────────────────
+    const renderInlineList = (rows, total, colors, listId, subtitleId, emptyMsg) => {
+      const sub = $(subtitleId);
+      if (sub) sub.textContent = rows.length
+        ? rows.length + " item" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel
+        : emptyMsg;
+      const el = $(listId);
+      if (!el) return;
+      if (!rows.length) {
+        el.innerHTML = makeEmptyState("📊", "No data", emptyMsg);
+        return;
+      }
+      el.innerHTML = rows.map((row, i) => {
+        const share = total ? Math.round((row.total / total) * 100) : 0;
+        return '<div class="legend-row">' +
+          '<div class="legend-swatch" style="background:' + colors[i % colors.length] + ';">' +
+            '<span>' + escapeHtml(row.name.charAt(0).toUpperCase()) + '</span>' +
+          '</div>' +
+          '<div>' +
+            '<div class="legend-name">' + escapeHtml(row.name) + '</div>' +
+            '<div class="legend-sub">' + row.count + ' txn' + (row.count !== 1 ? 's' : '') + ' · ' + share + '%</div>' +
+          '</div>' +
+          '<div class="legend-value">' + formatCurrency(row.total) + '</div>' +
+        '</div>';
+      }).join('');
+    };
+
+    // ── Income by source aggregation ──────────────────────────────────────
+    const INC_COLORS = ["#34c78a","#27ae60","#48d1a0","#6ee7b7","#059669","#10b981","#52d9a0","#a7f3d0"];
+    const incSrcMap = {};
+    for (const e of incomeEntries) {
+      const key = e.name || e.description || "Unknown";
+      if (!incSrcMap[key]) incSrcMap[key] = { name: key, total: 0, count: 0 };
+      incSrcMap[key].total += Number(e.amount || 0);
+      incSrcMap[key].count++;
+    }
+    const incSrcRows = Object.values(incSrcMap).sort((a,b) => b.total - a.total).slice(0, 8);
+    const incSrcTotal = incSrcRows.reduce((s,r) => s + r.total, 0);
+    renderInlineList(incSrcRows, incSrcTotal, INC_COLORS, "incomeSrcList", "analyticsIncSrcSubtitle", "No income yet for this period.");
+
+    // ── Account spending aggregation ──────────────────────────────────────
+    const ACCT_COLORS = ["#7f8cff","#a78bfa","#818cf8","#6366f1","#8b5cf6","#4f46e5","#c4b5fd","#9fa8da"];
+    const acctMap = {};
+    for (const e of expenseEntries) {
+      const key = e.account || "Unknown";
+      if (!acctMap[key]) acctMap[key] = { name: key, total: 0, count: 0 };
+      acctMap[key].total += Number(e.amount || 0);
+      acctMap[key].count++;
+    }
+    const acctRows = Object.values(acctMap).sort((a,b) => b.total - a.total).slice(0, 8);
+    const acctTotal = acctRows.reduce((s,r) => s + r.total, 0);
+    renderInlineList(acctRows, acctTotal, ACCT_COLORS, "acctSpendList", "analyticsAcctSubtitle", "No expense data for this period.");
 
     // Section 4: Top categories list
     const topNote = $("analyticsTopCategoryNote");
@@ -4231,7 +4280,7 @@ export const HTML = /* html */ `<!doctype html>
 
   async function deleteExpense(pageId) {
     try {
-      await api("/api/expense/" + pageId, { method: "DELETE" });
+      await api("/api/d1/expense/" + pageId, { method: "DELETE" });
       toast("Expense deleted", "ok");
       state.expensesByPeriod = {};
       state.analyticsByPeriod = {};
@@ -4270,12 +4319,6 @@ export const HTML = /* html */ `<!doctype html>
       const row = event.target.closest("[data-analytics-category]");
       if (!row) return;
       openCategoryDetail(row.getAttribute("data-analytics-category"));
-    });
-
-    $("chartSvg").addEventListener("click", (event) => {
-      const row = event.target.closest("[data-bar-category]");
-      if (!row) return;
-      openCategoryDetail(row.getAttribute("data-bar-category"));
     });
 
     $("categoryDetailBackBtn").onclick = () => setActiveView(state.lastNonDetailView || "analytics");

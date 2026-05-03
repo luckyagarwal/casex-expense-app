@@ -1,5 +1,6 @@
--- Notion Expense Desktop — D1 Schema
--- Run: npx wrangler d1 execute notion-expense-db --file schema.sql
+-- Expense Tracker — D1 Schema
+-- Local:      npx wrangler d1 execute notion-expense-db --file schema.sql
+-- Production: npx wrangler d1 execute notion-expense-db --file schema.sql --remote
 
 CREATE TABLE IF NOT EXISTS categories (
   id   TEXT PRIMARY KEY,
@@ -32,13 +33,14 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 
 CREATE TABLE IF NOT EXISTS income (
-  id         TEXT PRIMARY KEY,
-  date       TEXT NOT NULL,
-  amount     REAL NOT NULL,
-  note       TEXT DEFAULT '',
-  source     TEXT DEFAULT '',
-  account_id TEXT REFERENCES accounts(id),
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  id          TEXT PRIMARY KEY,
+  date        TEXT NOT NULL,
+  amount      REAL NOT NULL,
+  note        TEXT DEFAULT '',
+  source      TEXT DEFAULT '',
+  category_id TEXT REFERENCES categories(id),
+  account_id  TEXT REFERENCES accounts(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS transfers (

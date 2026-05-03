@@ -61,21 +61,21 @@ svg{display:block;flex-shrink:0}
   --font-display:"SF Pro Display","Segoe UI Variable Display","Inter",system-ui,sans-serif;
   --font-body:"SF Pro Text","SF Pro Display","Inter",system-ui,sans-serif;
   --font-mono:"SF Mono","Fira Code",ui-monospace,monospace;
-  --text-xs:11px;--text-sm:13px;--text-base:15px;--text-md:16px;
-  --text-lg:18px;--text-xl:22px;--text-2xl:28px;--text-3xl:36px;--text-4xl:48px;
+  --text-xs:12px;--text-sm:14px;--text-base:16px;--text-md:17px;
+  --text-lg:20px;--text-xl:24px;--text-2xl:30px;--text-3xl:38px;--text-4xl:52px;
 
   /* Radius */
   --r-xs:4px;--r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--r-full:9999px;
 
   /* Layout */
-  --sidebar-w:240px;
-  --sidebar-w-col:48px;
-  --panel-w:400px;
-  --topbar-h:52px;
-  --txn-row-h:48px;
+  --sidebar-w:268px;
+  --sidebar-w-col:52px;
+  --panel-w:500px;
+  --topbar-h:64px;
+  --txn-row-h:64px;
 
   /* Z-index */
-  --z-sidebar:20;--z-panel:30;--z-overlay:40;
+  --z-sidebar:20;--z-overlay:25;--z-panel:30;
   --z-dropdown:50;--z-toast:60;--z-palette:70;--z-tooltip:80;
 
   /* Motion */
@@ -203,8 +203,8 @@ body {
   background: var(--color-accent);
   color: #fff;
   border-radius: var(--r-sm);
-  padding: var(--s4) var(--s5);
-  font-size: var(--text-sm);
+  padding: var(--s5) var(--s6);
+  font-size: var(--text-base);
   font-weight: 600;
   transition: background var(--dur-fast) var(--ease);
   white-space: nowrap;
@@ -223,10 +223,10 @@ body {
 .sidebar-nav-item {
   display: flex;
   align-items: center;
-  gap: var(--s4);
-  padding: var(--s3) var(--s4);
+  gap: var(--s5);
+  padding: var(--s4) var(--s5);
   border-radius: var(--r-sm);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--fg-muted);
   cursor: pointer;
@@ -336,7 +336,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--s8) var(--s9);
+  padding: var(--s9) var(--s10);
 }
 
 /* ── Period tabs ───────────────────────────────────────────────────── */
@@ -500,76 +500,118 @@ body {
   letter-spacing: 0.06em;
 }
 
-/* ── Transaction list ──────────────────────────────────────────────── */
+/* ── Transaction cards ─────────────────────────────────────────────── */
+.txn-cards-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
 .txn-list { display: flex; flex-direction: column; }
-.txn-day-group { margin-bottom: var(--s6); }
+.txn-day-group { margin-bottom: var(--s7); }
 .txn-day-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: var(--s2) 0 var(--s3);
+  padding: var(--s2) 0 var(--s4);
   border-bottom: 1px solid var(--border);
-  margin-bottom: var(--s2);
+  margin-bottom: var(--s3);
 }
 .txn-day-label {
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--fg-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 .txn-day-net {
   font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--fg-muted);
+  font-weight: 700;
 }
 .txn-day-net.positive { color: var(--color-income); }
 .txn-day-net.negative { color: var(--color-accent); }
 
+/* Card row */
 .txn-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 0 var(--s6);
   align-items: center;
-  gap: var(--s5);
-  padding: var(--s3) var(--s4);
-  border-radius: var(--r-sm);
-  min-height: var(--txn-row-h);
+  padding: var(--s6) var(--s7);
+  border-radius: var(--r-lg);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-primary);
+  margin-bottom: var(--s4);
   cursor: pointer;
-  transition: background var(--dur-fast);
+  transition: background var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast), transform 120ms var(--ease);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
 }
-.txn-row:hover { background: var(--color-bg-surface-raised); }
+.txn-row:hover {
+  background: var(--color-bg-surface-2);
+  border-color: rgba(255,255,255,0.11);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+}
+.txn-row:active { transform: scale(0.995); }
+/* color accent strip on left edge */
+.txn-row.txn-expense { border-left: 4px solid var(--color-accent); }
+.txn-row.txn-income  { border-left: 4px solid var(--color-income); }
+
 .txn-row-icon {
-  width: 32px; height: 32px;
-  border-radius: var(--r-sm);
+  width: 52px; height: 52px;
+  border-radius: var(--r-md);
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
+  font-size: 24px;
   flex-shrink: 0;
 }
 .txn-row-icon.expense-icon { background: var(--color-accent-subtle); }
 .txn-row-icon.income-icon  { background: var(--color-income-subtle); }
-.txn-row-info { flex: 1; min-width: 0; }
+
+.txn-row-body { min-width: 0; }
 .txn-row-name {
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: var(--s2);
 }
-.txn-row-meta {
+.txn-row-pills {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.txn-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--s4);
+  border-radius: var(--r-full);
   font-size: var(--text-xs);
-  color: var(--fg-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
+  background: var(--color-bg-surface-raised);
+  border: 1px solid var(--color-border-secondary);
+  color: var(--fg-soft);
   white-space: nowrap;
-  margin-top: 2px;
+}
+.txn-pill.cat  { color: var(--color-accent); border-color: rgba(235,124,85,0.20); background: var(--color-accent-subtle); }
+.txn-pill.acct { color: var(--color-income); border-color: rgba(102,198,140,0.20); background: var(--color-income-subtle); }
+
+.txn-row-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s2);
+  flex-shrink: 0;
 }
 .txn-row-amount {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  flex-shrink: 0;
-  letter-spacing: -0.01em;
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .txn-row-amount.expense { color: var(--color-accent); }
 .txn-row-amount.income  { color: var(--color-income); }
+.txn-row-time {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
 
 /* ── Empty state ───────────────────────────────────────────────────── */
 .empty-state {
@@ -632,8 +674,69 @@ body {
 .donut-legend-pct { font-size: var(--text-xs); font-weight: 600; color: var(--fg-muted); }
 .donut-legend-amt { font-size: var(--text-xs); color: var(--fg-muted); }
 
+/* ── Category breakdown list ───────────────────────────────────────── */
+.cat-list { display: flex; flex-direction: column; gap: var(--s3); }
+.analytics-inline-row:hover { background: var(--color-bg-surface-raised); }
+.cat-row {
+  display: grid;
+  grid-template-columns: 28px 12px 160px 1fr 52px 120px;
+  gap: 0 var(--s5);
+  align-items: center;
+  padding: var(--s4) var(--s5);
+  border-radius: var(--r-md);
+  transition: background var(--dur-fast);
+}
+.cat-row:hover { background: var(--color-bg-surface-raised); }
+.cat-row-rank { font-size: var(--text-sm); color: var(--fg-muted); font-weight: 600; text-align: right; }
+.cat-row-dot { width: 12px; height: 12px; border-radius: 50%; }
+.cat-row-name { font-size: var(--text-base); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-row-bar-wrap { height: 8px; background: var(--color-bg-surface-raised); border-radius: var(--r-full); overflow: hidden; }
+.cat-row-bar { height: 100%; border-radius: var(--r-full); transition: width 0.5s var(--ease-out); }
+.cat-row-pct { font-size: var(--text-sm); color: var(--fg-muted); font-weight: 600; text-align: right; }
+.cat-row-amt { font-size: var(--text-base); font-weight: 600; color: var(--color-accent); text-align: right; }
+
+/* ── Category bar chart (analytics top-right) ──────────────────────── */
+.cat-bars { display: flex; flex-direction: column; gap: var(--s5); }
+.cat-bar-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 48px 110px;
+  gap: 0 var(--s5);
+  align-items: center;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  transition: background var(--dur-fast);
+}
+.cat-bar-row:hover { background: var(--color-bg-surface-raised); }
+.cat-bar-label { font-size: var(--text-sm); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg); }
+.cat-bar-track { height: 10px; background: var(--color-bg-surface-raised); border-radius: var(--r-full); overflow: hidden; }
+.cat-bar-fill { height: 100%; border-radius: var(--r-full); transition: width 0.55s var(--ease-out); }
+.cat-bar-pct { font-size: var(--text-xs); color: var(--fg-muted); font-weight: 600; text-align: right; }
+.cat-bar-amt { font-size: var(--text-sm); font-weight: 700; color: var(--color-accent); text-align: right; }
+
+/* ── Category filter chips (search view) ───────────────────────────── */
+.cat-filter-section { margin-bottom: var(--s6); }
+.cat-filter-label { font-size: var(--text-xs); font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--s3); }
+.cat-filter-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.cat-filter-chip {
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--s2) var(--s4);
+  background: var(--color-pill);
+  border: 1px solid transparent;
+  border-radius: var(--r-full);
+  font-size: var(--text-sm); font-weight: 500;
+  color: var(--fg-soft);
+  cursor: pointer;
+  transition: all var(--dur-fast);
+}
+.cat-filter-chip:hover { background: var(--surface-2); border-color: var(--border); }
+.cat-filter-chip.active {
+  background: var(--color-accent-subtle);
+  border-color: rgba(235,124,85,0.25);
+  color: var(--color-accent);
+}
+
 /* ── Search view ───────────────────────────────────────────────────── */
-.search-bar-wrap { margin-bottom: var(--s6); position: relative; }
+.search-bar-wrap { margin-bottom: var(--s6); position: relative; flex: 1; min-width: 0; }
 .search-input-icon {
   position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
   color: var(--fg-muted);
@@ -1198,12 +1301,18 @@ async function loadTxns(period, type = '', category = '') {
   return d.expenses || [];
 }
 
-async function searchTxns(q, from, to) {
+async function searchTxns(q, from, to, type = '', category = '', account = '', subcategory = '', sortBy = 'date', sortDir = 'desc') {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   let url = \`/api/d1/expenses?timeZone=\${encodeURIComponent(tz)}\`;
-  if (q) url += \`&q=\${encodeURIComponent(q)}\`;
-  if (from) url += \`&from=\${from}\`;
-  if (to) url += \`&to=\${to}\`;
+  if (q)           url += \`&q=\${encodeURIComponent(q)}\`;
+  if (from)        url += \`&from=\${from}\`;
+  if (to)          url += \`&to=\${to}\`;
+  if (type)        url += \`&type=\${type}\`;
+  if (category)    url += \`&category=\${encodeURIComponent(category)}\`;
+  if (subcategory) url += \`&subcategory=\${encodeURIComponent(subcategory)}\`;
+  if (account)     url += \`&account=\${encodeURIComponent(account)}\`;
+  if (sortBy !== 'date')  url += \`&sortBy=\${sortBy}\`;
+  if (sortDir !== 'desc') url += \`&sortDir=\${sortDir}\`;
   const d = await apiFetch(url);
   return d.expenses || [];
 }
@@ -1298,7 +1407,7 @@ function bindPeriodTabs(container, onChange) {
 // ── Overview view ──────────────────────────────────────────────────────────
 function renderOverview(area) {
   area.innerHTML = \`
-    <div style="max-width:860px">
+    <div>
       \${periodTabsHtml(state.period)}
       <div style="margin-top:var(--s7)" id="overview-body">
         <div class="skeleton" style="height:60px;width:240px;margin-bottom:var(--s4)"></div>
@@ -1338,8 +1447,10 @@ function renderOverview(area) {
         <div class="section-header">
           <span class="section-title">Recent Transactions</span>
         </div>
-        <div class="txn-list" id="recent-txn-list">
-          \${recent.length ? renderTxnRows(recent) : '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No transactions yet</div><div class="empty-state-body">Add your first transaction with the + button.</div></div>'}
+        <div class="txn-cards-wrap" style="max-width:720px">
+          <div class="txn-list" id="recent-txn-list">
+            \${recent.length ? renderTxnRows(recent) : '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No transactions yet</div><div class="empty-state-body">Add your first transaction with the + button.</div></div>'}
+          </div>
         </div>\`;
       body.querySelectorAll('[data-nav-type]').forEach(el => {
         el.addEventListener('click', () => navigate('transactions', { type: el.dataset.navType, period: state.period }));
@@ -1383,7 +1494,7 @@ function renderTransactions(area, topbarActions) {
   });
 
   area.innerHTML = \`
-    <div style="max-width:860px">
+    <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s6);flex-wrap:wrap;gap:var(--s4)">
         \${periodTabsHtml(state.period)}
         <div class="type-tabs">
@@ -1445,8 +1556,8 @@ function renderTxnListBody(body, txns) {
     groups[d].push(t);
   }
 
-  body.innerHTML = \`<div class="txn-list">\${
-    Object.entries(groups).map(([date, rows]) => {
+  body.innerHTML = \`<div class="txn-cards-wrap"><div class="txn-list">
+    \${Object.entries(groups).map(([date, rows]) => {
       const net = rows.reduce((s,r) => r.txnType==='income' ? s+r.amount : s-r.amount, 0);
       return \`<div class="txn-day-group">
         <div class="txn-day-header">
@@ -1455,25 +1566,44 @@ function renderTxnListBody(body, txns) {
         </div>
         \${renderTxnRows(rows)}
       </div>\`;
-    }).join('')
-  }</div>\`;
+    }).join('')}
+  </div></div>\`;
   bindTxnRowClicks(body);
 }
 
 function renderTxnRows(txns) {
-  return txns.map(t => \`
-    <div class="txn-row" data-txn-id="\${t.id}" data-txn-type="\${t.txnType}">
-      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">
-        \${t.categoryIcon?.type==='emoji' ? t.categoryIcon.value : (t.txnType==='income'?'💚':'🧾')}
+  return txns.map(t => {
+    const icon = t.categoryIcon?.type==='emoji' ? t.categoryIcon.value : (t.txnType==='income'?'💚':'🧾');
+    const timeStr = t.date && t.date.includes('T') ? new Date(t.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    const catPill = t.category ? \`<span class="txn-pill cat">\${t.category}</span>\` : '';
+    const acctPill = t.account ? \`<span class="txn-pill acct">\${t.account}</span>\` : '';
+    return \`<div class="txn-row txn-\${t.txnType==='income'?'income':'expense'}" data-txn-id="\${t.id}" data-txn-type="\${t.txnType}">
+      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${icon}</div>
+      <div class="txn-row-body">
+        <div class="txn-row-name">\${t.name || t.category || '—'}</div>
+        <div class="txn-row-pills">\${catPill}\${acctPill}</div>
       </div>
-      <div class="txn-row-info">
-        <div class="txn-row-name">\${t.name || '—'}</div>
-        <div class="txn-row-meta">\${[t.category, t.account].filter(Boolean).join(' · ')}</div>
+      <div class="txn-row-right">
+        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${t.txnType==='income'?'+':'−'}\${fmtAmt(t.amount)}</div>
+        \${timeStr ? \`<div class="txn-row-time">\${timeStr}</div>\` : ''}
       </div>
-      <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">
-        \${t.txnType==='income'?'+':'−'}\${fmtAmt(t.amount)}
+    </div>\`;
+  }).join('');
+}
+
+function renderTxnRowsMini(txns) {
+  return txns.map(t => {
+    const icon = t.categoryIcon?.type==='emoji' ? t.categoryIcon.value : (t.txnType==='income'?'💚':'🧾');
+    return \`<div class="txn-row txn-\${t.txnType==='income'?'income':'expense'}" data-txn-id="\${t.id}" data-txn-type="\${t.txnType}">
+      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${icon}</div>
+      <div class="txn-row-body">
+        <div class="txn-row-name">\${t.name || t.category || '—'}</div>
       </div>
-    </div>\`).join('');
+      <div class="txn-row-right">
+        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${t.txnType==='income'?'+':'−'}\${fmtAmt(t.amount)}</div>
+      </div>
+    </div>\`;
+  }).join('');
 }
 
 function bindTxnRowClicks(container) {
@@ -1487,13 +1617,14 @@ function bindTxnRowClicks(container) {
 // ── Analytics view ─────────────────────────────────────────────────────────
 function renderAnalytics(area) {
   area.innerHTML = \`
-    <div style="max-width:860px">
+    <div>
       \${periodTabsHtml(state.period)}
       <div style="margin-top:var(--s7)" id="analytics-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s7)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s7);margin-bottom:var(--s7)">
           <div class="skeleton" style="height:200px;border-radius:var(--r-lg)"></div>
           <div class="skeleton" style="height:200px;border-radius:var(--r-lg)"></div>
         </div>
+        <div class="skeleton" style="height:280px;border-radius:var(--r-lg)"></div>
       </div>
     </div>\`;
   bindPeriodTabs(area, () => renderAnalytics(area));
@@ -1503,34 +1634,69 @@ function renderAnalytics(area) {
       const body = document.getElementById('analytics-body');
       if (!body) return;
 
-      // Category breakdown
+      // ── Aggregations ──────────────────────────────────────────────────────
+      const COLORS = ['#ff7a59','#5ad6c9','#f2c14e','#7f8cff','#c46cff','#ff5f9e','#58b368','#ff9f43'];
+
+      // Category breakdown (expenses)
       const catTotals = {};
       for (const t of txns) {
         if (t.txnType !== 'expense') continue;
         const key = t.categoryId || '__none__';
-        if (!catTotals[key]) catTotals[key] = { name: t.category || 'Uncategorized', amount: 0, id: t.categoryId };
+        if (!catTotals[key]) catTotals[key] = { name: t.category || 'Uncategorized', amount: 0, count: 0, id: t.categoryId };
         catTotals[key].amount += t.amount;
+        catTotals[key].count++;
       }
       const cats = Object.values(catTotals).sort((a,b) => b.amount - a.amount).slice(0,8);
       const catTotal = cats.reduce((s,c) => s+c.amount, 0);
-      const COLORS = ['#ff7a59','#5ad6c9','#f2c14e','#7f8cff','#c46cff','#ff5f9e','#58b368','#ff9f43'];
 
-      // Donut SVG
-      let donutSvg = '';
-      let offset = 0;
-      const R = 52, CX = 64, CY = 64, FULL = 2*Math.PI*R;
-      for (let i=0; i<cats.length; i++) {
-        const pct = catTotal > 0 ? cats[i].amount / catTotal : 0;
-        const dash = pct * FULL;
-        const gap  = FULL - dash;
-        donutSvg += \`<circle cx="\${CX}" cy="\${CY}" r="\${R}" fill="none" stroke="\${COLORS[i%COLORS.length]}" stroke-width="16" stroke-dasharray="\${dash} \${gap}" stroke-dashoffset="\${-offset * FULL}" transform="rotate(-90 \${CX} \${CY})"/>\`;
-        offset += pct;
+      // Income by source (group by name/description)
+      const incSrcTotals = {};
+      for (const t of txns) {
+        if (t.txnType !== 'income') continue;
+        const key = t.name || t.description || 'Unknown';
+        if (!incSrcTotals[key]) incSrcTotals[key] = { name: key, amount: 0, count: 0 };
+        incSrcTotals[key].amount += t.amount;
+        incSrcTotals[key].count++;
       }
+      const incSrcs = Object.values(incSrcTotals).sort((a,b) => b.amount - a.amount).slice(0,8);
+      const incSrcTotal = incSrcs.reduce((s,c) => s+c.amount, 0);
+
+      // Account spending (expenses by account)
+      const acctTotals = {};
+      for (const t of txns) {
+        if (t.txnType !== 'expense') continue;
+        const key = t.account || 'Unknown';
+        if (!acctTotals[key]) acctTotals[key] = { name: key, amount: 0, count: 0 };
+        acctTotals[key].amount += t.amount;
+        acctTotals[key].count++;
+      }
+      const accts = Object.values(acctTotals).sort((a,b) => b.amount - a.amount).slice(0,8);
+      const acctTotal = accts.reduce((s,c) => s+c.amount, 0);
 
       const maxAmt = Math.max(summary.totalIncome, summary.totalExpenses, 1);
 
+      // ── Helper: render inline list (swatch + name + pct + amt) ────────────
+      const renderInlineList = (rows, total, colorFn) =>
+        rows.length ? \`
+          <div style="display:flex;flex-direction:column;gap:2px">
+            \${rows.map((c,i) => \`
+              <div style="display:grid;grid-template-columns:36px 1fr 52px 110px;gap:0 var(--s5);align-items:center;padding:var(--s4) var(--s5);border-radius:var(--r-md);transition:background var(--dur-fast)" class="analytics-inline-row">
+                <span style="background:\${colorFn(i)};width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:var(--text-xs);font-weight:700;flex-shrink:0">\${c.name.charAt(0).toUpperCase()}</span>
+                <div style="overflow:hidden">
+                  <div style="font-size:var(--text-base);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${c.name}</div>
+                  <div style="font-size:var(--text-xs);color:var(--fg-muted);font-weight:400;margin-top:2px">\${c.count} txn\${c.count===1?'':'s'}</div>
+                </div>
+                <span style="font-size:var(--text-sm);color:var(--fg-muted);font-weight:600;text-align:right">\${total>0?(c.amount/total*100).toFixed(0):0}%</span>
+                <span style="font-size:var(--text-base);font-weight:600;color:var(--color-accent);text-align:right">\${fmtAmt(c.amount)}</span>
+              </div>\`).join('')}
+          </div>\`
+        : '<div class="empty-state" style="padding:var(--s8) 0"><div class="empty-state-icon">📊</div><div class="empty-state-title">No data</div></div>';
+
+      const incomeColor = i => ['#34c78a','#27ae60','#48d1a0','#6ee7b7','#a7f3d0','#059669','#10b981','#52d9a0'][i % 8];
+      const acctColor   = i => ['#7f8cff','#a78bfa','#818cf8','#6366f1','#8b5cf6','#4f46e5','#c4b5fd','#9fa8da'][i % 8];
+
       body.innerHTML = \`
-        <div class="analytics-grid">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s7);margin-bottom:var(--s7)">
           <div class="analytics-card">
             <div class="analytics-card-title">Income vs Expenses</div>
             <div class="bar-chart">
@@ -1553,37 +1719,46 @@ function renderAnalytics(area) {
             </div>
           </div>
           <div class="analytics-card">
-            <div class="analytics-card-title">Spending by Category</div>
-            \${cats.length ? \`
-              <div class="donut-wrap">
-                <div class="donut-svg-wrap">
-                  <svg width="128" height="128" viewBox="0 0 128 128">
-                    <circle cx="64" cy="64" r="52" fill="none" stroke="var(--color-bg-surface-raised)" stroke-width="16"/>
-                    \${donutSvg}
-                    <text x="64" y="60" text-anchor="middle" fill="var(--fg-muted)" font-size="9" font-family="inherit">Total</text>
-                    <text x="64" y="74" text-anchor="middle" fill="var(--fg)" font-size="11" font-weight="600" font-family="inherit">\${fmtAmt(catTotal)}</text>
-                  </svg>
-                </div>
-                <div class="donut-legend">
-                  \${cats.map((c,i) => \`
-                    <div class="donut-legend-item" data-cat-id="\${c.id}" data-cat-name="\${c.name}">
-                      <span class="donut-dot" style="background:\${COLORS[i%COLORS.length]}"></span>
-                      <span class="donut-legend-name">\${c.name}</span>
-                      <span class="donut-legend-pct">\${catTotal>0?(c.amount/catTotal*100).toFixed(0):0}%</span>
-                    </div>\`).join('')}
-                </div>
-              </div>\`
-            : '<div class="empty-state" style="padding:var(--s8) 0"><div class="empty-state-icon">📊</div><div class="empty-state-title">No expense data</div></div>'}
+            <div class="analytics-card-title">Income by Source</div>
+            \${renderInlineList(incSrcs, incSrcTotal, incomeColor)}
           </div>
-        </div>\`;
+        </div>
+        <div class="analytics-card" style="margin-bottom:var(--s7)">
+          <div class="analytics-card-title">Spending by Account</div>
+          \${renderInlineList(accts, acctTotal, acctColor)}
+        </div>
+        \${cats.length ? \`
+          <div class="analytics-card" style="margin-top:0">
+            <div class="analytics-card-title">Category Breakdown</div>
+            <div id="analytics-cat-list" class="cat-list"></div>
+          </div>\` : ''}
+      \`;
 
-      body.querySelectorAll('.donut-legend-item').forEach(el => {
-        el.addEventListener('click', () => {
-          state.categoryFilter = el.dataset.catId;
-          state.categoryFilterName = el.dataset.catName;
-          navigate('transactions', { category: el.dataset.catId });
+      // Category breakdown list
+      const catListEl = document.getElementById('analytics-cat-list');
+      if (catListEl && cats.length) {
+        catListEl.innerHTML = cats.map((c, i) => \`
+          <div class="cat-row" data-cat-id="\${c.id}" data-cat-name="\${c.name}" style="cursor:pointer">
+            <span class="cat-row-rank">\${i+1}</span>
+            <span class="cat-row-dot" style="background:\${COLORS[i%COLORS.length]}"></span>
+            <div class="cat-row-name">
+              \${c.name}
+              <div style="font-size:var(--text-xs);color:var(--fg-muted);font-weight:400;margin-top:2px">\${c.count} expense\${c.count===1?'':'s'}</div>
+            </div>
+            <div class="cat-row-bar-wrap">
+              <div class="cat-row-bar" style="width:\${catTotal>0?(c.amount/catTotal*100).toFixed(1):0}%;background:\${COLORS[i%COLORS.length]}"></div>
+            </div>
+            <span class="cat-row-pct">\${catTotal>0?(c.amount/catTotal*100).toFixed(0):0}%</span>
+            <span class="cat-row-amt">\${fmtAmt(c.amount)}</span>
+          </div>\`).join('');
+        catListEl.querySelectorAll('.cat-row').forEach(el => {
+          el.addEventListener('click', () => {
+            state.categoryFilter = el.dataset.catId;
+            state.categoryFilterName = el.dataset.catName;
+            navigate('transactions', { category: el.dataset.catId });
+          });
         });
-      });
+      }
     })
     .catch(err => showToast('Failed to load analytics: ' + err.message, 'error'));
 }
@@ -1595,44 +1770,179 @@ function renderSearch(area) {
   const fromDefault = \`\${y}-\${m}-01\`;
   const toDefault = \`\${y}-\${m}-\${String(new Date(y,now.getMonth()+1,0).getDate()).padStart(2,'0')}\`;
 
-  area.innerHTML = \`
-    <div style="max-width:860px">
-      <div class="search-bar-wrap">
-        <svg class="search-input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input type="text" class="search-input" id="search-q" placeholder="Search transactions…" autocomplete="off" autofocus/>
-      </div>
-      <div class="search-filters">
-        <span class="search-filter-label">From</span>
-        <input type="date" class="date-input" id="search-from" value="\${fromDefault}"/>
-        <span class="search-filter-label">To</span>
-        <input type="date" class="date-input" id="search-to" value="\${toDefault}"/>
-      </div>
-      <div id="search-results-body">
-        <div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">Start typing to search</div></div>
-      </div>
-    </div>\`;
+  let searchType = '';
+  let searchCategory = '';
+  let searchAccount = '';
+  let searchSubcat = '';
+  let searchSortBy = 'date';
+  let searchSortDir = 'desc';
 
-  let debounce;
-  const doSearch = () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(async () => {
-      const q = document.getElementById('search-q')?.value.trim() || '';
+  const buildSearchUI = (bs) => {
+    const cats    = bs.categories    || [];
+    const subcats = bs.subcategories || [];
+    const accts   = bs.accounts      || [];
+
+    const catChipsHtml  = cats.map(c =>
+      \`<button class="cat-filter-chip" data-id="\${c.id}" data-name="\${c.name}">\${c.name}</button>\`).join('');
+    const acctChipsHtml = accts.map(a =>
+      \`<button class="cat-filter-chip" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('');
+
+    const catOptions  = cats.map(c  => \`<option value="\${c.id}">\${c.name}</option>\`).join('');
+    const acctOptions = accts.map(a => \`<option value="\${a.id}">\${a.name}</option>\`).join('');
+
+    area.innerHTML = \`
+      <div>
+        <!-- Search bar row -->
+        <div style="display:flex;gap:var(--s4);margin-bottom:var(--s5)">
+          <div class="search-bar-wrap" style="flex:1;margin-bottom:0">
+            <svg class="search-input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <input type="text" class="search-input" id="search-q" placeholder="Search transactions…" autocomplete="off" autofocus/>
+          </div>
+          <button class="panel-save-btn" id="search-btn" style="flex-shrink:0;padding:0 var(--s7)">Search</button>
+          <button class="icon-btn" id="search-export-btn" title="Export results as CSV" style="flex-shrink:0;width:44px;height:44px;border:1px solid var(--border);border-radius:var(--r-sm)">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v9M5 7l2.5 3 2.5-3M2 11v1.5A1.5 1.5 0 003.5 14h8a1.5 1.5 0 001.5-1.5V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Type + Date + Sort row -->
+        <div style="display:flex;align-items:center;gap:var(--s6);margin-bottom:var(--s5);flex-wrap:wrap">
+          <div class="type-tabs" id="search-type-tabs">
+            \${[['','All'],['expense','Expenses'],['income','Income']].map(([v,l]) => \`
+              <button class="type-tab \${searchType===v?'active':''}" data-type="\${v}">\${l}</button>\`).join('')}
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--s3)">
+            <span class="search-filter-label">From</span>
+            <input type="date" class="date-input" id="search-from" value="\${fromDefault}"/>
+            <span class="search-filter-label">To</span>
+            <input type="date" class="date-input" id="search-to" value="\${toDefault}"/>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--s3)">
+            <span class="search-filter-label">Sort</span>
+            <select class="date-input" id="sort-sel" style="height:36px">
+              <option value="date-desc">Date: New → Old</option>
+              <option value="date-asc">Date: Old → New</option>
+              <option value="amount-desc">Amount: High → Low</option>
+              <option value="amount-asc">Amount: Low → High</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dropdown filters row -->
+        <div style="display:flex;align-items:center;gap:var(--s6);margin-bottom:var(--s6);flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:var(--s3)">
+            <span class="search-filter-label">Category</span>
+            <select class="date-input" id="search-cat-sel" style="min-width:160px;height:36px">
+              <option value="">All categories</option>
+              \${catOptions}
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--s3)" id="search-subcat-wrap">
+            <span class="search-filter-label">Subcategory</span>
+            <select class="date-input" id="search-subcat-sel" style="min-width:160px;height:36px">
+              <option value="">All subcategories</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--s3)">
+            <span class="search-filter-label">Account</span>
+            <select class="date-input" id="search-acct-sel" style="min-width:160px;height:36px">
+              <option value="">All accounts</option>
+              \${acctOptions}
+            </select>
+          </div>
+        </div>
+
+        <div id="search-results-body">
+          <div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">Start typing to search</div></div>
+        </div>
+      </div>\`;
+
+    const execSearch = async () => {
+      const q    = document.getElementById('search-q')?.value.trim() || '';
       const from = document.getElementById('search-from')?.value || '';
       const to   = document.getElementById('search-to')?.value || '';
       const body = document.getElementById('search-results-body');
       if (!body) return;
-      if (!q && !from && !to) { body.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">Start typing to search</div></div>'; return; }
-      body.innerHTML = '<div class="skeleton" style="height:48px;border-radius:var(--r-sm)"></div>';
+      body.innerHTML = '<div class="skeleton" style="height:64px;border-radius:var(--r-lg)"></div>';
       try {
-        const txns = await searchTxns(q, from, to);
+        const txns = await searchTxns(q, from, to, searchType, searchCategory, searchAccount, searchSubcat, searchSortBy, searchSortDir);
         renderTxnListBody(body, txns);
       } catch(err) { showToast('Search failed: ' + err.message, 'error'); }
-    }, 200);
+    };
+
+    let debounce;
+    const doSearch = () => { clearTimeout(debounce); debounce = setTimeout(execSearch, 250); };
+
+    // Update subcategory dropdown when category changes
+    const updateSubcatDropdown = () => {
+      const sel = document.getElementById('search-subcat-sel');
+      if (!sel) return;
+      const filtered = subcats.filter(s => s.category_id === searchCategory);
+      sel.innerHTML = '<option value="">All subcategories</option>' +
+        filtered.map(s => \`<option value="\${s.id}">\${s.name}</option>\`).join('');
+      searchSubcat = '';
+    };
+
+    document.getElementById('search-q').addEventListener('input', doSearch);
+    document.getElementById('search-btn').addEventListener('click', execSearch);
+    document.getElementById('search-from').addEventListener('change', doSearch);
+    document.getElementById('search-to').addEventListener('change', doSearch);
+
+    document.getElementById('sort-sel').addEventListener('change', (e) => {
+      const [sb, sd] = e.target.value.split('-');
+      searchSortBy = sb; searchSortDir = sd;
+      doSearch();
+    });
+
+    document.getElementById('search-cat-sel').addEventListener('change', (e) => {
+      searchCategory = e.target.value;
+      searchSubcat = '';
+      updateSubcatDropdown();
+      doSearch();
+    });
+    document.getElementById('search-subcat-sel').addEventListener('change', (e) => {
+      searchSubcat = e.target.value; doSearch();
+    });
+    document.getElementById('search-acct-sel').addEventListener('change', (e) => {
+      searchAccount = e.target.value; doSearch();
+    });
+
+    // Type tabs
+    document.getElementById('search-type-tabs').querySelectorAll('.type-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        searchType = btn.dataset.type;
+        document.getElementById('search-type-tabs').querySelectorAll('.type-tab')
+          .forEach(b => b.classList.toggle('active', b.dataset.type === searchType));
+        doSearch();
+      });
+    });
+
+    document.getElementById('search-export-btn').addEventListener('click', () => {
+      const q    = document.getElementById('search-q')?.value.trim() || '';
+      const from = document.getElementById('search-from')?.value || '';
+      const to   = document.getElementById('search-to')?.value || '';
+      const tz   = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      let url = \`/api/d1/export?type=\${searchType||'expense'}&timeZone=\${tz}\`;
+      if (from) url += \`&from=\${from}\`;
+      if (to)   url += \`&to=\${to}\`;
+      if (q)    url += \`&q=\${encodeURIComponent(q)}\`;
+      if (searchCategory) url += \`&category=\${encodeURIComponent(searchCategory)}\`;
+      if (searchSubcat)   url += \`&subcategory=\${encodeURIComponent(searchSubcat)}\`;
+      if (searchAccount)  url += \`&account=\${encodeURIComponent(searchAccount)}\`;
+      window.location.href = url;
+    });
+
+    execSearch();
   };
 
-  document.getElementById('search-q').addEventListener('input', doSearch);
-  document.getElementById('search-from').addEventListener('change', doSearch);
-  document.getElementById('search-to').addEventListener('change', doSearch);
+  // Use cached bootstrap or load it
+  if (state.bootstrap) {
+    buildSearchUI(state.bootstrap);
+  } else {
+    area.innerHTML = '<div class="skeleton" style="height:44px;border-radius:var(--r-md);margin-bottom:var(--s4)"></div>';
+    loadBootstrap()
+      .catch(() => ({ categories: [], subcategories: [], accounts: [] }))
+      .then(buildSearchUI);
+  }
 }
 
 // ── Right panel ────────────────────────────────────────────────────────────
@@ -1766,8 +2076,14 @@ function renderPanelAddBody(body) {
         <input type="number" class="form-input amount-input" id="pf-amount" placeholder="0" min="0" step="0.01" inputmode="decimal" autofocus/>
       </div>
       <div class="form-field">
-        <label class="form-label">Source</label>
+        <label class="form-label">Source / Note</label>
         <input type="text" class="form-input" id="pf-note" placeholder="e.g. Salary, Freelance"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Category</label>
+        <div class="chip-grid" id="pf-category">
+          \${bs.categories.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
+        </div>
       </div>
       <div class="form-field">
         <label class="form-label">Account</label>
@@ -1842,8 +2158,10 @@ async function saveTransaction() {
       body.fromAccountId = fromChip.dataset.id;
       body.toAccountId   = toChip.dataset.id;
     } else if (mode === 'income') {
+      const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
-      if (acctChip) body.accountId = acctChip.dataset.id;
+      if (catChip)  body.categoryId = catChip.dataset.id;
+      if (acctChip) body.accountId  = acctChip.dataset.id;
     } else {
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
@@ -1947,13 +2265,12 @@ function renderPanelEdit() {
       <label class="form-label">Amount</label>
       <input type="number" class="form-input amount-input" id="pf-amount" value="\${t.amount}" min="0" step="0.01"/>
     </div>
-    \${t.txnType !== 'income' ? \`
-      <div class="form-field">
-        <label class="form-label">Category</label>
-        <div class="chip-grid" id="pf-category">
-          \${bs.categories.map(c => \`<button class="chip-item \${c.id===t.categoryId?'selected':''}" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
-        </div>
-      </div>\` : ''}
+    <div class="form-field">
+      <label class="form-label">Category</label>
+      <div class="chip-grid" id="pf-category">
+        \${bs.categories.map(c => \`<button class="chip-item \${c.id===t.categoryId?'selected':''}" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
+      </div>
+    </div>
     <div class="form-field">
       <label class="form-label">Account</label>
       <div class="chip-grid" id="pf-account">
