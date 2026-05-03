@@ -11,3 +11,11 @@ database_id = "965d5c49-a8f9-4820-bc18-ac959924df84"
 # [[routes]]
 # pattern = "expense.yourdomain.com/*"
 # zone_name = "yourdomain.com"
+
+[env.stag]
+name = "notion-expense-stag"
+
+[[env.stag.d1_databases]]
+binding = "DB"
+database_name = "notion-expense-db"
+database_id = "965d5c49-a8f9-4820-bc18-ac959924df84"
