@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS income (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Idempotent migrations for existing databases
+-- Safe to re-run; errors on already-existing columns are silently ignored by the app
+-- ALTER TABLE income ADD COLUMN category_id TEXT REFERENCES categories(id);
+
 CREATE TABLE IF NOT EXISTS transfers (
   id              TEXT PRIMARY KEY,
   date            TEXT NOT NULL,
