@@ -109,36 +109,31 @@ async function handleD1Bootstrap(env) {
     d1All(env.DB, "SELECT id,name,category_id FROM subcategories ORDER BY name"),
     d1All(env.DB, "SELECT id,name,emoji FROM accounts ORDER BY name"),
     d1All(env.DB,
-      "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 100"),
+      "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 20"),
   ]);
 
   const mkIcon = (emoji) => emoji ? { type: "emoji", value: emoji } : null;
-  const catMap  = Object.fromEntries(categories.map(c => [c.id, c.name]));
-  const subMap  = Object.fromEntries(subcategories.map(s => [s.id, s.name]));
-  const acctMap = Object.fromEntries(accounts.map(a => [a.id, a.name]));
+  const catSet  = new Set(categories.map(c => c.id));
+  const subSet  = new Set(subcategories.map(s => s.id));
+  const acctSet = new Set(accounts.map(a => a.id));
 
   const recentCats = [], recentSubs = [], recentAccts = [];
   const seenCat = new Set(), seenSub = new Set(), seenAcct = new Set();
-  for (const ex of recentExpenses) {
-    if (ex.category_id && !seenCat.has(ex.category_id) && recentCats.length < 5) {
-      const name = catMap[ex.category_id];
-      if (name) { recentCats.push({ id: ex.category_id, name }); seenCat.add(ex.category_id); }
-    }
-    if (ex.subcategory_id && !seenSub.has(ex.subcategory_id) && recentSubs.length < 5) {
-      const name = subMap[ex.subcategory_id];
-      if (name) { recentSubs.push({ id: ex.subcategory_id, name }); seenSub.add(ex.subcategory_id); }
-    }
-    if (ex.account_id && !seenAcct.has(ex.account_id) && recentAccts.length < 5) {
-      const name = acctMap[ex.account_id];
-      if (name) { recentAccts.push({ id: ex.account_id, name }); seenAcct.add(ex.account_id); }
-    }
-  }
-
   const subcatByCategory = {};
-  for (const s of subcategories) {
-    if (!s.category_id) continue;
-    if (!subcatByCategory[s.category_id]) subcatByCategory[s.category_id] = {};
-    subcatByCategory[s.category_id][s.id] = 1;
+  for (const ex of recentExpenses) {
+    if (ex.category_id && catSet.has(ex.category_id) && !seenCat.has(ex.category_id) && recentCats.length < 5) {
+      recentCats.push(ex.category_id); seenCat.add(ex.category_id);
+    }
+    if (ex.subcategory_id && subSet.has(ex.subcategory_id) && !seenSub.has(ex.subcategory_id) && recentSubs.length < 5) {
+      recentSubs.push(ex.subcategory_id); seenSub.add(ex.subcategory_id);
+    }
+    if (ex.account_id && acctSet.has(ex.account_id) && !seenAcct.has(ex.account_id) && recentAccts.length < 5) {
+      recentAccts.push(ex.account_id); seenAcct.add(ex.account_id);
+    }
+    if (ex.category_id && ex.subcategory_id) {
+      if (!subcatByCategory[ex.category_id]) subcatByCategory[ex.category_id] = {};
+      subcatByCategory[ex.category_id][ex.subcategory_id] = (subcatByCategory[ex.category_id][ex.subcategory_id] || 0) + 1;
+    }
   }
 
   return {
