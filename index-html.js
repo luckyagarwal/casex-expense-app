@@ -2112,7 +2112,7 @@ export const HTML = /* html */ `<!doctype html>
 <div id="pageLoader">
   <div class="loader-mark">+</div>
   <div class="loader-ring"></div>
-  <div class="screen-subtitle" id="pageLoaderText">Syncing your Notion workspace...</div>
+  <div class="screen-subtitle" id="pageLoaderText">Syncing your data...</div>
 </div>
 
 <div class="app-shell">
@@ -2559,7 +2559,7 @@ export const HTML = /* html */ `<!doctype html>
     </button>
   </div>
   <div class="txn-sheet-confirm" id="txnSheetConfirm" hidden>
-    <p>Delete this transaction from Notion?</p>
+    <p>Delete this transaction?</p>
     <div class="txn-sheet-confirm-btns">
       <button class="txn-confirm-cancel" id="txnConfirmCancel">Cancel</button>
       <button class="txn-confirm-delete" id="txnConfirmDelete">Delete</button>
@@ -2571,9 +2571,9 @@ export const HTML = /* html */ `<!doctype html>
 
 <script>
 (() => {
-  const LS_CACHE = "notion_expense_cache_v2";
-  const LS_CACHE_AT = "notion_expense_cache_at_v2";
-  const LS_THEME = "notion_expense_theme_v2";
+  const LS_CACHE = "casex_expense_cache_v3";
+  const LS_CACHE_AT = "casex_expense_cache_at_v3";
+  const LS_THEME = "casex_expense_theme_v3";
   const SUGGESTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
   const EXP_LS_TTL = { today: 2 * 60 * 1000, week: 10 * 60 * 1000, month: 20 * 60 * 1000 };
   const PERIOD_LABELS = { today: "day", week: "weekly", month: "monthly" };

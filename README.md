@@ -1,6 +1,6 @@
-# Expense Tracker
+# casexExpenseApp
 
-Personal finance web app built on Cloudflare Workers + D1 (SQLite). No external dependencies, no Notion, no third-party APIs.
+Personal finance web app built on Cloudflare Workers + D1 (SQLite). No external dependencies, no third-party APIs.
 
 | URL | What you get |
 |-----|--------------|
@@ -27,7 +27,7 @@ npm install
 ### 2. Create the D1 database
 
 ```bash
-npx wrangler d1 create notion-expense-db
+npx wrangler d1 create casex-expense-db
 ```
 
 Copy the returned `database_id` into `wrangler.toml`:
@@ -35,14 +35,14 @@ Copy the returned `database_id` into `wrangler.toml`:
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "notion-expense-db"
+database_name = "casex-expense-db"
 database_id = "YOUR_DATABASE_ID_HERE"
 ```
 
 ### 3. Apply the schema
 
 ```bash
-npx wrangler d1 execute notion-expense-db --file schema.sql
+npx wrangler d1 execute casex-expense-db --file schema.sql
 ```
 
 ### 4. Run locally
@@ -63,13 +63,13 @@ npm run dev
 npx wrangler login
 
 # Apply schema to production D1
-npx wrangler d1 execute notion-expense-db --file schema.sql --remote
+npx wrangler d1 execute casex-expense-db --file schema.sql --remote
 
 # Deploy
 npm run deploy
 ```
 
-Live at `https://notion-expense.<your-subdomain>.workers.dev`.
+Live at `https://casex-expense.<your-subdomain>.workers.dev`.
 
 ---
 
@@ -78,14 +78,14 @@ Live at `https://notion-expense.<your-subdomain>.workers.dev`.
 Manually insert lookup rows via the D1 console or wrangler:
 
 ```bash
-npx wrangler d1 execute notion-expense-db --remote --command \
+npx wrangler d1 execute casex-expense-db --remote --command \
   "INSERT INTO categories (id,name,emoji) VALUES (lower(hex(randomblob(16))),'Food','🍔')"
 ```
 
 Or bulk-insert via a SQL file:
 
 ```bash
-npx wrangler d1 execute notion-expense-db --remote --file seed.sql
+npx wrangler d1 execute casex-expense-db --remote --file seed.sql
 ```
 
 ---

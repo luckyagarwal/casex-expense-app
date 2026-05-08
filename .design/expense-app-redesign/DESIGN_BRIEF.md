@@ -87,6 +87,6 @@ Long-press or swipe-reveal edit on transaction card. Opens same add form pre-fil
 - Recurring transaction scheduling
 - Push notifications or reminders
 - Data export (CSV, PDF)
-- Cloud sync settings UI (Notion integration config assumed already set up)
+- Cloud sync settings UI
 - Onboarding flow for new users
 - Desktop-optimized layout

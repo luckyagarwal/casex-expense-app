@@ -1,6 +1,6 @@
 -- Expense Tracker — D1 Schema
--- Local:      npx wrangler d1 execute notion-expense-db --file schema.sql
--- Production: npx wrangler d1 execute notion-expense-db --file schema.sql --remote
+-- Local:      npx wrangler d1 execute casex-expense-db --file schema.sql
+-- Production: npx wrangler d1 execute casex-expense-db --file schema.sql --remote
 
 CREATE TABLE IF NOT EXISTS categories (
   id   TEXT PRIMARY KEY,

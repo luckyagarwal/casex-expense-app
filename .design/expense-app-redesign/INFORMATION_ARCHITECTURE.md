@@ -171,7 +171,7 @@ App
 
 ## Content Growth Plan
 
-- **Transactions**: grow unboundedly. Managed via period-scoped queries to Notion API — no local pagination needed. Search handles historical lookup.
+- **Transactions**: grow unboundedly. Managed via period-scoped queries to the D1 backend — no local pagination needed. Search handles historical lookup.
 - **Categories**: user-created, grow slowly. Chip selector already handles "show all" expand pattern. No pagination needed.
 - **Subcategories**: user-created, contextual to category. Same expand pattern.
 - **Accounts**: user-created, typically 3–10. No growth concern.
@@ -184,4 +184,4 @@ App is a single-page Cloudflare Worker serving one HTML document. No client-side
 - **View state**: managed via `state.currentView` in JS — not reflected in URL.
 - **Deep linking**: not supported (acceptable for personal PWA saved to home screen).
 - **Query parameters**: none currently. Not introduced in this redesign.
-- **Worker routes**: `GET /` → HTML app, `GET /api/*` → Notion proxy, `GET /manifest.json` → PWA manifest.
+- **Worker routes**: `GET /` → HTML app, `GET /api/*` → D1-backed JSON, `GET /manifest.json` → PWA manifest.
