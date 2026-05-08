@@ -5,4 +5,4 @@ compatibility_date = "2024-12-30"
 [[d1_databases]]
 binding = "DB"
 database_name = "casex-expense-db"
-database_id = "965d5c49-a8f9-4820-bc18-ac959924df84"
+database_id = "53c0bba8-17e9-440e-97c5-8eff1369ba1c"
