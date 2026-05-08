@@ -1269,6 +1269,10 @@ const chipIcon = (icon, def) => {
     const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
     if (b) return '<span style="display:inline-flex;width:1.3em;height:1.3em;vertical-align:-2px;border-radius:4px;overflow:hidden;">' + b.svg + '</span>';
   }
+  if (icon.type === 'brand') {
+    const b = BRANDS_LIB.find(x => x.key === 'brand:' + icon.value);
+    if (b) return '<span style="display:inline-flex;width:1.3em;height:1.3em;vertical-align:-2px;border-radius:4px;overflow:hidden;">' + b.svg + '</span>';
+  }
   if (icon.type === 'image') {
     return '<img src="' + icon.value + '" alt="" style="width:1.2em;height:1.2em;vertical-align:-2px;border-radius:4px;object-fit:cover;" />';
   }
@@ -2071,6 +2075,10 @@ function renderSettingsIcon(icon, fallback) {
     const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
     if (b) return \`<span style="display:inline-flex;width:36px;height:36px;border-radius:8px;overflow:hidden;">\${b.svg}</span>\`;
   }
+  if (icon.type === 'brand') {
+    const b = BRANDS_LIB.find(x => x.key === 'brand:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:36px;height:36px;border-radius:8px;overflow:hidden;">\${b.svg}</span>\`;
+  }
   return \`<span>\${escapeAttr(fallback)}</span>\`;
 }
 
@@ -2097,6 +2105,7 @@ function openSettingsPicker(table, item) {
       <div style="display:flex;gap:var(--s2);padding:0 var(--s5);border-bottom:1px solid var(--border);">
         <button class="dpicker-tab" data-dtab="icons" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Icons</button>
         <button class="dpicker-tab" data-dtab="emoji" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Emoji</button>
+        <button class="dpicker-tab" data-dtab="brands" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Brands</button>
         \${isAccount ? '<button class="dpicker-tab" data-dtab="banks" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Banks</button>' : ''}
       </div>
       <div style="padding:var(--s5);overflow-y:auto;">
@@ -2106,6 +2115,9 @@ function openSettingsPicker(table, item) {
         <div data-dpanel="emoji" style="display:none;">
           <input id="dpicker-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="width:100%;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);margin-bottom:var(--s4);" />
           <div id="dpicker-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
+        </div>
+        <div data-dpanel="brands" style="display:none;">
+          <div id="dpicker-brands-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);"></div>
         </div>
         \${isAccount ? '<div data-dpanel="banks" style="display:none;"><div id="dpicker-banks-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);"></div></div>' : ''}
       </div>
@@ -2152,6 +2164,15 @@ function openSettingsPicker(table, item) {
     if (v && v.length <= 8) commitSettingsPicker({ emoji: v, iconUrl: null });
   });
 
+  // Brands grid
+  const brandsGrid = modal.querySelector('#dpicker-brands-grid');
+  brandsGrid.innerHTML = BRANDS_LIB.map(b =>
+    \`<button data-brandkey="\${escapeAttr(b.key)}" aria-label="\${escapeAttr(b.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:transparent;border-radius:var(--r-md);cursor:pointer;overflow:hidden;padding:0;"><span style="display:block;width:100%;height:100%;">\${b.svg}</span></button>\`
+  ).join('');
+  brandsGrid.querySelectorAll('[data-brandkey]').forEach(cell => {
+    cell.addEventListener('click', () => commitSettingsPicker({ emoji: null, iconUrl: cell.dataset.brandkey }));
+  });
+
   // Banks grid (accounts only)
   if (isAccount) {
     const banksGrid = modal.querySelector('#dpicker-banks-grid');
@@ -2163,7 +2184,12 @@ function openSettingsPicker(table, item) {
     });
   }
 
-  setDTab(defaultTab);
+  // Pick the right default tab — brand match wins for non-account
+  const upper = (item.name || '').toUpperCase();
+  const brandMatch = BRANDS_LIB.find(b => upper.includes(b.name.toUpperCase()));
+  let resolvedTab = defaultTab;
+  if (!isAccount && brandMatch) resolvedTab = 'brands';
+  setDTab(resolvedTab);
 }
 function closeSettingsPicker() {
   const m = document.getElementById('settings-picker-modal');

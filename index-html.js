@@ -2805,6 +2805,7 @@ export const HTML = /* html */ `<!doctype html>
   <div class="icon-picker-tabs" id="iconPickerTabs" role="tablist">
     <button class="icon-picker-tab" data-picker-tab="icons" role="tab">Icons</button>
     <button class="icon-picker-tab active" data-picker-tab="emoji" role="tab" aria-selected="true">Emoji</button>
+    <button class="icon-picker-tab" data-picker-tab="brands" role="tab">Brands</button>
     <button class="icon-picker-tab" data-picker-tab="banks" role="tab" data-banks-only hidden>Banks</button>
   </div>
   <div class="icon-picker-body">
@@ -2814,6 +2815,9 @@ export const HTML = /* html */ `<!doctype html>
     <div class="icon-picker-panel active" data-picker-panel="emoji">
       <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type any emoji…" maxlength="8" autocomplete="off" />
       <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
+    </div>
+    <div class="icon-picker-panel" data-picker-panel="brands">
+      <div class="icon-picker-grid" id="iconPickerBrandsGrid" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></div>
     </div>
     <div class="icon-picker-panel" data-picker-panel="banks">
       <div class="icon-picker-grid" id="iconPickerBanksGrid" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></div>
@@ -3003,6 +3007,10 @@ ${ICONS_LIB_SOURCE}
       const b = BANK_LOGOS.find((x) => x.key === "bank:" + icon.value);
       if (b) return b.svg;
     }
+    if (icon.type === "brand") {
+      const b = BRANDS_LIB.find((x) => x.key === "brand:" + icon.value);
+      if (b) return b.svg;
+    }
     return '<span>' + escapeHtml(fallback || "?") + '</span>';
   }
 
@@ -3101,6 +3109,15 @@ ${ICONS_LIB_SOURCE}
       cell.addEventListener("click", () => commitPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
     });
 
+    // Render Brands grid
+    const brandsGrid = $("iconPickerBrandsGrid");
+    brandsGrid.innerHTML = BRANDS_LIB.map((b) =>
+      '<button class="icon-picker-cell" data-brand-key="' + escapeHtml(b.key) + '" aria-label="' + escapeHtml(b.name) + '">' + b.svg + '</button>'
+    ).join("");
+    brandsGrid.querySelectorAll("[data-brand-key]").forEach((cell) => {
+      cell.addEventListener("click", () => commitPicker({ emoji: null, iconUrl: cell.dataset.brandKey }));
+    });
+
     // Render Banks (accounts only)
     const banksTab = document.querySelector('[data-banks-only]');
     if (table === "accounts") {
@@ -3116,19 +3133,25 @@ ${ICONS_LIB_SOURCE}
       banksTab.hidden = true;
     }
 
-    // Default tab: Banks for accounts (with name match), else Icons
+    // Auto-suggest highlights
+    const upper = (item.name || "").toUpperCase();
+    const brandMatch = BRANDS_LIB.find((b) => upper.includes(b.name.toUpperCase()));
+    if (brandMatch) {
+      const cell = document.querySelector('[data-brand-key="' + brandMatch.key + '"]');
+      if (cell) cell.classList.add("selected");
+    }
     if (table === "accounts") {
-      setPickerTab("banks");
-      // Auto-suggest highlight
-      const upper = (item.name || "").toUpperCase();
-      const match = BANK_LOGOS.find((b) => upper.includes(b.name));
-      if (match) {
-        const cell = document.querySelector('[data-bank-key="' + match.key + '"]');
+      const bankMatch = BANK_LOGOS.find((b) => upper.includes(b.name));
+      if (bankMatch) {
+        const cell = document.querySelector('[data-bank-key="' + bankMatch.key + '"]');
         if (cell) cell.classList.add("selected");
       }
-    } else {
-      setPickerTab("icons");
     }
+
+    // Default tab
+    if (table === "accounts") setPickerTab("banks");
+    else if (brandMatch)      setPickerTab("brands");
+    else                      setPickerTab("icons");
 
     $("iconPickerSheet").classList.add("open");
     $("iconPickerOverlay").classList.add("open");
@@ -3154,6 +3177,7 @@ ${ICONS_LIB_SOURCE}
           if (payload.iconUrl.startsWith("/")) item.icon = { type: "image", value: payload.iconUrl };
           else if (payload.iconUrl.startsWith("lucide:")) item.icon = { type: "lucide", value: payload.iconUrl.slice(7) };
           else if (payload.iconUrl.startsWith("bank:"))   item.icon = { type: "bank",   value: payload.iconUrl.slice(5) };
+          else if (payload.iconUrl.startsWith("brand:"))  item.icon = { type: "brand",  value: payload.iconUrl.slice(6) };
         } else if (payload.emoji) {
           item.icon = { type: "emoji", value: payload.emoji };
         } else {
@@ -3253,6 +3277,10 @@ ${ICONS_LIB_SOURCE}
     }
     if (icon && icon.type === "bank" && icon.value) {
       const b = (typeof BANK_LOGOS !== "undefined") ? BANK_LOGOS.find((x) => x.key === "bank:" + icon.value) : null;
+      if (b) return '<span class="icon-emoji ' + cls + '" style="display:inline-flex;align-items:center;justify-content:center;width:1.4em;height:1.4em;overflow:hidden;border-radius:6px;">' + b.svg + '</span>';
+    }
+    if (icon && icon.type === "brand" && icon.value) {
+      const b = (typeof BRANDS_LIB !== "undefined") ? BRANDS_LIB.find((x) => x.key === "brand:" + icon.value) : null;
       if (b) return '<span class="icon-emoji ' + cls + '" style="display:inline-flex;align-items:center;justify-content:center;width:1.4em;height:1.4em;overflow:hidden;border-radius:6px;">' + b.svg + '</span>';
     }
     return '<span class="icon-emoji ' + cls + '">' + (icon && icon.type === "emoji" ? icon.value : (fallback || "*")) + '</span>';

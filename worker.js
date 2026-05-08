@@ -116,6 +116,7 @@ async function handleD1Bootstrap(env) {
     if (iconUrl) {
       if (iconUrl.startsWith("lucide:")) return { type: "lucide", value: iconUrl.slice(7) };
       if (iconUrl.startsWith("bank:"))   return { type: "bank",   value: iconUrl.slice(5) };
+      if (iconUrl.startsWith("brand:"))  return { type: "brand",  value: iconUrl.slice(6) };
       if (iconUrl.startsWith("/"))       return { type: "image",  value: iconUrl };
     }
     return emoji ? { type: "emoji", value: emoji } : null;
