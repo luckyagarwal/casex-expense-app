@@ -105,14 +105,21 @@ async function handleD1Bootstrap(env) {
   if (!env.DB) return { error: "D1 database not configured", status: 500 };
 
   const [categories, subcategories, accounts, recentExpenses] = await Promise.all([
-    d1All(env.DB, "SELECT id,name,emoji FROM categories ORDER BY name"),
-    d1All(env.DB, "SELECT id,name,category_id FROM subcategories ORDER BY name"),
-    d1All(env.DB, "SELECT id,name,emoji FROM accounts ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,emoji,icon_url FROM categories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,category_id,icon_url FROM subcategories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,emoji,icon_url FROM accounts ORDER BY name"),
     d1All(env.DB,
       "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 20"),
   ]);
 
-  const mkIcon = (emoji) => emoji ? { type: "emoji", value: emoji } : null;
+  const mkIcon = (emoji, iconUrl) => {
+    if (iconUrl) {
+      if (iconUrl.startsWith("lucide:")) return { type: "lucide", value: iconUrl.slice(7) };
+      if (iconUrl.startsWith("bank:"))   return { type: "bank",   value: iconUrl.slice(5) };
+      if (iconUrl.startsWith("/"))       return { type: "image",  value: iconUrl };
+    }
+    return emoji ? { type: "emoji", value: emoji } : null;
+  };
   const catSet  = new Set(categories.map(c => c.id));
   const subSet  = new Set(subcategories.map(s => s.id));
   const acctSet = new Set(accounts.map(a => a.id));
@@ -137,12 +144,43 @@ async function handleD1Bootstrap(env) {
   }
 
   return {
-    categories:    categories.map(c => ({ id: c.id, name: c.name, icon: mkIcon(c.emoji) })),
-    subcategories: subcategories.map(s => ({ id: s.id, name: s.name, categoryId: s.category_id })),
-    accounts:      accounts.map(a => ({ id: a.id, name: a.name, icon: mkIcon(a.emoji) })),
+    categories:    categories.map(c => ({ id: c.id, name: c.name, icon: mkIcon(c.emoji, c.icon_url) })),
+    subcategories: subcategories.map(s => ({ id: s.id, name: s.name, categoryId: s.category_id, icon: mkIcon(null, s.icon_url) })),
+    accounts:      accounts.map(a => ({ id: a.id, name: a.name, icon: mkIcon(a.emoji, a.icon_url) })),
     recent:        { categories: recentCats, subcategories: recentSubs, accounts: recentAccts },
     subcatByCategory,
   };
+}
+
+// ----------------------------------------------------------------------------
+// Entity edit — categories, subcategories, accounts (rename + re-icon)
+// ----------------------------------------------------------------------------
+
+async function handleD1UpdateEntity(env, table, id, body) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  if (!id) return { error: "ID required", status: 400 };
+  if (!["categories", "subcategories", "accounts"].includes(table))
+    return { error: "Invalid table", status: 400 };
+
+  const sets = [], params = [];
+  if (typeof body?.name === "string") {
+    const name = body.name.trim();
+    if (!name) return { error: "Name cannot be empty", status: 400 };
+    sets.push("name=?"); params.push(name);
+  }
+  if (body && "emoji" in body) {
+    sets.push("emoji=?"); params.push(typeof body.emoji === "string" ? body.emoji : "");
+  }
+  if (body && "iconUrl" in body) {
+    sets.push("icon_url=?"); params.push(body.iconUrl || null);
+  }
+  if (!sets.length) return { error: "Nothing to update", status: 400 };
+
+  params.push(id);
+  const sql = `UPDATE ${table} SET ${sets.join(",")} WHERE id=?`;
+  const r = await env.DB.prepare(sql).bind(...params).run();
+  if (!r.meta?.changes) return { error: "Not found", status: 404 };
+  return { ok: true, id };
 }
 
 // ----------------------------------------------------------------------------
@@ -414,7 +452,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v3";
+const CACHE_NAME = "ne-pwa-v4";
 const OFFLINE_URLS = ["/", "/desktop"];
 
 self.addEventListener("install", (event) => {
@@ -545,6 +583,16 @@ export default {
         // CSV export
         if (url.pathname === "/api/d1/export" && request.method === "GET") {
           return handleD1Export(env, url);
+        }
+
+        // Entity rename + re-icon
+        const entityMatch = url.pathname.match(/^\/api\/d1\/(categories|subcategories|accounts)\/([^/]+)$/);
+        if (entityMatch && request.method === "PUT") {
+          const [, table, id] = entityMatch;
+          const body = await request.json().catch(() => null);
+          const result = await handleD1UpdateEntity(env, table, id, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
         }
 
         return json({ error: "not found" }, 404);

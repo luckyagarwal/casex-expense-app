@@ -3,22 +3,25 @@
 -- Production: npx wrangler d1 execute casex-expense-db --file schema.sql --remote
 
 CREATE TABLE IF NOT EXISTS categories (
-  id   TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  emoji TEXT DEFAULT '',
-  type TEXT NOT NULL DEFAULT 'expense'  -- 'expense' | 'income' | 'both'
+  id       TEXT PRIMARY KEY,
+  name     TEXT NOT NULL,
+  emoji    TEXT DEFAULT '',
+  icon_url TEXT,
+  type     TEXT NOT NULL DEFAULT 'expense'  -- 'expense' | 'income' | 'both'
 );
 
 CREATE TABLE IF NOT EXISTS subcategories (
   id          TEXT PRIMARY KEY,
   name        TEXT NOT NULL,
-  category_id TEXT NOT NULL REFERENCES categories(id)
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  icon_url    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
-  id    TEXT PRIMARY KEY,
-  name  TEXT NOT NULL,
-  emoji TEXT DEFAULT ''
+  id       TEXT PRIMARY KEY,
+  name     TEXT NOT NULL,
+  emoji    TEXT DEFAULT '',
+  icon_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS expenses (

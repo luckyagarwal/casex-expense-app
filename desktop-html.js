@@ -1165,6 +1165,10 @@ body {
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <span class="sidebar-nav-label">Search</span>
       </button>
+      <button class="sidebar-nav-item" data-view="settings">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M13.5 9.5l1 .5-1 1.732-1.5-.464a5 5 0 01-1.5.866L10 13H6l-.5-.866a5 5 0 01-1.5-.866L2.5 11.732 1.5 10l1-.5a5 5 0 010-3l-1-.5L2.5 4.268l1.5.464a5 5 0 011.5-.866L6 3h4l.5.866a5 5 0 011.5.866l1.5-.464 1 1.732-1 .5a5 5 0 010 3z" stroke="currentColor" stroke-width="1.2"/></svg>
+        <span class="sidebar-nav-label">Settings</span>
+      </button>
     </nav>
     <div class="sidebar-footer">
       <button class="sidebar-footer-btn" id="theme-toggle-btn" aria-label="Toggle theme">
@@ -1381,6 +1385,9 @@ function renderView() {
   } else if (state.view === 'search') {
     topbarTitle.textContent = 'Search';
     renderSearch(area);
+  } else if (state.view === 'settings') {
+    topbarTitle.textContent = 'Settings';
+    renderSettings(area);
   }
 }
 
@@ -1943,6 +1950,172 @@ function renderSearch(area) {
       .catch(() => ({ categories: [], subcategories: [], accounts: [] }))
       .then(buildSearchUI);
   }
+}
+
+// ── Settings view ──────────────────────────────────────────────────────────
+const SETTINGS_EMOJI_QUICKPICK = ["🍽️","🍕","☕","🛒","🚗","✈️","🏠","💡","💊","💰","💸","💳","📈","📉","🎁","🎬","🎵","📱","👕","💄","🧴","⛽","🚇","🚲","🏥","📚","🎓","🐶","🪴","⚙️"];
+let settingsTab = 'categories';
+let settingsPickerCtx = null;
+
+function renderSettings(area) {
+  area.innerHTML = \`
+    <div style="max-width:760px;margin:0 auto;">
+      <div class="settings-tabs" style="display:flex;gap:6px;padding:4px;background:var(--color-bg-surface);border-radius:var(--r-md);margin-bottom:var(--s5);">
+        \${['categories','subcategories','accounts'].map(t => \`
+          <button class="settings-tab \${t===settingsTab?'active':''}" data-tab="\${t}" style="flex:1;padding:10px;border:none;background:\${t===settingsTab?'var(--color-bg-surface-raised)':'transparent'};color:\${t===settingsTab?'var(--fg)':'var(--fg-soft)'};border-radius:var(--r-sm);font-weight:500;cursor:pointer;text-transform:capitalize;">\${t}</button>
+        \`).join('')}
+      </div>
+      <div id="settings-list" style="display:flex;flex-direction:column;gap:var(--s2);"></div>
+    </div>
+  \`;
+
+  area.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      settingsTab = btn.dataset.tab;
+      renderSettings(area);
+    });
+  });
+
+  loadBootstrap()
+    .catch(() => ({ categories: [], subcategories: [], accounts: [] }))
+    .then(bs => {
+      const list = document.getElementById('settings-list');
+      if (!list) return;
+      const items = bs[settingsTab] || [];
+      const sorted = [...items].sort((a, b) => (a.name||'').localeCompare(b.name||''));
+      const subParents = settingsTab === 'subcategories'
+        ? Object.fromEntries((bs.categories||[]).map(c => [c.id, c.name]))
+        : null;
+
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty-state" style="padding:var(--s8) 0"><div class="empty-state-icon">📦</div><div class="empty-state-title">Nothing here yet</div></div>';
+        return;
+      }
+
+      list.innerHTML = sorted.map(item => {
+        const fallback = (item.name || '?').charAt(0);
+        const meta = subParents ? subParents[item.categoryId] || '' : '';
+        const iconHtml = renderSettingsIcon(item.icon, fallback);
+        return \`<div class="settings-row" data-row-id="\${item.id}" style="display:flex;align-items:center;gap:var(--s4);padding:var(--s3) var(--s4);background:var(--color-bg-surface);border:1px solid var(--border);border-radius:var(--r-md);">
+          <button class="settings-icon-btn" data-edit-icon style="width:44px;height:44px;border-radius:var(--r-sm);background:var(--color-bg-surface-raised);border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0;">\${iconHtml}</button>
+          <div style="flex:1;min-width:0;">
+            <input class="settings-name-input" data-edit-name value="\${escapeAttr(item.name||'')}" style="width:100%;border:none;background:transparent;color:var(--fg);font-size:var(--text-base);font-weight:500;padding:6px 0;outline:none;border-bottom:1px solid transparent;" />
+            \${meta ? \`<div style="font-size:var(--text-xs);color:var(--fg-soft);margin-top:2px;">in \${escapeAttr(meta)}</div>\` : ''}
+          </div>
+          <button class="icon-btn" data-edit-icon aria-label="Edit icon" style="width:36px;height:36px;border:none;background:transparent;color:var(--fg-soft);border-radius:var(--r-sm);cursor:pointer;">✎</button>
+        </div>\`;
+      }).join('');
+
+      list.querySelectorAll('.settings-row').forEach(row => {
+        const id = row.dataset.rowId;
+        const item = sorted.find(x => x.id === id);
+        const nameInput = row.querySelector('[data-edit-name]');
+        let originalName = item.name || '';
+        nameInput.addEventListener('focus', () => { originalName = nameInput.value; nameInput.style.borderBottomColor = 'var(--color-accent)'; });
+        nameInput.addEventListener('blur', async () => {
+          nameInput.style.borderBottomColor = 'transparent';
+          const next = nameInput.value.trim();
+          if (!next || next === originalName) { nameInput.value = originalName; return; }
+          try {
+            await fetch('/api/d1/' + settingsTab + '/' + id, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: next })
+            }).then(r => { if (!r.ok) throw new Error('rename failed'); });
+            item.name = next;
+            invalidateBootstrapCache();
+            showToast('Renamed');
+          } catch (err) {
+            nameInput.value = originalName;
+            showToast('Couldn\\'t rename');
+          }
+        });
+        nameInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') nameInput.blur();
+          if (e.key === 'Escape') { nameInput.value = originalName; nameInput.blur(); }
+        });
+        row.querySelectorAll('[data-edit-icon]').forEach(btn => {
+          btn.addEventListener('click', () => openSettingsPicker(settingsTab, item));
+        });
+      });
+    });
+}
+
+function renderSettingsIcon(icon, fallback) {
+  if (!icon) return \`<span>\${escapeAttr(fallback)}</span>\`;
+  if (icon.type === 'emoji') return \`<span>\${escapeAttr(icon.value)}</span>\`;
+  if (icon.type === 'image') return \`<img src="\${escapeAttr(icon.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);" />\`;
+  return \`<span>\${escapeAttr(fallback)}</span>\`;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function openSettingsPicker(table, item) {
+  settingsPickerCtx = { table, id: item.id };
+  let modal = document.getElementById('settings-picker-modal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'settings-picker-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:var(--s4);';
+  modal.innerHTML = \`
+    <div role="dialog" aria-modal="true" style="background:var(--color-bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md);width:520px;max-width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--s5);border-bottom:1px solid var(--border);">
+        <div style="font-size:var(--text-lg);font-weight:600;">Icon for \${escapeAttr(item.name||'')}</div>
+        <button id="settings-picker-close" style="border:none;background:transparent;font-size:24px;color:var(--fg-soft);cursor:pointer;">×</button>
+      </div>
+      <div style="padding:var(--s5);">
+        <div style="display:flex;gap:var(--s2);border-bottom:1px solid var(--border);padding-bottom:var(--s3);margin-bottom:var(--s4);">
+          <button class="picker-tab active" data-picker-tab="emoji" style="padding:var(--s2) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid var(--color-accent);">Emoji</button>
+        </div>
+        <input id="settings-picker-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="width:100%;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);margin-bottom:var(--s4);" />
+        <div id="settings-picker-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);max-height:300px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  \`;
+  document.body.appendChild(modal);
+
+  modal.querySelector('#settings-picker-close').addEventListener('click', closeSettingsPicker);
+  modal.addEventListener('click', e => { if (e.target === modal) closeSettingsPicker(); });
+
+  const grid = modal.querySelector('#settings-picker-grid');
+  grid.innerHTML = SETTINGS_EMOJI_QUICKPICK.map(e =>
+    \`<button data-emoji="\${escapeAttr(e)}" style="aspect-ratio:1;border:1px solid var(--border);background:var(--color-bg-surface-raised);border-radius:var(--r-sm);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\${e}</button>\`
+  ).join('');
+  grid.querySelectorAll('[data-emoji]').forEach(cell => {
+    cell.addEventListener('click', () => commitSettingsPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
+  });
+  modal.querySelector('#settings-picker-emoji-input').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v && v.length <= 8) commitSettingsPicker({ emoji: v, iconUrl: null });
+  });
+}
+function closeSettingsPicker() {
+  const m = document.getElementById('settings-picker-modal');
+  if (m) m.remove();
+  settingsPickerCtx = null;
+}
+async function commitSettingsPicker(payload) {
+  if (!settingsPickerCtx) return;
+  try {
+    const r = await fetch('/api/d1/' + settingsPickerCtx.table + '/' + settingsPickerCtx.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('save failed');
+    invalidateBootstrapCache();
+    closeSettingsPicker();
+    showToast('Icon updated');
+    renderSettings(document.getElementById('content-area'));
+  } catch (err) {
+    showToast('Couldn\\'t save');
+  }
+}
+
+function invalidateBootstrapCache() {
+  state.bootstrap = null;
 }
 
 // ── Right panel ────────────────────────────────────────────────────────────

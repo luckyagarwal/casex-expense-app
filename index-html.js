@@ -458,6 +458,251 @@ export const HTML = /* html */ `<!doctype html>
     font-size: var(--text-lg);
   }
 
+  .menu-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .menu-btn:active { background: var(--surface-2); }
+  .menu-btn svg { width: 22px; height: 22px; }
+
+  /* ── Side drawer ── */
+  .drawer-overlay {
+    position: fixed; inset: 0;
+    background: var(--color-overlay, rgba(0,0,0,.5));
+    opacity: 0; pointer-events: none;
+    transition: opacity 180ms ease-out;
+    z-index: 90;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+  .side-drawer {
+    position: fixed; left: 0; top: 0;
+    width: min(280px, 80vw);
+    height: 100dvh;
+    background: var(--color-sheet-bg, var(--surface));
+    box-shadow: 8px 0 32px rgba(0,0,0,.18);
+    transform: translateX(-100%);
+    transition: transform 220ms ease-out;
+    display: flex; flex-direction: column;
+    z-index: 100;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .side-drawer.open { transform: translateX(0); }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 16px 12px; border-bottom: 1px solid var(--border);
+  }
+  .drawer-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: var(--weight-semibold);
+    color: var(--fg);
+  }
+  .drawer-brand-mark {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--color-accent, var(--accent));
+    color: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .drawer-nav { flex: 1; overflow-y: auto; padding: 8px 8px; }
+  .drawer-item {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 12px 12px;
+    border: none; background: transparent;
+    text-align: left;
+    border-radius: 12px;
+    color: var(--fg);
+    font-size: var(--text-base);
+    cursor: pointer;
+  }
+  .drawer-item:hover, .drawer-item:active { background: var(--surface-2); }
+  .drawer-item svg { color: var(--fg-soft); flex-shrink: 0; }
+  .drawer-item-disabled { color: var(--fg-muted, var(--fg-soft)); opacity: .55; cursor: not-allowed; }
+  .drawer-item-tag {
+    margin-left: auto;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--fg-soft);
+  }
+  .drawer-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-soft);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+
+  /* ── Settings view ── */
+  .settings-tabs {
+    display: flex; gap: 6px;
+    padding: 4px; margin: 4px 0 14px;
+    background: var(--surface-2);
+    border-radius: 14px;
+  }
+  .settings-tab {
+    flex: 1; padding: 10px 8px;
+    border: none; background: transparent;
+    color: var(--fg-soft);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .settings-tab.active {
+    background: var(--surface);
+    color: var(--fg);
+    box-shadow: var(--shadow-soft);
+  }
+  .settings-list {
+    display: flex; flex-direction: column;
+    gap: 8px; padding-bottom: 120px;
+  }
+  .settings-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .settings-row-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .settings-row-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+  .settings-row-icon svg { width: 22px; height: 22px; }
+  .settings-row-name {
+    flex: 1;
+    border: none; background: transparent;
+    color: var(--fg);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    padding: 6px 4px;
+    outline: none;
+    border-bottom: 1px solid transparent;
+  }
+  .settings-row-name:focus {
+    border-bottom-color: var(--color-accent, var(--accent));
+  }
+  .settings-row-meta {
+    color: var(--fg-soft);
+    font-size: var(--text-xs);
+    margin-top: 2px;
+  }
+  .settings-row-edit {
+    width: 32px; height: 32px;
+    border: none; background: transparent;
+    color: var(--fg-soft);
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .settings-row-edit:hover { background: var(--surface-2); }
+
+  /* ── Icon picker sheet ── */
+  .icon-picker-overlay {
+    position: fixed; inset: 0;
+    background: var(--color-overlay, rgba(0,0,0,.5));
+    opacity: 0; pointer-events: none;
+    transition: opacity 180ms ease-out;
+    z-index: 110;
+  }
+  .icon-picker-overlay.open { opacity: 1; pointer-events: auto; }
+  .icon-picker-sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    max-height: 80dvh;
+    background: var(--color-sheet-bg, var(--surface));
+    border-radius: var(--sheet-radius, 24px) var(--sheet-radius, 24px) 0 0;
+    box-shadow: var(--shadow-sheet, 0 -8px 32px rgba(0,0,0,.4));
+    transform: translateY(100%);
+    transition: transform 240ms ease-out;
+    z-index: 120;
+    display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .icon-picker-sheet.open { transform: translateY(0); }
+  .icon-picker-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+  }
+  .icon-picker-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px 4px;
+  }
+  .icon-picker-title { font-size: var(--text-lg); font-weight: var(--weight-semibold); margin: 0; }
+  .icon-picker-tabs {
+    display: flex; gap: 4px;
+    padding: 0 12px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .icon-picker-tab {
+    padding: 8px 12px;
+    border: none; background: transparent;
+    color: var(--fg-soft);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+  }
+  .icon-picker-tab.active { color: var(--fg); }
+  .icon-picker-tab.active::after {
+    content: "";
+    position: absolute; left: 12px; right: 12px; bottom: -8px;
+    height: 2px;
+    background: var(--color-accent, var(--accent));
+    border-radius: 2px;
+  }
+  .icon-picker-body { flex: 1; overflow-y: auto; padding: 14px 16px 24px; }
+  .icon-picker-panel { display: none; }
+  .icon-picker-panel.active { display: block; }
+  .icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .icon-picker-cell {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .icon-picker-cell:active { transform: scale(0.92); }
+  .icon-picker-cell.selected {
+    border-color: var(--color-accent, var(--accent));
+    background: color-mix(in srgb, var(--color-accent, var(--accent)) 12%, transparent);
+  }
+  .icon-picker-cell svg { width: 24px; height: 24px; }
+  .icon-picker-cell img { width: 100%; height: 100%; object-fit: cover; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-overlay, .side-drawer, .icon-picker-overlay, .icon-picker-sheet {
+      transition: none;
+    }
+  }
+
   .search-capsule {
     border: 1px solid var(--border);
     border-radius: 999px;
@@ -2119,6 +2364,7 @@ export const HTML = /* html */ `<!doctype html>
   <section class="view active" id="homeView" data-view="home">
     <div class="topbar">
       <div class="topbar-leading">
+        <button class="menu-btn" data-open-drawer aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
         <h1 class="screen-title">Overview</h1>
       </div>
       <div class="topbar-actions">
@@ -2164,11 +2410,11 @@ export const HTML = /* html */ `<!doctype html>
   <section class="view" id="expensesView" data-view="expenses">
     <div class="topbar">
       <div class="topbar-leading">
+        <button class="menu-btn" data-open-drawer aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
         <h1 class="screen-title">Transactions</h1>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshExpensesBtn" title="Refresh" aria-label="Refresh">↻</button>
-        <button class="search-capsule" id="openSearchBtn" title="Search"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
 
@@ -2335,11 +2581,11 @@ export const HTML = /* html */ `<!doctype html>
   <section class="view" id="analyticsView" data-view="analytics">
     <div class="topbar">
       <div class="topbar-leading">
+        <button class="menu-btn" data-open-drawer aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
         <h1 class="screen-title">Analytics</h1>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" id="refreshAnalyticsBtn" title="Refresh" aria-label="Refresh">↻</button>
-        <button class="search-capsule" id="openSearchFromAnalyticsBtn" title="Search"><span class="sicon">⌕</span><span>Search</span></button>
       </div>
     </div>
 
@@ -2471,9 +2717,7 @@ export const HTML = /* html */ `<!doctype html>
         <button class="back-btn" id="categoryDetailBackBtn">‹ Back</button>
         <h1 class="screen-title" id="categoryDetailTitle">Category</h1>
       </div>
-      <div class="topbar-actions">
-        <button class="search-capsule" id="openSearchFromDetailBtn" title="Search expenses"><span class="sicon">⌕</span><span>Search</span></button>
-      </div>
+      <div class="topbar-actions"></div>
     </div>
 
     <div class="hero-card">
@@ -2497,6 +2741,74 @@ export const HTML = /* html */ `<!doctype html>
     </div>
   </section>
 
+  <section class="view" id="settingsView" data-view="settings">
+    <div class="topbar">
+      <div class="topbar-leading">
+        <button class="back-btn" data-back-from-settings>‹ Back</button>
+        <h1 class="screen-title">Settings</h1>
+      </div>
+      <div class="topbar-actions"></div>
+    </div>
+    <div class="settings-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
+      <button class="settings-tab active" data-settings-tab="categories" role="tab" aria-selected="true">Categories</button>
+      <button class="settings-tab" data-settings-tab="subcategories" role="tab" aria-selected="false">Subcategories</button>
+      <button class="settings-tab" data-settings-tab="accounts" role="tab" aria-selected="false">Accounts</button>
+    </div>
+    <div class="settings-list" id="settingsList"></div>
+  </section>
+
+</div>
+
+<!-- Side drawer (mobile menu) -->
+<div id="drawerOverlay" class="drawer-overlay" aria-hidden="true"></div>
+<aside id="sideDrawer" class="side-drawer" role="dialog" aria-modal="true" aria-label="App menu" aria-hidden="true">
+  <div class="drawer-header">
+    <div class="drawer-brand">
+      <span class="drawer-brand-mark">+</span>
+      <span class="drawer-brand-name">Casex Expense</span>
+    </div>
+    <button class="icon-btn" id="drawerCloseBtn" aria-label="Close menu">×</button>
+  </div>
+  <nav class="drawer-nav">
+    <button class="drawer-item" data-drawer-action="settings">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6 1.65 1.65 0 0010 3.09V3a2 2 0 114 0v.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+    <button class="drawer-item" data-drawer-action="theme">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <span>Toggle Theme</span>
+    </button>
+    <button class="drawer-item drawer-item-disabled" disabled>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Export Data</span>
+      <span class="drawer-item-tag">Soon</span>
+    </button>
+    <button class="drawer-item drawer-item-disabled" disabled>
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span>About</span>
+      <span class="drawer-item-tag">Soon</span>
+    </button>
+  </nav>
+  <div class="drawer-footer">v1.0 · Casex Expense App</div>
+</aside>
+
+<!-- Icon picker sheet -->
+<div id="iconPickerOverlay" class="icon-picker-overlay" aria-hidden="true"></div>
+<div id="iconPickerSheet" class="icon-picker-sheet" role="dialog" aria-modal="true" aria-label="Pick an icon" aria-hidden="true">
+  <div class="icon-picker-handle"></div>
+  <div class="icon-picker-header">
+    <h2 class="icon-picker-title" id="iconPickerTitle">Pick an icon</h2>
+    <button class="icon-btn" id="iconPickerCloseBtn" aria-label="Close">×</button>
+  </div>
+  <div class="icon-picker-tabs" id="iconPickerTabs" role="tablist">
+    <button class="icon-picker-tab active" data-picker-tab="emoji" role="tab" aria-selected="true">Emoji</button>
+  </div>
+  <div class="icon-picker-body">
+    <div class="icon-picker-panel" data-picker-panel="emoji">
+      <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type any emoji…" maxlength="8" autocomplete="off" />
+      <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
+    </div>
+  </div>
 </div>
 
 <nav class="bottom-nav" id="bottomNav" role="tablist" aria-label="Main navigation">
@@ -2620,7 +2932,11 @@ export const HTML = /* html */ `<!doctype html>
       analytics: 0,
       search: 0,
       categoryDetail: 0,
+      settings: 0,
     },
+    settingsTab: "categories",
+    drawerOpen: false,
+    iconPickerCtx: null, // { table, id, currentIcon }
   };
 
   function applyTheme(theme) {
@@ -2643,6 +2959,159 @@ export const HTML = /* html */ `<!doctype html>
     const current = document.documentElement.getAttribute("data-theme");
     applyTheme(current === "dark" ? "light" : "dark");
     if (state.analyticsByPeriod[state.analyticsPeriod]) renderAnalytics(state.analyticsByPeriod[state.analyticsPeriod]);
+  }
+
+  // ── Side drawer ──
+  function openDrawer() {
+    state.drawerOpen = true;
+    $("sideDrawer").classList.add("open");
+    $("drawerOverlay").classList.add("open");
+    $("sideDrawer").setAttribute("aria-hidden", "false");
+    $("drawerOverlay").setAttribute("aria-hidden", "false");
+  }
+  function closeDrawer() {
+    state.drawerOpen = false;
+    $("sideDrawer").classList.remove("open");
+    $("drawerOverlay").classList.remove("open");
+    $("sideDrawer").setAttribute("aria-hidden", "true");
+    $("drawerOverlay").setAttribute("aria-hidden", "true");
+  }
+
+  // ── Settings ──
+  const EMOJI_QUICKPICK = ["🍽️","🍕","☕","🛒","🚗","✈️","🏠","💡","💊","💰","💸","💳","📈","📉","🎁","🎬","🎵","📱","👕","💄","🧴","⛽","🚇","🚲","🏥","📚","🎓","🐶","🪴","⚙️"];
+
+  function iconHTML(icon, fallback) {
+    if (!icon) return '<span>' + escapeHtml(fallback || "?") + '</span>';
+    if (icon.type === "emoji") return '<span>' + escapeHtml(icon.value) + '</span>';
+    if (icon.type === "image") return '<img src="' + escapeHtml(icon.value) + '" alt="" />';
+    if (icon.type === "lucide" || icon.type === "bank") {
+      // Phase 2 — fallback to label initial for now
+      return '<span>' + escapeHtml((fallback || "?").charAt(0)) + '</span>';
+    }
+    return '<span>' + escapeHtml(fallback || "?") + '</span>';
+  }
+
+  function renderSettings() {
+    const list = $("settingsList");
+    if (!list || !state.data) return;
+    let items = [];
+    if (state.settingsTab === "categories")     items = state.data.categories || [];
+    else if (state.settingsTab === "subcategories") items = state.data.subcategories || [];
+    else if (state.settingsTab === "accounts")  items = state.data.accounts || [];
+    const sorted = [...items].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    if (!sorted.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-msg">Nothing here yet</div></div>';
+      return;
+    }
+
+    const subParents = state.settingsTab === "subcategories"
+      ? Object.fromEntries((state.data.categories || []).map((c) => [c.id, c.name]))
+      : null;
+
+    list.innerHTML = sorted.map((item) => {
+      const fallback = (item.name || "?").charAt(0);
+      const meta = subParents ? subParents[item.categoryId] || "" : "";
+      return '<div class="settings-row" data-row-id="' + escapeHtml(item.id) + '">' +
+        '<button class="settings-row-icon" data-edit-icon aria-label="Change icon for ' + escapeHtml(item.name) + '">' + iconHTML(item.icon, fallback) + '</button>' +
+        '<div style="flex:1; min-width:0;">' +
+          '<input class="settings-row-name" data-edit-name value="' + escapeHtml(item.name || "") + '" aria-label="Rename ' + escapeHtml(item.name) + '" />' +
+          (meta ? '<div class="settings-row-meta">in ' + escapeHtml(meta) + '</div>' : '') +
+        '</div>' +
+        '<button class="settings-row-edit" data-edit-icon aria-label="Edit icon">✎</button>' +
+      '</div>';
+    }).join("");
+
+    // Wire row events
+    list.querySelectorAll(".settings-row").forEach((row) => {
+      const id = row.dataset.rowId;
+      const item = sorted.find((x) => x.id === id);
+      const nameInput = row.querySelector("[data-edit-name]");
+      let originalName = item.name || "";
+      nameInput.addEventListener("focus", () => { originalName = nameInput.value; });
+      nameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") nameInput.blur();
+        if (e.key === "Escape") { nameInput.value = originalName; nameInput.blur(); }
+      });
+      nameInput.addEventListener("blur", async () => {
+        const next = nameInput.value.trim();
+        if (!next || next === originalName) { nameInput.value = originalName; return; }
+        try {
+          await api("/api/d1/" + state.settingsTab + "/" + id, { method: "PUT", body: JSON.stringify({ name: next }) });
+          item.name = next;
+          await invalidateBootstrap();
+          toast("Renamed", "ok");
+        } catch (err) {
+          nameInput.value = originalName;
+          toast("Couldn't rename: " + err.message, "err");
+        }
+      });
+      row.querySelectorAll("[data-edit-icon]").forEach((btn) => {
+        btn.addEventListener("click", () => openIconPicker(state.settingsTab, item));
+      });
+    });
+  }
+
+  // ── Icon picker ──
+  function openIconPicker(table, item) {
+    state.iconPickerCtx = { table, id: item.id, current: item.icon };
+    $("iconPickerTitle").textContent = "Icon for " + (item.name || "");
+    $("iconPickerEmojiInput").value = "";
+    const grid = $("iconPickerEmojiGrid");
+    grid.innerHTML = EMOJI_QUICKPICK.map((e) =>
+      '<button class="icon-picker-cell" data-emoji="' + escapeHtml(e) + '">' + escapeHtml(e) + '</button>'
+    ).join("");
+    grid.querySelectorAll("[data-emoji]").forEach((cell) => {
+      cell.addEventListener("click", () => commitPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
+    });
+    $("iconPickerSheet").classList.add("open");
+    $("iconPickerOverlay").classList.add("open");
+    $("iconPickerSheet").setAttribute("aria-hidden", "false");
+  }
+  function closeIconPicker() {
+    $("iconPickerSheet").classList.remove("open");
+    $("iconPickerOverlay").classList.remove("open");
+    $("iconPickerSheet").setAttribute("aria-hidden", "true");
+    state.iconPickerCtx = null;
+  }
+  async function commitPicker(payload) {
+    const ctx = state.iconPickerCtx;
+    if (!ctx) return;
+    try {
+      await api("/api/d1/" + ctx.table + "/" + ctx.id, { method: "PUT", body: JSON.stringify(payload) });
+      await invalidateBootstrap();
+      // Update the item icon locally so renderSettings shows it instantly
+      const list = state.data[ctx.table] || [];
+      const item = list.find((x) => x.id === ctx.id);
+      if (item) {
+        if (payload.iconUrl) {
+          if (payload.iconUrl.startsWith("/")) item.icon = { type: "image", value: payload.iconUrl };
+          else if (payload.iconUrl.startsWith("lucide:")) item.icon = { type: "lucide", value: payload.iconUrl.slice(7) };
+          else if (payload.iconUrl.startsWith("bank:"))   item.icon = { type: "bank",   value: payload.iconUrl.slice(5) };
+        } else if (payload.emoji) {
+          item.icon = { type: "emoji", value: payload.emoji };
+        } else {
+          item.icon = null;
+        }
+      }
+      closeIconPicker();
+      renderSettings();
+      toast("Icon updated", "ok");
+    } catch (err) {
+      toast("Couldn't save: " + err.message, "err");
+    }
+  }
+  async function invalidateBootstrap() {
+    try {
+      localStorage.removeItem(LS_CACHE);
+      localStorage.removeItem(LS_CACHE_AT);
+      const fresh = await api("/api/d1/bootstrap");
+      state.data = fresh;
+      localStorage.setItem(LS_CACHE, JSON.stringify(fresh));
+      localStorage.setItem(LS_CACHE_AT, String(Date.now()));
+      renderFormChips();
+      clearExpCache();
+    } catch (e) { /* tolerate */ }
   }
 
   function toast(message, kind) {
@@ -2753,7 +3222,7 @@ export const HTML = /* html */ `<!doctype html>
 
   function setActiveView(view) {
     state.currentView = view;
-    ["expenses", "add", "income", "analytics", "search", "categoryDetail"].forEach((key) => {
+    ["expenses", "add", "income", "analytics", "search", "categoryDetail", "settings"].forEach((key) => {
       const node = $(key + "View");
       if (!node) return;
       node.classList.toggle("active", key === view);
@@ -2771,10 +3240,13 @@ export const HTML = /* html */ `<!doctype html>
 
     // Hide bottom nav on drill-down views
     const nav = $("bottomNav");
-    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail");
+    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail" || view === "settings");
 
-    if (view !== "categoryDetail") state.lastNonDetailView = view;
-    if (view !== "search" && view !== "categoryDetail") state.lastNonSearchView = view;
+    if (view !== "categoryDetail" && view !== "settings") state.lastNonDetailView = view;
+    if (view !== "search" && view !== "categoryDetail" && view !== "settings") state.lastNonSearchView = view;
+    if (view === "settings") {
+      renderSettings();
+    }
 
     if (view === "home") {
       ensureHomeLoaded(state.homePeriod).catch((err) => {
@@ -4415,10 +4887,45 @@ export const HTML = /* html */ `<!doctype html>
       setActiveView(nextView);
     };
 
-    // Old search capsule buttons still work
-    ["openSearchBtn", "openSearchFromAddBtn", "openSearchFromAnalyticsBtn", "openSearchFromDetailBtn"].forEach((id) => {
-      const el = $(id);
-      if (el) el.onclick = () => setActiveView("search");
+    // Drawer triggers
+    document.querySelectorAll("[data-open-drawer]").forEach((btn) => {
+      btn.addEventListener("click", openDrawer);
+    });
+    $("drawerOverlay").addEventListener("click", closeDrawer);
+    $("drawerCloseBtn").addEventListener("click", closeDrawer);
+    document.querySelectorAll("[data-drawer-action]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.drawerAction;
+        closeDrawer();
+        if (action === "settings") setActiveView("settings");
+        else if (action === "theme") toggleTheme();
+      });
+    });
+
+    // Settings tabs + back
+    document.querySelectorAll("[data-back-from-settings]").forEach((btn) => {
+      btn.addEventListener("click", () => setActiveView("home"));
+    });
+    document.querySelectorAll("[data-settings-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.settingsTab = btn.dataset.settingsTab;
+        document.querySelectorAll("[data-settings-tab]").forEach((b) => {
+          const active = b.dataset.settingsTab === state.settingsTab;
+          b.classList.toggle("active", active);
+          b.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        renderSettings();
+      });
+    });
+
+    // Icon picker close
+    $("iconPickerOverlay").addEventListener("click", closeIconPicker);
+    $("iconPickerCloseBtn").addEventListener("click", closeIconPicker);
+    $("iconPickerEmojiInput").addEventListener("input", (e) => {
+      const val = e.target.value.trim();
+      if (val && val.length <= 8) {
+        commitPicker({ emoji: val, iconUrl: null });
+      }
     });
 
     // Transaction type tabs
