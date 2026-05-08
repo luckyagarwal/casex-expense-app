@@ -1613,7 +1613,7 @@ function renderTxnRows(txns) {
         <div class="txn-row-pills">\${catPill}\${acctPill}</div>
       </div>
       <div class="txn-row-right">
-        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${t.txnType==='income'?'+':'−'}\${fmtAmt(t.amount)}</div>
+        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${fmtAmt(t.amount)}</div>
         \${timeStr ? \`<div class="txn-row-time">\${timeStr}</div>\` : ''}
       </div>
     </div>\`;
@@ -1629,7 +1629,7 @@ function renderTxnRowsMini(txns) {
         <div class="txn-row-name">\${t.name || t.category || '—'}</div>
       </div>
       <div class="txn-row-right">
-        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${t.txnType==='income'?'+':'−'}\${fmtAmt(t.amount)}</div>
+        <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${fmtAmt(t.amount)}</div>
       </div>
     </div>\`;
   }).join('');
@@ -1828,8 +1828,9 @@ function renderSearch(area) {
             <input type="text" class="search-input" id="search-q" placeholder="Search transactions…" autocomplete="off" autofocus/>
           </div>
           <button class="panel-save-btn" id="search-btn" style="flex-shrink:0;padding:0 var(--s7)">Search</button>
-          <button class="icon-btn" id="search-export-btn" title="Export results as CSV" style="flex-shrink:0;width:44px;height:44px;border:1px solid var(--border);border-radius:var(--r-sm)">
+          <button id="search-export-btn" title="Export results as CSV" style="flex-shrink:0;padding:0 var(--s5);height:44px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface);color:var(--fg);font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:var(--s2);">
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v9M5 7l2.5 3 2.5-3M2 11v1.5A1.5 1.5 0 003.5 14h8a1.5 1.5 0 001.5-1.5V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Export CSV</span>
           </button>
         </div>
 
@@ -2113,7 +2114,10 @@ function openSettingsPicker(table, item) {
           <div id="dpicker-icons-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
         <div data-dpanel="emoji" style="display:none;">
-          <input id="dpicker-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="width:100%;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);margin-bottom:var(--s4);" />
+          <div style="display:flex;gap:var(--s2);margin-bottom:var(--s4);">
+            <input id="dpicker-emoji-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" style="flex:1;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);" />
+            <button id="dpicker-emoji-use" type="button" style="padding:0 var(--s5);border:1px solid var(--border);background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;cursor:pointer;">Use</button>
+          </div>
           <div id="dpicker-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
         <div data-dpanel="brands" style="display:none;">
@@ -2159,9 +2163,16 @@ function openSettingsPicker(table, item) {
   emojiGrid.querySelectorAll('[data-emoji]').forEach(cell => {
     cell.addEventListener('click', () => commitSettingsPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
   });
-  modal.querySelector('#dpicker-emoji-input').addEventListener('input', e => {
-    const v = e.target.value.trim();
+  const dEmojiInput = modal.querySelector('#dpicker-emoji-input');
+  const dEmojiUse   = modal.querySelector('#dpicker-emoji-use');
+  const dTryCommit = () => {
+    const v = dEmojiInput.value.trim();
     if (v && v.length <= 8) commitSettingsPicker({ emoji: v, iconUrl: null });
+    else showToast('Enter an emoji first');
+  };
+  dEmojiUse.addEventListener('click', dTryCommit);
+  dEmojiInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); dTryCommit(); }
   });
 
   // Brands grid

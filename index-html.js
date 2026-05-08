@@ -2780,16 +2780,6 @@ export const HTML = /* html */ `<!doctype html>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
       <span>Toggle Theme</span>
     </button>
-    <button class="drawer-item drawer-item-disabled" disabled>
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>Export Data</span>
-      <span class="drawer-item-tag">Soon</span>
-    </button>
-    <button class="drawer-item drawer-item-disabled" disabled>
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span>About</span>
-      <span class="drawer-item-tag">Soon</span>
-    </button>
   </nav>
   <div class="drawer-footer">v1.0 · Casex Expense App</div>
 </aside>
@@ -2813,7 +2803,10 @@ export const HTML = /* html */ `<!doctype html>
       <div class="icon-picker-grid" id="iconPickerIconsGrid"></div>
     </div>
     <div class="icon-picker-panel active" data-picker-panel="emoji">
-      <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type any emoji…" maxlength="8" autocomplete="off" />
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" autocomplete="off" style="flex:1;" />
+        <button id="iconPickerEmojiUseBtn" class="save-btn" type="button" style="padding:0 16px;">Use</button>
+      </div>
       <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
     </div>
     <div class="icon-picker-panel" data-picker-panel="brands">
@@ -5026,11 +5019,16 @@ ${ICONS_LIB_SOURCE}
     document.querySelectorAll("[data-picker-tab]").forEach((btn) => {
       btn.addEventListener("click", () => setPickerTab(btn.dataset.pickerTab));
     });
-    $("iconPickerEmojiInput").addEventListener("input", (e) => {
-      const val = e.target.value.trim();
-      if (val && val.length <= 8) {
-        commitPicker({ emoji: val, iconUrl: null });
-      }
+    const emojiInput = $("iconPickerEmojiInput");
+    const useBtn = $("iconPickerEmojiUseBtn");
+    const tryCommitEmoji = () => {
+      const val = emojiInput.value.trim();
+      if (val && val.length <= 8) commitPicker({ emoji: val, iconUrl: null });
+      else toast("Enter an emoji first", "err");
+    };
+    useBtn.addEventListener("click", tryCommitEmoji);
+    emojiInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); tryCommitEmoji(); }
     });
 
     // Transaction type tabs
