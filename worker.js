@@ -181,7 +181,7 @@ async function handleD1Expenses(env, url) {
       LEFT JOIN categories c ON e.category_id=c.id
       LEFT JOIN subcategories s ON e.subcategory_id=s.id
       LEFT JOIN accounts a ON e.account_id=a.id
-      WHERE e.date>=? AND e.date<=?`;
+      WHERE substr(e.date,1,10)>=? AND substr(e.date,1,10)<=?`;
     const p = [startDate, endDate];
     if (catFilter)  { sql += " AND e.category_id=?";    p.push(catFilter); }
     if (subFilter)  { sql += " AND e.subcategory_id=?"; p.push(subFilter); }
@@ -201,7 +201,7 @@ async function handleD1Expenses(env, url) {
       FROM income i
       LEFT JOIN categories c ON i.category_id=c.id
       LEFT JOIN accounts a ON i.account_id=a.id
-      WHERE i.date>=? AND i.date<=?`;
+      WHERE substr(i.date,1,10)>=? AND substr(i.date,1,10)<=?`;
     const p = [startDate, endDate];
     if (acctFilter) { sql += " AND i.account_id=?"; p.push(acctFilter); }
     if (q) {
@@ -259,8 +259,8 @@ async function handleD1Summary(env, url) {
   const { startDate, endDate } = rangeForPeriod(period, timeZone);
 
   const [expSum, incSum] = await Promise.all([
-    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE date>=? AND date<=?", [startDate, endDate]),
-    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM income   WHERE date>=? AND date<=?", [startDate, endDate]),
+    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM expenses WHERE substr(date,1,10)>=? AND substr(date,1,10)<=?", [startDate, endDate]),
+    d1First(env.DB, "SELECT COALESCE(SUM(amount),0) as total FROM income   WHERE substr(date,1,10)>=? AND substr(date,1,10)<=?", [startDate, endDate]),
   ]);
 
   const totalExpenses = expSum?.total || 0;
@@ -365,7 +365,7 @@ async function handleD1Export(env, url) {
     const rows = await d1All(env.DB,
       `SELECT i.date,i.note,i.source,i.amount,a.name as account
        FROM income i LEFT JOIN accounts a ON i.account_id=a.id
-       WHERE i.date>=? AND i.date<=? ORDER BY i.date DESC`,
+       WHERE substr(i.date,1,10)>=? AND substr(i.date,1,10)<=? ORDER BY i.date DESC`,
       [startDate, endDate]);
     csv = "Date,Source,Amount,Account\n" +
       rows.map(r => [r.date, r.note || r.source, r.amount, r.account].map(esc).join(",")).join("\n");
@@ -376,7 +376,7 @@ async function handleD1Export(env, url) {
        LEFT JOIN categories c ON e.category_id=c.id
        LEFT JOIN subcategories s ON e.subcategory_id=s.id
        LEFT JOIN accounts a ON e.account_id=a.id
-       WHERE e.date>=? AND e.date<=? ORDER BY e.date DESC`,
+       WHERE substr(e.date,1,10)>=? AND substr(e.date,1,10)<=? ORDER BY e.date DESC`,
       [startDate, endDate]);
     csv = "Date,Note,Amount,Category,Subcategory,Account\n" +
       rows.map(r => [r.date, r.note, r.amount, r.category, r.subcategory, r.account].map(esc).join(",")).join("\n");
