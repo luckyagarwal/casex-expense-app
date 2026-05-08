@@ -1,3 +1,5 @@
+import { ICONS_LIB_SOURCE } from "./icons-lib.js";
+
 export const DESKTOP_HTML = `<!doctype html>
 <html lang="en" data-theme="">
 <head>
@@ -1225,6 +1227,7 @@ body {
 <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
 <script>
+${ICONS_LIB_SOURCE}
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
   view: 'overview',
@@ -1250,11 +1253,26 @@ const state = {
   loading: false,
 };
 
-// Safe icon helper — only renders emoji chars, never URLs
+// Safe icon helper — emoji/SVG inline render, falls back to default
 const chipIcon = (icon, def) => {
-  const v = icon?.value;
-  if (!v || v.startsWith('http') || v.startsWith('Token') || v.length > 10) return def;
-  return v;
+  if (!icon) return def;
+  if (icon.type === 'emoji') {
+    const v = icon.value;
+    if (!v || v.length > 10) return def;
+    return v;
+  }
+  if (icon.type === 'lucide') {
+    const it = ICONS_LIB.find(x => x.key === 'lucide:' + icon.value);
+    if (it) return '<span style="display:inline-flex;width:1.1em;height:1.1em;vertical-align:-2px;">' + it.svg + '</span>';
+  }
+  if (icon.type === 'bank') {
+    const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
+    if (b) return '<span style="display:inline-flex;width:1.3em;height:1.3em;vertical-align:-2px;border-radius:4px;overflow:hidden;">' + b.svg + '</span>';
+  }
+  if (icon.type === 'image') {
+    return '<img src="' + icon.value + '" alt="" style="width:1.2em;height:1.2em;vertical-align:-2px;border-radius:4px;object-fit:cover;" />';
+  }
+  return def;
 };
 
 const fmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -2045,6 +2063,14 @@ function renderSettingsIcon(icon, fallback) {
   if (!icon) return \`<span>\${escapeAttr(fallback)}</span>\`;
   if (icon.type === 'emoji') return \`<span>\${escapeAttr(icon.value)}</span>\`;
   if (icon.type === 'image') return \`<img src="\${escapeAttr(icon.value)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);" />\`;
+  if (icon.type === 'lucide') {
+    const it = ICONS_LIB.find(x => x.key === 'lucide:' + icon.value);
+    if (it) return \`<span style="display:inline-flex;width:24px;height:24px;">\${it.svg}</span>\`;
+  }
+  if (icon.type === 'bank') {
+    const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:36px;height:36px;border-radius:8px;overflow:hidden;">\${b.svg}</span>\`;
+  }
   return \`<span>\${escapeAttr(fallback)}</span>\`;
 }
 
@@ -2053,24 +2079,35 @@ function escapeAttr(s) {
 }
 
 function openSettingsPicker(table, item) {
-  settingsPickerCtx = { table, id: item.id };
+  settingsPickerCtx = { table, id: item.id, name: item.name };
   let modal = document.getElementById('settings-picker-modal');
   if (modal) modal.remove();
+  const isAccount = table === 'accounts';
+  const defaultTab = isAccount ? 'banks' : 'icons';
+
   modal = document.createElement('div');
   modal.id = 'settings-picker-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:var(--s4);';
   modal.innerHTML = \`
-    <div role="dialog" aria-modal="true" style="background:var(--color-bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md);width:520px;max-width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div role="dialog" aria-modal="true" style="background:var(--color-bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md);width:560px;max-width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--s5);border-bottom:1px solid var(--border);">
         <div style="font-size:var(--text-lg);font-weight:600;">Icon for \${escapeAttr(item.name||'')}</div>
         <button id="settings-picker-close" style="border:none;background:transparent;font-size:24px;color:var(--fg-soft);cursor:pointer;">×</button>
       </div>
-      <div style="padding:var(--s5);">
-        <div style="display:flex;gap:var(--s2);border-bottom:1px solid var(--border);padding-bottom:var(--s3);margin-bottom:var(--s4);">
-          <button class="picker-tab active" data-picker-tab="emoji" style="padding:var(--s2) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid var(--color-accent);">Emoji</button>
+      <div style="display:flex;gap:var(--s2);padding:0 var(--s5);border-bottom:1px solid var(--border);">
+        <button class="dpicker-tab" data-dtab="icons" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Icons</button>
+        <button class="dpicker-tab" data-dtab="emoji" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Emoji</button>
+        \${isAccount ? '<button class="dpicker-tab" data-dtab="banks" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Banks</button>' : ''}
+      </div>
+      <div style="padding:var(--s5);overflow-y:auto;">
+        <div data-dpanel="icons" style="display:none;">
+          <div id="dpicker-icons-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
-        <input id="settings-picker-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="width:100%;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);margin-bottom:var(--s4);" />
-        <div id="settings-picker-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);max-height:300px;overflow-y:auto;"></div>
+        <div data-dpanel="emoji" style="display:none;">
+          <input id="dpicker-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="width:100%;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);margin-bottom:var(--s4);" />
+          <div id="dpicker-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
+        </div>
+        \${isAccount ? '<div data-dpanel="banks" style="display:none;"><div id="dpicker-banks-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);"></div></div>' : ''}
       </div>
     </div>
   \`;
@@ -2079,17 +2116,54 @@ function openSettingsPicker(table, item) {
   modal.querySelector('#settings-picker-close').addEventListener('click', closeSettingsPicker);
   modal.addEventListener('click', e => { if (e.target === modal) closeSettingsPicker(); });
 
-  const grid = modal.querySelector('#settings-picker-grid');
-  grid.innerHTML = SETTINGS_EMOJI_QUICKPICK.map(e =>
+  const setDTab = (tab) => {
+    modal.querySelectorAll('[data-dtab]').forEach(b => {
+      const active = b.dataset.dtab === tab;
+      b.style.borderBottomColor = active ? 'var(--color-accent)' : 'transparent';
+      b.style.color = active ? 'var(--fg)' : 'var(--fg-soft)';
+    });
+    modal.querySelectorAll('[data-dpanel]').forEach(p => {
+      p.style.display = p.dataset.dpanel === tab ? 'block' : 'none';
+    });
+  };
+  modal.querySelectorAll('[data-dtab]').forEach(b => {
+    b.addEventListener('click', () => setDTab(b.dataset.dtab));
+  });
+
+  // Icons grid
+  const iconsGrid = modal.querySelector('#dpicker-icons-grid');
+  iconsGrid.innerHTML = ICONS_LIB.map(it =>
+    \`<button data-iconkey="\${escapeAttr(it.key)}" aria-label="\${escapeAttr(it.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:var(--color-bg-surface-raised);border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--fg);"><span style="width:24px;height:24px;display:inline-flex;">\${it.svg}</span></button>\`
+  ).join('');
+  iconsGrid.querySelectorAll('[data-iconkey]').forEach(cell => {
+    cell.addEventListener('click', () => commitSettingsPicker({ emoji: null, iconUrl: cell.dataset.iconkey }));
+  });
+
+  // Emoji grid
+  const emojiGrid = modal.querySelector('#dpicker-emoji-grid');
+  emojiGrid.innerHTML = SETTINGS_EMOJI_QUICKPICK.map(e =>
     \`<button data-emoji="\${escapeAttr(e)}" style="aspect-ratio:1;border:1px solid var(--border);background:var(--color-bg-surface-raised);border-radius:var(--r-sm);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\${e}</button>\`
   ).join('');
-  grid.querySelectorAll('[data-emoji]').forEach(cell => {
+  emojiGrid.querySelectorAll('[data-emoji]').forEach(cell => {
     cell.addEventListener('click', () => commitSettingsPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
   });
-  modal.querySelector('#settings-picker-emoji-input').addEventListener('input', e => {
+  modal.querySelector('#dpicker-emoji-input').addEventListener('input', e => {
     const v = e.target.value.trim();
     if (v && v.length <= 8) commitSettingsPicker({ emoji: v, iconUrl: null });
   });
+
+  // Banks grid (accounts only)
+  if (isAccount) {
+    const banksGrid = modal.querySelector('#dpicker-banks-grid');
+    banksGrid.innerHTML = BANK_LOGOS.map(b =>
+      \`<button data-bankkey="\${escapeAttr(b.key)}" aria-label="\${escapeAttr(b.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:transparent;border-radius:var(--r-md);cursor:pointer;overflow:hidden;padding:0;"><span style="display:block;width:100%;height:100%;">\${b.svg}</span></button>\`
+    ).join('');
+    banksGrid.querySelectorAll('[data-bankkey]').forEach(cell => {
+      cell.addEventListener('click', () => commitSettingsPicker({ emoji: null, iconUrl: cell.dataset.bankkey }));
+    });
+  }
+
+  setDTab(defaultTab);
 }
 function closeSettingsPicker() {
   const m = document.getElementById('settings-picker-modal');

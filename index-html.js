@@ -1,6 +1,8 @@
 // HTML + CSS + JS for the expense app. Served at GET /.
 // Exported as a string so the Worker can ship as a single bundle.
 
+import { ICONS_LIB_SOURCE } from "./icons-lib.js";
+
 export const HTML = /* html */ `<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
@@ -2801,12 +2803,20 @@ export const HTML = /* html */ `<!doctype html>
     <button class="icon-btn" id="iconPickerCloseBtn" aria-label="Close">×</button>
   </div>
   <div class="icon-picker-tabs" id="iconPickerTabs" role="tablist">
+    <button class="icon-picker-tab" data-picker-tab="icons" role="tab">Icons</button>
     <button class="icon-picker-tab active" data-picker-tab="emoji" role="tab" aria-selected="true">Emoji</button>
+    <button class="icon-picker-tab" data-picker-tab="banks" role="tab" data-banks-only hidden>Banks</button>
   </div>
   <div class="icon-picker-body">
-    <div class="icon-picker-panel" data-picker-panel="emoji">
+    <div class="icon-picker-panel" data-picker-panel="icons">
+      <div class="icon-picker-grid" id="iconPickerIconsGrid"></div>
+    </div>
+    <div class="icon-picker-panel active" data-picker-panel="emoji">
       <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type any emoji…" maxlength="8" autocomplete="off" />
       <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
+    </div>
+    <div class="icon-picker-panel" data-picker-panel="banks">
+      <div class="icon-picker-grid" id="iconPickerBanksGrid" style="grid-template-columns: repeat(4, minmax(0, 1fr));"></div>
     </div>
   </div>
 </div>
@@ -2882,6 +2892,7 @@ export const HTML = /* html */ `<!doctype html>
 <div class="toast" id="toast"></div>
 
 <script>
+${ICONS_LIB_SOURCE}
 (() => {
   const LS_CACHE = "casex_expense_cache_v3";
   const LS_CACHE_AT = "casex_expense_cache_at_v3";
@@ -2984,9 +2995,13 @@ export const HTML = /* html */ `<!doctype html>
     if (!icon) return '<span>' + escapeHtml(fallback || "?") + '</span>';
     if (icon.type === "emoji") return '<span>' + escapeHtml(icon.value) + '</span>';
     if (icon.type === "image") return '<img src="' + escapeHtml(icon.value) + '" alt="" />';
-    if (icon.type === "lucide" || icon.type === "bank") {
-      // Phase 2 — fallback to label initial for now
-      return '<span>' + escapeHtml((fallback || "?").charAt(0)) + '</span>';
+    if (icon.type === "lucide") {
+      const it = ICONS_LIB.find((x) => x.key === "lucide:" + icon.value);
+      if (it) return it.svg;
+    }
+    if (icon.type === "bank") {
+      const b = BANK_LOGOS.find((x) => x.key === "bank:" + icon.value);
+      if (b) return b.svg;
     }
     return '<span>' + escapeHtml(fallback || "?") + '</span>';
   }
@@ -3053,17 +3068,68 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   // ── Icon picker ──
+  function setPickerTab(tab) {
+    document.querySelectorAll("[data-picker-tab]").forEach((b) => {
+      const active = b.dataset.pickerTab === tab;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    document.querySelectorAll("[data-picker-panel]").forEach((p) => {
+      p.classList.toggle("active", p.dataset.pickerPanel === tab);
+    });
+  }
   function openIconPicker(table, item) {
-    state.iconPickerCtx = { table, id: item.id, current: item.icon };
+    state.iconPickerCtx = { table, id: item.id, current: item.icon, name: item.name };
     $("iconPickerTitle").textContent = "Icon for " + (item.name || "");
     $("iconPickerEmojiInput").value = "";
-    const grid = $("iconPickerEmojiGrid");
-    grid.innerHTML = EMOJI_QUICKPICK.map((e) =>
+
+    // Render Icons grid
+    const iconsGrid = $("iconPickerIconsGrid");
+    iconsGrid.innerHTML = ICONS_LIB.map((it) =>
+      '<button class="icon-picker-cell" data-icon-key="' + escapeHtml(it.key) + '" aria-label="' + escapeHtml(it.name) + '">' + it.svg + '</button>'
+    ).join("");
+    iconsGrid.querySelectorAll("[data-icon-key]").forEach((cell) => {
+      cell.addEventListener("click", () => commitPicker({ emoji: null, iconUrl: cell.dataset.iconKey }));
+    });
+
+    // Render Emoji grid
+    const emojiGrid = $("iconPickerEmojiGrid");
+    emojiGrid.innerHTML = EMOJI_QUICKPICK.map((e) =>
       '<button class="icon-picker-cell" data-emoji="' + escapeHtml(e) + '">' + escapeHtml(e) + '</button>'
     ).join("");
-    grid.querySelectorAll("[data-emoji]").forEach((cell) => {
+    emojiGrid.querySelectorAll("[data-emoji]").forEach((cell) => {
       cell.addEventListener("click", () => commitPicker({ emoji: cell.dataset.emoji, iconUrl: null }));
     });
+
+    // Render Banks (accounts only)
+    const banksTab = document.querySelector('[data-banks-only]');
+    if (table === "accounts") {
+      banksTab.hidden = false;
+      const banksGrid = $("iconPickerBanksGrid");
+      banksGrid.innerHTML = BANK_LOGOS.map((b) =>
+        '<button class="icon-picker-cell" data-bank-key="' + escapeHtml(b.key) + '" aria-label="' + escapeHtml(b.name) + '">' + b.svg + '</button>'
+      ).join("");
+      banksGrid.querySelectorAll("[data-bank-key]").forEach((cell) => {
+        cell.addEventListener("click", () => commitPicker({ emoji: null, iconUrl: cell.dataset.bankKey }));
+      });
+    } else {
+      banksTab.hidden = true;
+    }
+
+    // Default tab: Banks for accounts (with name match), else Icons
+    if (table === "accounts") {
+      setPickerTab("banks");
+      // Auto-suggest highlight
+      const upper = (item.name || "").toUpperCase();
+      const match = BANK_LOGOS.find((b) => upper.includes(b.name));
+      if (match) {
+        const cell = document.querySelector('[data-bank-key="' + match.key + '"]');
+        if (cell) cell.classList.add("selected");
+      }
+    } else {
+      setPickerTab("icons");
+    }
+
     $("iconPickerSheet").classList.add("open");
     $("iconPickerOverlay").classList.add("open");
     $("iconPickerSheet").setAttribute("aria-hidden", "false");
@@ -3180,6 +3246,14 @@ export const HTML = /* html */ `<!doctype html>
     const cls = className || "";
     if (icon && icon.type === "image" && icon.value) {
       return '<img src="' + icon.value + '" alt="" class="' + cls + '" />';
+    }
+    if (icon && icon.type === "lucide" && icon.value) {
+      const it = (typeof ICONS_LIB !== "undefined") ? ICONS_LIB.find((x) => x.key === "lucide:" + icon.value) : null;
+      if (it) return '<span class="icon-emoji ' + cls + '" style="display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;">' + it.svg + '</span>';
+    }
+    if (icon && icon.type === "bank" && icon.value) {
+      const b = (typeof BANK_LOGOS !== "undefined") ? BANK_LOGOS.find((x) => x.key === "bank:" + icon.value) : null;
+      if (b) return '<span class="icon-emoji ' + cls + '" style="display:inline-flex;align-items:center;justify-content:center;width:1.4em;height:1.4em;overflow:hidden;border-radius:6px;">' + b.svg + '</span>';
     }
     return '<span class="icon-emoji ' + cls + '">' + (icon && icon.type === "emoji" ? icon.value : (fallback || "*")) + '</span>';
   }
@@ -4918,9 +4992,12 @@ export const HTML = /* html */ `<!doctype html>
       });
     });
 
-    // Icon picker close
+    // Icon picker close + tab switching
     $("iconPickerOverlay").addEventListener("click", closeIconPicker);
     $("iconPickerCloseBtn").addEventListener("click", closeIconPicker);
+    document.querySelectorAll("[data-picker-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => setPickerTab(btn.dataset.pickerTab));
+    });
     $("iconPickerEmojiInput").addEventListener("input", (e) => {
       const val = e.target.value.trim();
       if (val && val.length <= 8) {
