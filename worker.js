@@ -419,8 +419,8 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v2";
-const OFFLINE_URLS = ["/"];
+const CACHE_NAME = "ne-pwa-v3";
+const OFFLINE_URLS = ["/", "/desktop"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -443,7 +443,8 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
-        if (networkResponse.ok) {
+        const ct = networkResponse.headers.get("Content-Type") || "";
+        if (networkResponse.ok && ct.includes("application/json")) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
@@ -459,11 +460,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname === "/") {
+  if (url.pathname === "/" || url.pathname === "/desktop") {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse.ok)
+          const ct = networkResponse.headers.get("Content-Type") || "";
+          if (networkResponse.ok && ct.includes("text/html"))
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
           return networkResponse;
         }).catch(() => null);
