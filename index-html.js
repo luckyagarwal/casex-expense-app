@@ -328,11 +328,28 @@ export const HTML = /* html */ `<!doctype html>
     touch-action: manipulation;
   }
   html, body {
-    height: var(--app-vh, 100vh);
-    min-height: var(--app-vh, 100vh);
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   body {
     overflow-x: hidden;
+  }
+  /* iOS PWA: paint a generous strip at the viewport bottom with the nav
+     background colour. Sits BELOW the bottom-nav (z-index 49 vs nav 50)
+     so it only shows in any gap iOS leaves — home-indicator zone, browser
+     chrome, etc. 250px is intentionally large to cover any reasonable
+     case without computing iOS quirks. */
+  body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 250px;
+    background: var(--color-nav-bg);
+    z-index: 49;
+    pointer-events: none;
   }
 
   /* Prevent iOS from auto-zooming when focusing inputs (requires ≥16px) */
@@ -355,13 +372,15 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .app-shell {
-    min-height: var(--app-vh, 100vh);
+    min-height: 100vh;
+    min-height: 100dvh;
     background: transparent;
   }
 
   .view {
     display: none;
-    min-height: var(--app-vh, 100vh);
+    min-height: 100vh;
+    min-height: 100dvh;
     padding:
       max(20px, env(safe-area-inset-top))
       var(--space-6)
@@ -2907,26 +2926,6 @@ export const HTML = /* html */ `<!doctype html>
 <script>
 ${ICONS_LIB_SOURCE}
 (() => {
-  // iOS PWA standalone has a known bug where 100vh / 100dvh return a
-  // pre-layout viewport on first paint, so the bottom-nav rendered partway
-  // up the screen until the user interacted. We pin the visual viewport
-  // height to a CSS var and update it on every orientation/resize event.
-  const setAppVh = () => {
-    const vv = window.visualViewport;
-    const h = (vv && vv.height) || window.innerHeight;
-    if (h) document.documentElement.style.setProperty("--app-vh", h + "px");
-  };
-  setAppVh();
-  requestAnimationFrame(setAppVh);
-  window.addEventListener("resize", setAppVh);
-  window.addEventListener("orientationchange", () => {
-    setAppVh();
-    setTimeout(setAppVh, 200);
-  });
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", setAppVh);
-  }
-
   const LS_CACHE = "casex_expense_cache_v4";
   const LS_CACHE_AT = "casex_expense_cache_at_v4";
   const LS_THEME = "casex_expense_theme_v4";
