@@ -1550,13 +1550,13 @@ export const HTML = /* html */ `<!doctype html>
   .chip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 12px;
+    gap: 10px;
+    padding: 12px 16px;
     border-radius: 999px;
     background: var(--surface-3);
     border: 1px solid var(--border);
     color: var(--fg-soft);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     font-weight: var(--weight-medium);
     cursor: pointer;
   }
@@ -1572,16 +1572,30 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .chip-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     background: var(--surface-4);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     flex-shrink: 0;
+  }
+  .chip-icon img,
+  .chip-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .chip-icon span,
+  .chip-icon .icon-emoji {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .chip-remove {

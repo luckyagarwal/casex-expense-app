@@ -926,16 +926,24 @@ body {
 .chip-item {
   display: flex;
   align-items: center;
-  gap: var(--s2);
-  padding: var(--s2) var(--s5);
+  gap: var(--s3);
+  padding: var(--s3) var(--s5);
   background: var(--color-pill);
   border: 1px solid transparent;
   border-radius: var(--r-full);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--fg-soft);
   cursor: pointer;
   transition: all var(--dur-fast);
+}
+.chip-item > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.chip-item svg, .chip-item img {
+  display: block;
 }
 .chip-item:hover { background: var(--surface-2); border-color: var(--border); }
 .chip-item.selected {
