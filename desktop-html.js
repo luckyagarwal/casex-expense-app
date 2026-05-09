@@ -2471,7 +2471,8 @@ function renderPanelAddBody(body) {
     });
   });
 
-  // Subcategory cascade: re-render subcategory chips when category changes
+  // Subcategory cascade: re-render subcategory chips when category changes,
+  // ranked by recency (subcatByCategory weights from last 20 transactions).
   const catGrid = body.querySelector('#pf-category');
   const subGrid = body.querySelector('#pf-subcategory');
   if (catGrid && subGrid) {
@@ -2481,7 +2482,13 @@ function renderPanelAddBody(body) {
         subGrid.innerHTML = '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories for this category</span>';
         return;
       }
-      subGrid.innerHTML = subs.map(s => \`<button class="chip-item" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
+      const weights = (bs.subcatByCategory && bs.subcatByCategory[catId]) || {};
+      const ranked = [...subs].sort((a, b) => {
+        const wa = weights[a.id] || 0, wb = weights[b.id] || 0;
+        if (wb !== wa) return wb - wa;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      subGrid.innerHTML = ranked.map(s => \`<button class="chip-item" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
       subGrid.querySelectorAll('.chip-item').forEach(chip => {
         chip.addEventListener('click', () => {
           subGrid.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
@@ -2671,7 +2678,13 @@ function renderPanelEdit() {
         subGridEdit.innerHTML = '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
         return;
       }
-      subGridEdit.innerHTML = subs.map(s => \`<button class="chip-item \${s.id===preselectId?'selected':''}" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
+      const weights = (bs.subcatByCategory && bs.subcatByCategory[catId]) || {};
+      const ranked = [...subs].sort((a, b) => {
+        const wa = weights[a.id] || 0, wb = weights[b.id] || 0;
+        if (wb !== wa) return wb - wa;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      subGridEdit.innerHTML = ranked.map(s => \`<button class="chip-item \${s.id===preselectId?'selected':''}" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
       subGridEdit.querySelectorAll('.chip-item').forEach(chip => {
         chip.addEventListener('click', () => {
           subGridEdit.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));

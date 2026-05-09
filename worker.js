@@ -465,7 +465,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v7";
+const CACHE_NAME = "ne-pwa-v8";
 const OFFLINE_URLS = ["/", "/desktop"];
 
 self.addEventListener("install", (event) => {

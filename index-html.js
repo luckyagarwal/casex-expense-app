@@ -2891,9 +2891,9 @@ export const HTML = /* html */ `<!doctype html>
 <script>
 ${ICONS_LIB_SOURCE}
 (() => {
-  const LS_CACHE = "casex_expense_cache_v3";
-  const LS_CACHE_AT = "casex_expense_cache_at_v3";
-  const LS_THEME = "casex_expense_theme_v3";
+  const LS_CACHE = "casex_expense_cache_v4";
+  const LS_CACHE_AT = "casex_expense_cache_at_v4";
+  const LS_THEME = "casex_expense_theme_v4";
   const SUGGESTIONS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
   const EXP_LS_TTL = { today: 2 * 60 * 1000, week: 10 * 60 * 1000, month: 20 * 60 * 1000 };
   const PERIOD_LABELS = { today: "day", week: "weekly", month: "monthly" };
