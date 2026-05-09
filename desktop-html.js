@@ -1599,7 +1599,7 @@ function renderTxnListBody(body, txns) {
       return \`<div class="txn-day-group">
         <div class="txn-day-header">
           <span class="txn-day-label">\${dayLabel(date)}</span>
-          <span class="txn-day-net \${net>=0?'positive':'negative'}">\${net>=0?'+':'−'}\${fmtAmt(Math.abs(net))}</span>
+          <span class="txn-day-net \${net>=0?'positive':'negative'}">\${fmtAmt(Math.abs(net))}</span>
         </div>
         \${renderTxnRows(rows)}
       </div>\`;
