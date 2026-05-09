@@ -317,31 +317,22 @@ export const HTML = /* html */ `<!doctype html>
 
   html, body {
     margin: 0;
-    min-height: 100%;
-    height: 100%;
+    min-height: 100dvh;
     background: var(--bg);
     color: var(--fg);
     font-family: "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Inter", "Avenir Next", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
     overscroll-behavior: none;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     touch-action: manipulation;
   }
-  /* Paint the iOS home-indicator zone with the nav background so the area
-     beneath the bottom-nav never appears as a blank cream strip. */
-  body::after {
-    content: "";
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background: var(--color-nav-bg);
-    z-index: 49;
-    pointer-events: none;
+  html { height: -webkit-fill-available; }
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
   }
 
   /* Prevent iOS from auto-zooming when focusing inputs (requires ≥16px) */
@@ -366,8 +357,6 @@ export const HTML = /* html */ `<!doctype html>
   .app-shell {
     min-height: 100vh;
     min-height: 100dvh;
-    position: relative;
-    overflow-x: hidden;
     background: transparent;
   }
 
