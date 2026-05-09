@@ -2477,8 +2477,8 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <div class="input-card">
-      <div class="field-label">Expense Name</div>
-      <input id="expense" class="text-input" type="text" placeholder="Coffee, Uber, groceries..." autocomplete="off" />
+      <div class="field-label">Description</div>
+      <input id="expense" name="txnDescription" class="text-input" type="text" placeholder="Coffee, Uber, groceries..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" />
     </div>
 
     <div class="input-card" id="catCard">
@@ -2549,7 +2549,7 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card">
       <div class="field-label" id="incomeSourceLabel">Income Source</div>
-      <input id="incomeSource" class="text-input" type="text" placeholder="Salary, Freelance, Dividends..." autocomplete="off" />
+      <input id="incomeSource" name="incomeNote" class="text-input" type="text" placeholder="Salary, Freelance, Dividends..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" />
     </div>
 
     <div class="input-card" id="transferFromAcctCard" hidden>
