@@ -1414,6 +1414,14 @@ function renderView() {
     renderAnalytics(area);
   } else if (state.view === 'search') {
     topbarTitle.textContent = 'Search';
+    topbarActions.innerHTML = \`
+      <button class="icon-btn" id="topbar-search-export" aria-label="Export results as CSV" title="Export results as CSV">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 7l3 3 3-3M2 12v1.5A1.5 1.5 0 003.5 15h9a1.5 1.5 0 001.5-1.5V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>\`;
+    document.getElementById('topbar-search-export').addEventListener('click', () => {
+      const inlineBtn = document.getElementById('search-export-btn');
+      if (inlineBtn) inlineBtn.click();
+    });
     renderSearch(area);
   } else if (state.view === 'settings') {
     topbarTitle.textContent = 'Settings';

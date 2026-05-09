@@ -318,6 +318,7 @@ export const HTML = /* html */ `<!doctype html>
   html, body {
     margin: 0;
     min-height: 100%;
+    height: 100%;
     background: var(--bg);
     color: var(--fg);
     font-family: "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Inter", "Avenir Next", system-ui, sans-serif;
@@ -328,6 +329,19 @@ export const HTML = /* html */ `<!doctype html>
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     touch-action: manipulation;
+  }
+  /* Paint the iOS home-indicator zone with the nav background so the area
+     beneath the bottom-nav never appears as a blank cream strip. */
+  body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background: var(--color-nav-bg);
+    z-index: 49;
+    pointer-events: none;
   }
 
   /* Prevent iOS from auto-zooming when focusing inputs (requires ≥16px) */
@@ -2478,7 +2492,7 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card">
       <div class="field-label">Description</div>
-      <input id="expense" name="txnDescription" class="text-input" type="text" placeholder="Coffee, Uber, groceries..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" />
+      <input id="expense" name="txnDescription" class="text-input" type="text" placeholder="Coffee, Uber, groceries..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" />
     </div>
 
     <div class="input-card" id="catCard">
@@ -2549,7 +2563,7 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card">
       <div class="field-label" id="incomeSourceLabel">Income Source</div>
-      <input id="incomeSource" name="incomeNote" class="text-input" type="text" placeholder="Salary, Freelance, Dividends..." autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" />
+      <input id="incomeSource" name="incomeNote" class="text-input" type="text" placeholder="Salary, Freelance, Dividends..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" />
     </div>
 
     <div class="input-card" id="transferFromAcctCard" hidden>
@@ -2670,6 +2684,7 @@ export const HTML = /* html */ `<!doctype html>
         <h1 class="screen-title">Search</h1>
       </div>
       <div class="topbar-actions">
+        <button class="icon-btn" id="searchExportBtn" title="Export results as CSV" aria-label="Export CSV"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="icon-btn" id="searchThemeBtn" title="Toggle theme">☀</button>
       </div>
     </div>
@@ -5207,6 +5222,25 @@ ${ICONS_LIB_SOURCE}
     );
 
     $("searchBackBtn").onclick = () => setActiveView(state.lastNonSearchView || "expenses");
+
+    const searchExportBtn = $("searchExportBtn");
+    if (searchExportBtn) {
+      searchExportBtn.onclick = () => {
+        const from = $("searchFrom").value;
+        const to   = $("searchTo").value;
+        if (!from || !to) { toast("Pick both From and To dates first", "err"); return; }
+        const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+        const params = new URLSearchParams();
+        params.set("type", "expense");
+        params.set("from", from);
+        params.set("to", to);
+        if (tz) params.set("timeZone", decodeURIComponent(tz));
+        if (state.searchFilter.categoryId)    params.set("category",    state.searchFilter.categoryId);
+        if (state.searchFilter.subcategoryId) params.set("subcategory", state.searchFilter.subcategoryId);
+        if (state.searchFilter.accountId)     params.set("account",     state.searchFilter.accountId);
+        window.location.href = "/api/d1/export?" + params.toString();
+      };
+    }
   }
 
   async function init() {
