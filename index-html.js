@@ -335,21 +335,6 @@ export const HTML = /* html */ `<!doctype html>
   body {
     overflow-x: hidden;
   }
-  /* Thin strip at the very bottom of the viewport, below the bottom-nav.
-     Always visible. Painted with the nav background so it reads as part
-     of the tab bar visually. Height stays fixed at 24px regardless of
-     whatever iOS reports for env(safe-area-inset-bottom). */
-  body::after {
-    content: "";
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 24px;
-    background: var(--color-nav-bg);
-    z-index: 49;
-    pointer-events: none;
-  }
 
   /* Prevent iOS from auto-zooming when focusing inputs (requires ≥16px) */
   input, select, textarea {
@@ -383,7 +368,7 @@ export const HTML = /* html */ `<!doctype html>
     padding:
       max(20px, env(safe-area-inset-top))
       var(--space-6)
-      calc(var(--nav-h) + 24px + 20px + env(safe-area-inset-bottom));
+      calc(var(--nav-h) + 20px + env(safe-area-inset-bottom));
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -401,7 +386,7 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .view.add-view {
-    padding-bottom: calc(var(--nav-h) + 24px + 32px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--nav-h) + 32px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -1784,10 +1769,11 @@ export const HTML = /* html */ `<!doctype html>
   /* ── Bottom tab bar ── */
   .bottom-nav {
     position: fixed;
-    bottom: 24px; /* sits above the 24px home-indicator strip painted by body::after */
+    bottom: 0;
     left: 0;
     right: 0;
-    height: var(--nav-h);
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--color-nav-bg);
     border-top: 1px solid var(--color-nav-border);
     backdrop-filter: blur(20px);
@@ -2126,7 +2112,7 @@ export const HTML = /* html */ `<!doctype html>
     position: fixed;
     left: 18px;
     right: 18px;
-    bottom: calc(var(--nav-h) + 24px + 16px + env(safe-area-inset-bottom));
+    bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));
     border-radius: 18px;
     padding: 14px 16px;
     text-align: center;
@@ -3368,7 +3354,7 @@ ${ICONS_LIB_SOURCE}
 
     // Hide bottom nav on drill-down views
     const nav = $("bottomNav");
-    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail" || view === "settings");
+    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail");
 
     if (view !== "categoryDetail" && view !== "settings") state.lastNonDetailView = view;
     if (view !== "search" && view !== "categoryDetail" && view !== "settings") state.lastNonSearchView = view;
