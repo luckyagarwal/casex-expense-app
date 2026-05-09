@@ -2803,9 +2803,9 @@ export const HTML = /* html */ `<!doctype html>
       <div class="icon-picker-grid" id="iconPickerIconsGrid"></div>
     </div>
     <div class="icon-picker-panel active" data-picker-panel="emoji">
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" autocomplete="off" style="flex:1;" />
-        <button id="iconPickerEmojiUseBtn" class="save-btn" type="button" style="padding:0 16px;">Use</button>
+      <div style="display:flex; gap:10px; margin-bottom:14px; align-items:stretch;">
+        <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" autocomplete="off" style="flex:1; height:54px; font-size:24px; padding:0 16px; text-align:center;" />
+        <button id="iconPickerEmojiUseBtn" class="save-btn" type="button" style="height:54px; padding:0 22px; font-size:15px;">Use</button>
       </div>
       <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
     </div>

@@ -2114,9 +2114,9 @@ function openSettingsPicker(table, item) {
           <div id="dpicker-icons-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
         <div data-dpanel="emoji" style="display:none;">
-          <div style="display:flex;gap:var(--s2);margin-bottom:var(--s4);">
-            <input id="dpicker-emoji-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" style="flex:1;padding:var(--s3);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);" />
-            <button id="dpicker-emoji-use" type="button" style="padding:0 var(--s5);border:1px solid var(--border);background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;cursor:pointer;">Use</button>
+          <div style="display:flex;gap:var(--s3);margin-bottom:var(--s4);align-items:stretch;">
+            <input id="dpicker-emoji-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" style="flex:1;height:56px;padding:0 var(--s4);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:24px;text-align:center;" />
+            <button id="dpicker-emoji-use" type="button" style="height:56px;padding:0 var(--s6);border:none;background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;font-size:15px;cursor:pointer;">Use</button>
           </div>
           <div id="dpicker-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
@@ -2391,6 +2391,12 @@ function renderPanelAddBody(body) {
           \${bs.categories.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
         </div>
       </div>
+      <div class="form-field" id="pf-subcat-field">
+        <label class="form-label">Subcategory</label>
+        <div class="chip-grid" id="pf-subcategory">
+          <span style="color:var(--fg-soft);font-size:var(--text-sm)">Select a category first</span>
+        </div>
+      </div>
       <div class="form-field">
         <label class="form-label">Account</label>
         <div class="chip-grid" id="pf-account">
@@ -2417,6 +2423,29 @@ function renderPanelAddBody(body) {
       });
     });
   });
+
+  // Subcategory cascade: re-render subcategory chips when category changes
+  const catGrid = body.querySelector('#pf-category');
+  const subGrid = body.querySelector('#pf-subcategory');
+  if (catGrid && subGrid) {
+    const renderSubs = (catId) => {
+      const subs = (bs.subcategories || []).filter(s => (s.categoryId || s.category_id) === catId);
+      if (!subs.length) {
+        subGrid.innerHTML = '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories for this category</span>';
+        return;
+      }
+      subGrid.innerHTML = subs.map(s => \`<button class="chip-item" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
+      subGrid.querySelectorAll('.chip-item').forEach(chip => {
+        chip.addEventListener('click', () => {
+          subGrid.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+        });
+      });
+    };
+    catGrid.querySelectorAll('.chip-item').forEach(chip => {
+      chip.addEventListener('click', () => renderSubs(chip.dataset.id));
+    });
+  }
 
   // Focus amount
   const amtInput = document.getElementById('pf-amount');
@@ -2448,9 +2477,11 @@ async function saveTransaction() {
       if (acctChip) body.accountId  = acctChip.dataset.id;
     } else {
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
+      const subChip  = document.getElementById('pf-subcategory')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
-      if (catChip)  body.categoryId  = catChip.dataset.id;
-      if (acctChip) body.accountId   = acctChip.dataset.id;
+      if (catChip)  body.categoryId    = catChip.dataset.id;
+      if (subChip)  body.subcategoryId = subChip.dataset.id;
+      if (acctChip) body.accountId     = acctChip.dataset.id;
     }
 
     const r = await fetch('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
@@ -2543,7 +2574,8 @@ function renderPanelEdit() {
     </button>\`;
   document.getElementById('panel-close').addEventListener('click', closePanel);
 
-  const bs = state.bootstrap || { categories: [], accounts: [] };
+  const bs = state.bootstrap || { categories: [], subcategories: [], accounts: [] };
+  const isExpense = (t.txnType || 'expense') === 'expense';
   body.innerHTML = \`
     <div class="form-field">
       <label class="form-label">Amount</label>
@@ -2555,6 +2587,10 @@ function renderPanelEdit() {
         \${bs.categories.map(c => \`<button class="chip-item \${c.id===t.categoryId?'selected':''}" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
       </div>
     </div>
+    \${isExpense ? \`<div class="form-field">
+      <label class="form-label">Subcategory</label>
+      <div class="chip-grid" id="pf-subcategory"></div>
+    </div>\` : ''}
     <div class="form-field">
       <label class="form-label">Account</label>
       <div class="chip-grid" id="pf-account">
@@ -2579,6 +2615,29 @@ function renderPanelEdit() {
     });
   });
 
+  // Subcategory cascade for edit form
+  const subGridEdit = body.querySelector('#pf-subcategory');
+  if (isExpense && subGridEdit) {
+    const renderSubsEdit = (catId, preselectId) => {
+      const subs = (bs.subcategories || []).filter(s => (s.categoryId || s.category_id) === catId);
+      if (!subs.length) {
+        subGridEdit.innerHTML = '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
+        return;
+      }
+      subGridEdit.innerHTML = subs.map(s => \`<button class="chip-item \${s.id===preselectId?'selected':''}" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('');
+      subGridEdit.querySelectorAll('.chip-item').forEach(chip => {
+        chip.addEventListener('click', () => {
+          subGridEdit.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+        });
+      });
+    };
+    renderSubsEdit(t.categoryId, t.subcategoryId);
+    body.querySelector('#pf-category').querySelectorAll('.chip-item').forEach(chip => {
+      chip.addEventListener('click', () => renderSubsEdit(chip.dataset.id, null));
+    });
+  }
+
   footer.innerHTML = \`
     <button class="panel-save-btn" id="panel-save">Save Changes</button>
     <button class="panel-cancel-btn" id="panel-cancel">Cancel</button>\`;
@@ -2592,11 +2651,13 @@ function renderPanelEdit() {
       const note     = document.getElementById('pf-note')?.value?.trim() || '';
       const date     = document.getElementById('pf-date')?.value || t.date;
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
+      const subChip  = document.getElementById('pf-subcategory')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
       const body = {
         amount, note, date, txnType: t.txnType,
-        categoryId:  catChip?.dataset.id  || t.categoryId  || '',
-        accountId:   acctChip?.dataset.id || t.accountId   || '',
+        categoryId:    catChip?.dataset.id  || t.categoryId    || '',
+        subcategoryId: subChip?.dataset.id  || (t.txnType === 'income' ? '' : ''),
+        accountId:     acctChip?.dataset.id || t.accountId     || '',
       };
       const r = await fetch(\`/api/d1/expense/\${t.id}\`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (!r.ok) { const e = await r.json(); throw new Error(e.error||'Update failed'); }
