@@ -3465,12 +3465,10 @@ ${ICONS_LIB_SOURCE}
   }
 
   function suggestedSubs() {
-    const selected = state.chosen.categoryId;
-    const fallback = (state.data && state.data.recent && state.data.recent.subcategories) || [];
-    if (!selected) return fallback;
-    const map = state.data.subcatByCategory && state.data.subcatByCategory[selected];
-    if (!map) return fallback;
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5).map((entry) => entry[0]);
+    // Subcategories are independent of selected category — always return the
+    // global recent list so the user can pick any subcategory regardless of
+    // which category (or none) is currently chosen.
+    return (state.data && state.data.recent && state.data.recent.subcategories) || [];
   }
 
   function renderChipLabel(item, fallback) {
@@ -3499,11 +3497,6 @@ ${ICONS_LIB_SOURCE}
       chip.onclick = () => {
         state.chosen[idField] = null;
         state.chosen[nameField] = null;
-        if (idField === "categoryId") {
-          state.chosen.subcategoryId = null;
-          state.chosen.subcategoryName = null;
-          renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories, suggestedSubs());
-        }
         renderChips(prefix, idField, nameField, fullList, recentIds);
       };
       el.appendChild(chip);
@@ -3523,11 +3516,6 @@ ${ICONS_LIB_SOURCE}
       chip.onclick = () => {
         state.chosen[idField] = item.id;
         state.chosen[nameField] = item.name;
-        if (idField === "categoryId") {
-          state.chosen.subcategoryId = null;
-          state.chosen.subcategoryName = null;
-          renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories, suggestedSubs());
-        }
         renderChips(prefix, idField, nameField, fullList, recentIds);
       };
       return chip;
@@ -3601,11 +3589,6 @@ ${ICONS_LIB_SOURCE}
           state.chosen[nameField] = item.name;
           input.value = "";
           close();
-          if (idField === "categoryId") {
-            state.chosen.subcategoryId = null;
-            state.chosen.subcategoryName = null;
-            renderChips("sub", "subcategoryId", "subcategoryName", state.data.subcategories, suggestedSubs());
-          }
           renderChips(prefix, idField, nameField, items, recentFor(prefix));
         };
         dropdown.appendChild(row);
