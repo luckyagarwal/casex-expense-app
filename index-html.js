@@ -317,7 +317,6 @@ export const HTML = /* html */ `<!doctype html>
 
   html, body {
     margin: 0;
-    min-height: 100dvh;
     background: var(--bg);
     color: var(--fg);
     font-family: "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Inter", "Avenir Next", system-ui, sans-serif;
@@ -328,10 +327,11 @@ export const HTML = /* html */ `<!doctype html>
     text-size-adjust: 100%;
     touch-action: manipulation;
   }
-  html { height: -webkit-fill-available; }
+  html, body {
+    height: var(--app-vh, 100vh);
+    min-height: var(--app-vh, 100vh);
+  }
   body {
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
     overflow-x: hidden;
   }
 
@@ -355,15 +355,13 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   .app-shell {
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: var(--app-vh, 100vh);
     background: transparent;
   }
 
   .view {
     display: none;
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: var(--app-vh, 100vh);
     padding:
       max(20px, env(safe-area-inset-top))
       var(--space-6)
@@ -2909,6 +2907,26 @@ export const HTML = /* html */ `<!doctype html>
 <script>
 ${ICONS_LIB_SOURCE}
 (() => {
+  // iOS PWA standalone has a known bug where 100vh / 100dvh return a
+  // pre-layout viewport on first paint, so the bottom-nav rendered partway
+  // up the screen until the user interacted. We pin the visual viewport
+  // height to a CSS var and update it on every orientation/resize event.
+  const setAppVh = () => {
+    const vv = window.visualViewport;
+    const h = (vv && vv.height) || window.innerHeight;
+    if (h) document.documentElement.style.setProperty("--app-vh", h + "px");
+  };
+  setAppVh();
+  requestAnimationFrame(setAppVh);
+  window.addEventListener("resize", setAppVh);
+  window.addEventListener("orientationchange", () => {
+    setAppVh();
+    setTimeout(setAppVh, 200);
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", setAppVh);
+  }
+
   const LS_CACHE = "casex_expense_cache_v4";
   const LS_CACHE_AT = "casex_expense_cache_at_v4";
   const LS_THEME = "casex_expense_theme_v4";
