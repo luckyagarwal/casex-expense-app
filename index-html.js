@@ -1788,8 +1788,7 @@ export const HTML = /* html */ `<!doctype html>
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    height: var(--nav-h);
     background: var(--color-nav-bg);
     border-top: 1px solid var(--color-nav-border);
     backdrop-filter: blur(20px);
