@@ -2817,9 +2817,9 @@ export const HTML = /* html */ `<!doctype html>
       <div class="icon-picker-grid" id="iconPickerIconsGrid"></div>
     </div>
     <div class="icon-picker-panel active" data-picker-panel="emoji">
-      <div style="display:flex; gap:10px; margin-bottom:14px; align-items:stretch;">
-        <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" autocomplete="off" style="flex:1; height:54px; font-size:24px; padding:0 16px; text-align:center;" />
-        <button id="iconPickerEmojiUseBtn" class="save-btn" type="button" style="height:54px; padding:0 22px; font-size:15px;">Use</button>
+      <div style="display:grid; grid-template-columns:1fr auto; gap:10px; margin-bottom:14px; align-items:stretch;">
+        <input id="iconPickerEmojiInput" class="text-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" size="1" autocomplete="off" style="width:100%; min-width:0; height:54px; font-size:24px; padding:0 18px; text-align:center; box-sizing:border-box;" />
+        <button id="iconPickerEmojiUseBtn" class="save-btn" type="button" style="height:54px; padding:0 24px; font-size:15px; white-space:nowrap;">Use</button>
       </div>
       <div class="icon-picker-grid" id="iconPickerEmojiGrid"></div>
     </div>

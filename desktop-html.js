@@ -2169,9 +2169,9 @@ function openSettingsPicker(table, item) {
           <div id="dpicker-icons-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
         <div data-dpanel="emoji" style="display:none;">
-          <div style="display:flex;gap:var(--s3);margin-bottom:var(--s4);align-items:stretch;">
-            <input id="dpicker-emoji-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" style="flex:1;height:56px;padding:0 var(--s4);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:24px;text-align:center;" />
-            <button id="dpicker-emoji-use" type="button" style="height:56px;padding:0 var(--s6);border:none;background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;font-size:15px;cursor:pointer;">Use</button>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:var(--s3);margin-bottom:var(--s4);align-items:stretch;">
+            <input id="dpicker-emoji-input" type="text" placeholder="Type or paste any emoji…" maxlength="8" size="1" style="width:100%;min-width:0;height:56px;padding:0 var(--s5);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:24px;text-align:center;box-sizing:border-box;" />
+            <button id="dpicker-emoji-use" type="button" style="height:56px;padding:0 var(--s7);border:none;background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;font-size:15px;cursor:pointer;white-space:nowrap;">Use</button>
           </div>
           <div id="dpicker-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
         </div>
