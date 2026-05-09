@@ -210,12 +210,21 @@ async function handleD1Expenses(env, url) {
     : rangeForPeriod(period, timeZone);
   const { startDate, endDate } = range;
 
-  const mkIcon = (emoji) => emoji ? { type: "emoji", value: emoji } : null;
+  const mkIcon = (emoji, iconUrl) => {
+    if (iconUrl) {
+      if (iconUrl.startsWith("lucide:")) return { type: "lucide", value: iconUrl.slice(7) };
+      if (iconUrl.startsWith("bank:"))   return { type: "bank",   value: iconUrl.slice(5) };
+      if (iconUrl.startsWith("brand:"))  return { type: "brand",  value: iconUrl.slice(6) };
+      if (iconUrl.startsWith("/"))       return { type: "image",  value: iconUrl };
+    }
+    return emoji ? { type: "emoji", value: emoji } : null;
+  };
   let expenses = [], incomeRows = [];
 
   if (!type || type === "expense") {
-    let sql = `SELECT e.*,c.name as cat_name,c.emoji as cat_emoji,
-      s.name as sub_name,a.name as acct_name,a.emoji as acct_emoji
+    let sql = `SELECT e.*,c.name as cat_name,c.emoji as cat_emoji,c.icon_url as cat_icon_url,
+      s.name as sub_name,s.icon_url as sub_icon_url,
+      a.name as acct_name,a.emoji as acct_emoji,a.icon_url as acct_icon_url
       FROM expenses e
       LEFT JOIN categories c ON e.category_id=c.id
       LEFT JOIN subcategories s ON e.subcategory_id=s.id
@@ -236,7 +245,8 @@ async function handleD1Expenses(env, url) {
   }
 
   if (!type || type === "income") {
-    let sql = `SELECT i.*,c.name as cat_name,c.emoji as cat_emoji,a.name as acct_name,a.emoji as acct_emoji
+    let sql = `SELECT i.*,c.name as cat_name,c.emoji as cat_emoji,c.icon_url as cat_icon_url,
+      a.name as acct_name,a.emoji as acct_emoji,a.icon_url as acct_icon_url
       FROM income i
       LEFT JOIN categories c ON i.category_id=c.id
       LEFT JOIN accounts a ON i.account_id=a.id
@@ -256,19 +266,21 @@ async function handleD1Expenses(env, url) {
   const mapExp = (r) => ({
     id: r.id, name: r.note || "", amount: r.amount, date: r.date,
     categoryId: r.category_id || "", category: r.cat_name || "",
-    categoryIcon: mkIcon(r.cat_emoji),
-    subcategoryId: r.subcategory_id || "", subcategory: r.sub_name || "", subcategoryIcons: [],
+    categoryIcon: mkIcon(r.cat_emoji, r.cat_icon_url),
+    subcategoryId: r.subcategory_id || "", subcategory: r.sub_name || "",
+    subcategoryIcon: mkIcon(null, r.sub_icon_url), subcategoryIcons: [],
     accountId: r.account_id || "", account: r.acct_name || "",
-    accountIcon: mkIcon(r.acct_emoji), txnType: "expense",
+    accountIcon: mkIcon(r.acct_emoji, r.acct_icon_url), txnType: "expense",
   });
 
   const mapInc = (r) => ({
     id: r.id, name: r.note || r.source || "", amount: r.amount, date: r.date,
     categoryId: r.category_id || "", category: r.cat_name || "",
-    categoryIcon: mkIcon(r.cat_emoji),
-    subcategoryId: "", subcategory: "", subcategoryIcons: [],
+    categoryIcon: mkIcon(r.cat_emoji, r.cat_icon_url),
+    subcategoryId: "", subcategory: "",
+    subcategoryIcon: null, subcategoryIcons: [],
     accountId: r.account_id || "", account: r.acct_name || "",
-    accountIcon: mkIcon(r.acct_emoji), txnType: "income",
+    accountIcon: mkIcon(r.acct_emoji, r.acct_icon_url), txnType: "income",
   });
 
   let all = [...expenses.map(mapExp), ...incomeRows.map(mapInc)];
@@ -453,7 +465,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v6";
+const CACHE_NAME = "ne-pwa-v7";
 const OFFLINE_URLS = ["/", "/desktop"];
 
 self.addEventListener("install", (event) => {

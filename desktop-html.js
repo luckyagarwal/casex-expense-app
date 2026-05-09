@@ -1600,17 +1600,62 @@ function renderTxnListBody(body, txns) {
   bindTxnRowClicks(body);
 }
 
+function bigIconHtml(icon, fallbackEmoji) {
+  if (!icon) return fallbackEmoji;
+  if (icon.type === 'emoji') return icon.value;
+  if (icon.type === 'lucide') {
+    const it = ICONS_LIB.find(x => x.key === 'lucide:' + icon.value);
+    if (it) return \`<span style="display:inline-flex;width:24px;height:24px;">\${it.svg}</span>\`;
+  }
+  if (icon.type === 'bank') {
+    const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:32px;height:32px;border-radius:6px;overflow:hidden;">\${b.svg}</span>\`;
+  }
+  if (icon.type === 'brand') {
+    const b = BRANDS_LIB.find(x => x.key === 'brand:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:32px;height:32px;border-radius:6px;overflow:hidden;">\${b.svg}</span>\`;
+  }
+  if (icon.type === 'image') {
+    return \`<img src="\${icon.value}" alt="" style="width:32px;height:32px;border-radius:6px;object-fit:cover;" />\`;
+  }
+  return fallbackEmoji;
+}
+
+function pillIconHtml(icon) {
+  if (!icon) return '';
+  if (icon.type === 'emoji') return icon.value + ' ';
+  if (icon.type === 'lucide') {
+    const it = ICONS_LIB.find(x => x.key === 'lucide:' + icon.value);
+    if (it) return \`<span style="display:inline-flex;width:14px;height:14px;vertical-align:-2px;margin-right:4px;">\${it.svg}</span>\`;
+  }
+  if (icon.type === 'bank') {
+    const b = BANK_LOGOS.find(x => x.key === 'bank:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:4px;border-radius:3px;overflow:hidden;">\${b.svg}</span>\`;
+  }
+  if (icon.type === 'brand') {
+    const b = BRANDS_LIB.find(x => x.key === 'brand:' + icon.value);
+    if (b) return \`<span style="display:inline-flex;width:16px;height:16px;vertical-align:-3px;margin-right:4px;border-radius:3px;overflow:hidden;">\${b.svg}</span>\`;
+  }
+  if (icon.type === 'image') {
+    return \`<img src="\${icon.value}" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;border-radius:3px;object-fit:cover;" />\`;
+  }
+  return '';
+}
+
 function renderTxnRows(txns) {
   return txns.map(t => {
-    const icon = t.categoryIcon?.type==='emoji' ? t.categoryIcon.value : (t.txnType==='income'?'💚':'🧾');
-    const timeStr = t.date && t.date.includes('T') ? new Date(t.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-    const catPill = t.category ? \`<span class="txn-pill cat">\${t.category}</span>\` : '';
-    const acctPill = t.account ? \`<span class="txn-pill acct">\${t.account}</span>\` : '';
+    const mainIcon  = t.subcategoryIcon || t.categoryIcon;
+    const fallback  = t.txnType==='income' ? '💚' : '🧾';
+    const iconHtml  = bigIconHtml(mainIcon, fallback);
+    const timeStr   = t.date && t.date.includes('T') ? new Date(t.date).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+    const catPill   = t.category    ? \`<span class="txn-pill cat">\${pillIconHtml(t.categoryIcon)}\${t.category}</span>\`           : '';
+    const subPill   = t.subcategory ? \`<span class="txn-pill cat">\${pillIconHtml(t.subcategoryIcon)}\${t.subcategory}</span>\`     : '';
+    const acctPill  = t.account     ? \`<span class="txn-pill acct">\${pillIconHtml(t.accountIcon)}\${t.account}</span>\`            : '';
     return \`<div class="txn-row txn-\${t.txnType==='income'?'income':'expense'}" data-txn-id="\${t.id}" data-txn-type="\${t.txnType}">
-      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${icon}</div>
+      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${iconHtml}</div>
       <div class="txn-row-body">
         <div class="txn-row-name">\${t.name || t.category || '—'}</div>
-        <div class="txn-row-pills">\${catPill}\${acctPill}</div>
+        <div class="txn-row-pills">\${catPill}\${subPill}\${acctPill}</div>
       </div>
       <div class="txn-row-right">
         <div class="txn-row-amount \${t.txnType==='income'?'income':'expense'}">\${fmtAmt(t.amount)}</div>
@@ -1622,9 +1667,11 @@ function renderTxnRows(txns) {
 
 function renderTxnRowsMini(txns) {
   return txns.map(t => {
-    const icon = t.categoryIcon?.type==='emoji' ? t.categoryIcon.value : (t.txnType==='income'?'💚':'🧾');
+    const mainIcon = t.subcategoryIcon || t.categoryIcon;
+    const fallback = t.txnType==='income' ? '💚' : '🧾';
+    const iconHtml = bigIconHtml(mainIcon, fallback);
     return \`<div class="txn-row txn-\${t.txnType==='income'?'income':'expense'}" data-txn-id="\${t.id}" data-txn-type="\${t.txnType}">
-      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${icon}</div>
+      <div class="txn-row-icon \${t.txnType==='income'?'income-icon':'expense-icon'}">\${iconHtml}</div>
       <div class="txn-row-body">
         <div class="txn-row-name">\${t.name || t.category || '—'}</div>
       </div>

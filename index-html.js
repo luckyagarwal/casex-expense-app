@@ -4352,23 +4352,23 @@ ${ICONS_LIB_SOURCE}
   }
 
   function renderExpenseCard(expense) {
-    const icon = expense.categoryIcon || (expense.accountIcon ? expense.accountIcon : null);
+    const mainIcon = expense.subcategoryIcon || expense.categoryIcon || expense.accountIcon || null;
     const title = expense.name || expense.subcategory || expense.category || "Expense";
     const time = formatTime(expense.date);
     const offlineIndicator = expense.isOffline ? '<span class="pill" style="border: 1px dashed var(--fg-soft); color: var(--fg-soft);">⏳ Syncing</span>' : '';
     const categoryPill = expense.category
-      ? '<span class="pill category-pill">' + escapeHtml(expense.category) + '</span>'
+      ? '<span class="pill category-pill">' + renderIcon(expense.categoryIcon, "", "pill-icon") + ' ' + escapeHtml(expense.category) + '</span>'
       : "";
     const subcategoryPill = expense.subcategory
-      ? '<span class="pill">' + escapeHtml(expense.subcategory) + '</span>'
+      ? '<span class="pill">' + renderIcon(expense.subcategoryIcon, "", "pill-icon") + ' ' + escapeHtml(expense.subcategory) + '</span>'
       : "";
     const accountPill = expense.account
-      ? '<span class="pill account-pill">' + escapeHtml(expense.account) + '</span>'
+      ? '<span class="pill account-pill">' + renderIcon(expense.accountIcon, "", "pill-icon") + ' ' + escapeHtml(expense.account) + '</span>'
       : "";
 
     return '' +
       '<div class="expense-card" data-expense-id="' + expense.id + '"' + (expense.isOffline ? ' style="opacity: 0.7;"' : '') + '>' +
-        '<div class="expense-icon">' + renderIcon(icon, initialFor(title)) + '</div>' +
+        '<div class="expense-icon">' + renderIcon(mainIcon, initialFor(title)) + '</div>' +
         '<div>' +
           '<div class="expense-name">' + escapeHtml(title) + '</div>' +
           '<div class="expense-meta">' + offlineIndicator + categoryPill + subcategoryPill + accountPill + '</div>' +
