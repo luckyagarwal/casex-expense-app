@@ -533,6 +533,37 @@ async function handleDeleteExpense(env, pageId) {
 }
 
 // ----------------------------------------------------------------------------
+// Manage taxonomy — create/delete categories, subcategories, accounts
+// ----------------------------------------------------------------------------
+
+const TAXONOMY = {
+  category:    { db: "CATEGORIES_DB_ID",    titleProp: "Category"    },
+  subcategory: { db: "SUBCATEGORIES_DB_ID", titleProp: "Subcategory" },
+  account:     { db: "ACCOUNTS_DB_ID",      titleProp: "Account"     },
+};
+
+async function handleCreateTaxonomy(env, kind, body) {
+  const def = TAXONOMY[kind];
+  if (!def) return { error: "Unknown kind", status: 400 };
+  const name = (body?.name || "").trim();
+  if (!name) return { error: "Name required", status: 400 };
+  const dbId = env[def.db];
+  if (!dbId) return { error: def.db + " not configured", status: 400 };
+  const page = await createRowInDb(env, dbId, def.titleProp, name);
+  await kvDel(env, "bootstrap");
+  return { ok: true, id: page.id, name };
+}
+
+async function handleDeleteTaxonomy(env, kind, pageId) {
+  const def = TAXONOMY[kind];
+  if (!def) return { error: "Unknown kind", status: 400 };
+  if (!pageId) return { error: "Page ID required", status: 400 };
+  await notion(env, "PATCH", `/pages/${pageId}`, { archived: true });
+  await kvDel(env, "bootstrap");
+  return { ok: true, pageId };
+}
+
+// ----------------------------------------------------------------------------
 // Create account transfer — saves to ACCOUNT_TRANSFERS_DB_ID
 // ----------------------------------------------------------------------------
 
@@ -902,6 +933,20 @@ export default {
           const pageId = url.pathname.slice("/api/expense/".length);
           const body = await request.json().catch(() => null);
           const result = await handleUpdateExpense(env, pageId, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        // Taxonomy CRUD
+        const taxoCreate = url.pathname.match(/^\/api\/(category|subcategory|account)$/);
+        if (taxoCreate && request.method === "POST") {
+          const body = await request.json().catch(() => null);
+          const result = await handleCreateTaxonomy(env, taxoCreate[1], body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+        const taxoDelete = url.pathname.match(/^\/api\/(category|subcategory|account)\/(.+)$/);
+        if (taxoDelete && request.method === "DELETE") {
+          const result = await handleDeleteTaxonomy(env, taxoDelete[1], taxoDelete[2]);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }

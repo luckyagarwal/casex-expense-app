@@ -1376,11 +1376,6 @@ export const HTML = /* html */ `<!doctype html>
     border-bottom: none;
   }
 
-  .dropdown-item.create {
-    color: var(--accent);
-    font-weight: var(--weight-semibold);
-  }
-
   .save-btn {
     width: 100%;
     padding: 16px 18px;
@@ -1518,8 +1513,16 @@ export const HTML = /* html */ `<!doctype html>
     justify-content: space-around;
     z-index: 50;
     transition: transform var(--dur-normal) var(--ease);
+    /* Promote to compositor layer — prevents iOS PWA standalone jitter
+       when safe-area / visualViewport recalcs on focus/rotation. */
+    transform: translateZ(0);
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
-  .bottom-nav.hidden {
+  .bottom-nav.hidden,
+  .bottom-nav.keyboard-open {
     transform: translateY(100%);
   }
   .nav-tab {
@@ -1843,6 +1846,95 @@ export const HTML = /* html */ `<!doctype html>
     cursor: pointer;
   }
 
+  /* ── Settings view ── */
+  .settings-section {
+    margin-top: var(--space-6);
+  }
+  .settings-section-title {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .settings-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .settings-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--color-pill);
+    font-size: var(--text-md);
+  }
+  .settings-item-name {
+    flex: 1;
+    font-size: var(--text-md);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .settings-item-del {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--color-status-error);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+  .settings-item-del:active { opacity: 0.6; }
+  .settings-add-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+  .settings-add-row input {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--color-text-primary);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: var(--text-md);
+    outline: none;
+  }
+  .settings-add-row input:focus { border-color: var(--color-border-focus); }
+  .settings-add-row button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0 16px;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+  .settings-add-row button:disabled { opacity: 0.5; }
+  .settings-empty {
+    padding: 14px;
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
+  }
+
   .toast {
     position: fixed;
     left: 18px;
@@ -2122,6 +2214,7 @@ export const HTML = /* html */ `<!doctype html>
         <h1 class="screen-title">Overview</h1>
       </div>
       <div class="topbar-actions">
+        <button class="icon-btn" id="homeSettingsBtn" title="Settings" aria-label="Settings">⚙</button>
         <button class="icon-btn" id="homeThemeBtn" title="Toggle theme" aria-label="Toggle theme">☀</button>
       </div>
     </div>
@@ -2224,7 +2317,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="catChips"></div>
       <button type="button" class="expand-toggle" id="catExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="catSearchRow" hidden>
-        <input id="catSearch" class="text-input" type="text" placeholder="Search or create category..." autocomplete="off" />
+        <input id="catSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="catDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2234,7 +2327,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="subChips"></div>
       <button type="button" class="expand-toggle" id="subExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="subSearchRow" hidden>
-        <input id="subSearch" class="text-input" type="text" placeholder="Search or create subcategory..." autocomplete="off" />
+        <input id="subSearch" class="text-input" type="text" placeholder="Search subcategory..." autocomplete="off" />
         <div id="subDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2244,7 +2337,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="acctChips"></div>
       <button type="button" class="expand-toggle" id="acctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="acctSearchRow" hidden>
-        <input id="acctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="acctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="acctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2295,7 +2388,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="transferFromAcctChips"></div>
       <button type="button" class="expand-toggle" id="transferFromAcctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="transferFromAcctSearchRow" hidden>
-        <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="transferFromAcctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2305,7 +2398,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="incomeCatChips"></div>
       <button type="button" class="expand-toggle" id="incomeCatExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="incomeCatSearchRow" hidden>
-        <input id="incomeCatSearch" class="text-input" type="text" placeholder="Search or create category..." autocomplete="off" />
+        <input id="incomeCatSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="incomeCatDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2315,7 +2408,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="incomeAcctChips"></div>
       <button type="button" class="expand-toggle" id="incomeAcctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="incomeAcctSearchRow" hidden>
-        <input id="incomeAcctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="incomeAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="incomeAcctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2492,6 +2585,42 @@ export const HTML = /* html */ `<!doctype html>
         <div class="empty-state-icon">📂</div>
         <div class="empty-state-msg">No transactions here</div>
         <div class="empty-state-hint">Nothing logged in this category for this period</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="settingsView" data-view="settings">
+    <div class="topbar">
+      <div class="topbar-leading">
+        <button class="back-btn" id="settingsBackBtn">‹ Back</button>
+        <h1 class="screen-title">Settings</h1>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Categories</div>
+      <div class="settings-list" id="settingsCatList"></div>
+      <div class="settings-add-row">
+        <input id="settingsCatInput" type="text" placeholder="New category name" autocomplete="off" />
+        <button id="settingsCatAddBtn" type="button">Add</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Subcategories</div>
+      <div class="settings-list" id="settingsSubList"></div>
+      <div class="settings-add-row">
+        <input id="settingsSubInput" type="text" placeholder="New subcategory name" autocomplete="off" />
+        <button id="settingsSubAddBtn" type="button">Add</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Accounts</div>
+      <div class="settings-list" id="settingsAcctList"></div>
+      <div class="settings-add-row">
+        <input id="settingsAcctInput" type="text" placeholder="New account name" autocomplete="off" />
+        <button id="settingsAcctAddBtn" type="button">Add</button>
       </div>
     </div>
   </section>
@@ -2752,7 +2881,7 @@ export const HTML = /* html */ `<!doctype html>
 
   function setActiveView(view) {
     state.currentView = view;
-    ["expenses", "add", "income", "analytics", "search", "categoryDetail"].forEach((key) => {
+    ["expenses", "add", "income", "analytics", "search", "categoryDetail", "settings"].forEach((key) => {
       const node = $(key + "View");
       if (!node) return;
       node.classList.toggle("active", key === view);
@@ -2770,7 +2899,7 @@ export const HTML = /* html */ `<!doctype html>
 
     // Hide bottom nav on drill-down views
     const nav = $("bottomNav");
-    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail");
+    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail" || view === "settings");
 
     if (view !== "categoryDetail") state.lastNonDetailView = view;
     if (view !== "search" && view !== "categoryDetail") state.lastNonSearchView = view;
@@ -2793,6 +2922,89 @@ export const HTML = /* html */ `<!doctype html>
     if (view === "search") {
       populateSearchChips();
     }
+    if (view === "settings") {
+      renderSettings();
+    }
+  }
+
+  // ── Settings view ────────────────────────────────────────────────────────
+  function renderSettings() {
+    if (!state.data) return;
+    renderSettingsList("settingsCatList",  state.data.categories,    "category");
+    renderSettingsList("settingsSubList",  state.data.subcategories, "subcategory");
+    renderSettingsList("settingsAcctList", state.data.accounts,      "account");
+  }
+
+  function renderSettingsList(containerId, items, kind) {
+    const el = $(containerId);
+    if (!el) return;
+    const list = (items || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+    if (!list.length) {
+      el.innerHTML = '<div class="settings-empty">None yet</div>';
+      return;
+    }
+    el.innerHTML = list.map((item) =>
+      '<div class="settings-item" data-id="' + escapeHtml(item.id) + '">' +
+        '<span class="settings-item-icon">' + renderIcon(item.icon, initialFor(item.name)) + '</span>' +
+        '<span class="settings-item-name">' + escapeHtml(item.name) + '</span>' +
+        '<button class="settings-item-del" type="button" data-kind="' + kind + '" data-id="' + escapeHtml(item.id) + '" data-name="' + escapeHtml(item.name) + '">Delete</button>' +
+      '</div>'
+    ).join("");
+    el.querySelectorAll(".settings-item-del").forEach((btn) => {
+      btn.onclick = () => deleteTaxonomy(btn.dataset.kind, btn.dataset.id, btn.dataset.name);
+    });
+  }
+
+  async function deleteTaxonomy(kind, id, name) {
+    if (!confirm("Delete " + kind + ' "' + name + '"?\\n\\nExisting transactions stay; the option just disappears from pickers.')) return;
+    try {
+      await api("/api/" + kind + "/" + id, { method: "DELETE" });
+      await bootstrap(true);
+      renderSettings();
+      toast(kind.charAt(0).toUpperCase() + kind.slice(1) + " deleted", "ok");
+    } catch (err) {
+      toast("Delete failed: " + (err.message || ""), "err");
+    }
+  }
+
+  async function addTaxonomy(kind, inputEl, btnEl) {
+    const name = (inputEl.value || "").trim();
+    if (!name) { inputEl.focus(); return; }
+    btnEl.disabled = true;
+    try {
+      await api("/api/" + kind, { method: "POST", body: JSON.stringify({ name }) });
+      inputEl.value = "";
+      await bootstrap(true);
+      renderSettings();
+      toast("Added", "ok");
+    } catch (err) {
+      toast("Add failed: " + (err.message || ""), "err");
+    } finally {
+      btnEl.disabled = false;
+    }
+  }
+
+  function wireSettings() {
+    const back = $("settingsBackBtn");
+    if (back) back.onclick = () => setActiveView("home");
+
+    const open = $("homeSettingsBtn");
+    if (open) open.onclick = () => setActiveView("settings");
+
+    const pairs = [
+      ["category",    "settingsCatInput",  "settingsCatAddBtn"],
+      ["subcategory", "settingsSubInput",  "settingsSubAddBtn"],
+      ["account",     "settingsAcctInput", "settingsAcctAddBtn"],
+    ];
+    pairs.forEach(([kind, inputId, btnId]) => {
+      const input = $(inputId);
+      const btn   = $(btnId);
+      if (!input || !btn) return;
+      btn.onclick = () => addTaxonomy(kind, input, btn);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); addTaxonomy(kind, input, btn); }
+      });
+    });
   }
 
   function openAddSheet() {
@@ -2813,11 +3025,11 @@ export const HTML = /* html */ `<!doctype html>
     });
   }
 
-  async function bootstrap() {
+  async function bootstrap(hardRefresh) {
     // Render from localStorage immediately (instant on return visits)
     const cached = localStorage.getItem(LS_CACHE);
     let hadCache = false;
-    if (cached) {
+    if (cached && !hardRefresh) {
       try {
         state.data = JSON.parse(cached);
         renderFormChips();
@@ -2825,7 +3037,7 @@ export const HTML = /* html */ `<!doctype html>
       } catch {}
     }
 
-    const netFetch = api("/api/bootstrap").then((data) => {
+    const netFetch = api("/api/bootstrap" + (hardRefresh ? "?refresh=1" : "")).then((data) => {
       state.data = data;
       localStorage.setItem(LS_CACHE, JSON.stringify(data));
       localStorage.setItem(LS_CACHE_AT, String(Date.now()));
@@ -2834,10 +3046,14 @@ export const HTML = /* html */ `<!doctype html>
       if (!state.data) toast("Failed to load Notion data: " + err.message, "err");
     });
 
+    if (hardRefresh) {
+      await netFetch;
+      return;
+    }
     if (hadCache) {
-      hideLoader(); // cached data ready — don't block on network
+      hideLoader();
     } else {
-      await netFetch; // first visit: must wait for network
+      await netFetch;
       hideLoader();
     }
   }
@@ -2974,7 +3190,7 @@ export const HTML = /* html */ `<!doctype html>
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
       expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search / Add ⌄";
+      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
       expandBtn.onclick = () => {
         state.expanded[prefix] = !state.expanded[prefix];
         renderChips(prefix, idField, nameField, fullList, recentIds);
@@ -3029,18 +3245,11 @@ export const HTML = /* html */ `<!doctype html>
         dropdown.appendChild(row);
       });
 
-      const exact = matches.some((item) => item.name.toLowerCase() === normalized);
-      if (normalized && !exact) {
+      if (normalized && !matches.length) {
         const row = document.createElement("div");
-        row.className = "dropdown-item create";
-        row.textContent = '+ Create "' + query.trim() + '"';
-        row.onclick = () => {
-          state.chosen[idField] = null;
-          state.chosen[nameField] = query.trim();
-          input.value = "";
-          close();
-          renderChips(prefix, idField, nameField, items, recentFor(prefix));
-        };
+        row.className = "dropdown-item";
+        row.style.color = "var(--color-text-tertiary)";
+        row.textContent = 'No matches. Add new options in Settings.';
         dropdown.appendChild(row);
       }
 
@@ -3115,7 +3324,7 @@ export const HTML = /* html */ `<!doctype html>
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
       expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search / Add ⌄";
+      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
       expandBtn.onclick = () => {
         state.incomeExpanded[prefix] = !state.incomeExpanded[prefix];
         renderIncomeChips(prefix, idField, nameField, fullList, recentIds);
@@ -3156,18 +3365,11 @@ export const HTML = /* html */ `<!doctype html>
         dropdown.appendChild(row);
       });
 
-      const exact = matches.some((item) => item.name.toLowerCase() === normalized);
-      if (normalized && !exact) {
+      if (normalized && !matches.length) {
         const row = document.createElement("div");
-        row.className = "dropdown-item create";
-        row.textContent = '+ Create "' + query.trim() + '"';
-        row.onclick = () => {
-          state.incomeChosen[idField] = null;
-          state.incomeChosen[nameField] = query.trim();
-          input.value = "";
-          close();
-          renderIncomeChips(prefix, idField, nameField, items, recentFor(prefix === "incomeCat" ? "cat" : "acct"));
-        };
+        row.className = "dropdown-item";
+        row.style.color = "var(--color-text-tertiary)";
+        row.textContent = 'No matches. Add new options in Settings.';
         dropdown.appendChild(row);
       }
 
@@ -3644,7 +3846,9 @@ export const HTML = /* html */ `<!doctype html>
     const expenseTotal = expenseEntries.reduce((s, e) => s + e.amount, 0);
     const balance = incomeTotal - expenseTotal;
     const count = expenseEntries.length;
-    const recent5 = expenses.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+    const sortedAll = expenses.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    // Day view: show every transaction. Week/Month: cap at 5 (See all → Txns).
+    const recent5 = data.period === "today" ? sortedAll : sortedAll.slice(0, 5);
 
     $("homeBalanceAmount").innerHTML = formatCurrencyParts(balance);
     $("homeBalanceMeta").textContent = count + " expense" + (count !== 1 ? "s" : "") + " this " + (PERIOD_LABELS[data.period] || data.period);
@@ -4486,6 +4690,22 @@ export const HTML = /* html */ `<!doctype html>
     });
   }
 
+  function initKeyboardDetector() {
+    // iOS PWA standalone: visualViewport shrinks when keyboard appears.
+    // position:fixed elements pin to layout viewport, so the bottom nav
+    // appears to drift / jitter as iOS scrolls focused inputs into view.
+    // Hide the nav while the keyboard is up.
+    const nav = $("bottomNav");
+    if (!nav || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const update = () => {
+      const delta = window.innerHeight - vv.height;
+      nav.classList.toggle("keyboard-open", delta > 120);
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+  }
+
   function initRefreshButtons() {
     $("refreshExpensesBtn").onclick = async () => {
       try {
@@ -4569,8 +4789,10 @@ export const HTML = /* html */ `<!doctype html>
     wireExpenseActions();
     wireTxnSheet();
     wireAnalyticsDrilldown();
+    wireSettings();
     initRefreshButtons();
     initSearchControls();
+    initKeyboardDetector();
 
     wireSearch("cat", "categoryId", "categoryName", () => state.data ? state.data.categories : []);
     wireSearch("sub", "subcategoryId", "subcategoryName", () => state.data ? state.data.subcategories : []);
