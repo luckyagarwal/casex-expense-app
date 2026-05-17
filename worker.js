@@ -305,7 +305,13 @@ async function handleGetExpenses(env, url) {
   if (categoryId)     andFilters.push({ property: "Category", relation: { contains: categoryId } });
   if (accountId)      andFilters.push({ property: "Account",  relation: { contains: accountId  } });
   const notionFilter = andFilters.length === 1 ? andFilters[0] : { and: andFilters };
-  const dateSorts    = [{ property: "Date", direction: "descending" }];
+  // Primary: Date desc. Tiebreaker: created_time desc — keeps same-day
+  // entries ordered most-recently-logged first instead of Notion's default
+  // (which can look like an amount sort).
+  const dateSorts    = [
+    { property: "Date", direction: "descending" },
+    { timestamp: "created_time", direction: "descending" },
+  ];
   const fallbackSort = [{ timestamp: "created_time", direction: "descending" }];
 
   // Fetch expenses and (if configured) income in parallel
