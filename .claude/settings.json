@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcrun xctrace *)",
+      "mcp__firebase__crashlytics_get_issue",
+      "mcp__anybox__search_bookmarks",
+      "mcp__firebase__crashlytics_list_events",
+      "mcp__firebase__crashlytics_get_report"
+    ]
+  }
+}
