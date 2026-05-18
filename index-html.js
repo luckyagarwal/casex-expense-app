@@ -630,14 +630,55 @@ export const HTML = /* html */ `<!doctype html>
     transition: opacity 140ms ease, background 140ms ease;
   }
   .settings-row-delete:hover { opacity: 1; background: rgba(244,106,106,0.12); }
-  .settings-add-cat-select {
-    width: 100%; margin-top: 6px;
-    background: var(--color-bg-surface-3);
-    border: 1px solid var(--color-border-primary);
-    border-radius: 8px; padding: 6px 10px;
-    color: var(--color-text-primary);
-    font-size: var(--text-sm); height: 36px;
+  .settings-add-form {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px;
+    background: var(--color-bg-surface);
+    border: 1.5px solid var(--color-border-focus);
+    border-radius: 14px;
   }
+  .settings-add-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid var(--color-border-primary);
+    border-radius: 10px;
+    background: var(--color-bg-surface-2);
+    color: var(--color-text-primary);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+  .settings-add-input:focus { border-color: var(--color-border-focus); }
+  .settings-add-cat-select {
+    width: 100%; box-sizing: border-box;
+    background: var(--color-bg-surface-2);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--color-text-primary);
+    font-size: var(--text-sm); height: 42px;
+  }
+  .settings-add-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .settings-add-cancel-btn {
+    padding: 8px 16px; border-radius: 10px;
+    border: 1px solid var(--color-border-primary);
+    background: transparent; color: var(--color-text-secondary);
+    font-size: var(--text-sm); font-weight: var(--weight-medium);
+    cursor: pointer;
+  }
+  .settings-add-save-btn {
+    padding: 8px 18px; border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--color-accent-expense), var(--color-accent-expense-hover));
+    color: #fff;
+    font-size: var(--text-sm); font-weight: var(--weight-semibold);
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+    box-shadow: 0 4px 12px var(--color-accent-expense-subtle);
+  }
+  .settings-add-save-btn:active { transform: scale(0.97); }
 
   /* ── Icon picker sheet ── */
   .icon-picker-overlay {
@@ -3135,8 +3176,7 @@ ${ICONS_LIB_SOURCE}
     const labels = { categories: "Category", subcategories: "Subcategory", accounts: "Account" };
     const label = labels[tab] || tab;
     const formEl = document.createElement("div");
-    formEl.className = "settings-row settings-add-form";
-    formEl.style.cssText = "border-color: var(--color-border-focus);";
+    formEl.className = "settings-add-form";
     let catSelectHtml = "";
     if (tab === "subcategories" && state.data) {
       const cats = [...(state.data.categories || [])].sort((a, b) => a.name.localeCompare(b.name));
@@ -3146,12 +3186,12 @@ ${ICONS_LIB_SOURCE}
         '</select>';
     }
     formEl.innerHTML =
-      '<div style="flex:1; min-width:0;">' +
-        '<input class="settings-row-name" id="settingsNewName" placeholder="' + label + ' name…" />' +
-        catSelectHtml +
-      '</div>' +
-      '<button class="save-btn" id="settingsNewSaveBtn" style="padding:0 14px; height:34px; font-size:var(--text-sm); flex-shrink:0;">Add</button>' +
-      '<button class="settings-row-delete" id="settingsNewCancelBtn" aria-label="Cancel" style="opacity:0.6;">✕</button>';
+      '<input class="settings-add-input" id="settingsNewName" placeholder="' + label + ' name…" />' +
+      catSelectHtml +
+      '<div class="settings-add-actions">' +
+        '<button class="settings-add-cancel-btn" id="settingsNewCancelBtn" type="button" aria-label="Cancel">Cancel</button>' +
+        '<button class="settings-add-save-btn" id="settingsNewSaveBtn" type="button">Add ' + label + '</button>' +
+      '</div>';
     list.insertBefore(formEl, list.firstChild);
     const nameInput = $("settingsNewName");
     nameInput.focus();
