@@ -154,8 +154,35 @@ async function handleD1Bootstrap(env) {
 }
 
 // ----------------------------------------------------------------------------
-// Entity edit — categories, subcategories, accounts (rename + re-icon)
+// Entity CRUD — categories, subcategories, accounts
 // ----------------------------------------------------------------------------
+
+async function handleD1CreateEntity(env, table, body) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  if (!["categories", "subcategories", "accounts"].includes(table))
+    return { error: "Invalid table", status: 400 };
+  const name = (body?.name || "").trim();
+  if (!name) return { error: "Name required", status: 400 };
+
+  const id = crypto.randomUUID();
+  if (table === "subcategories") {
+    const categoryId = body?.categoryId || null;
+    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id) VALUES (?,?,?)", [id, name, categoryId]);
+  } else {
+    await d1Run(env.DB, `INSERT INTO ${table} (id,name) VALUES (?,?)`, [id, name]);
+  }
+  return { ok: true, id };
+}
+
+async function handleD1DeleteEntity(env, table, id) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  if (!id) return { error: "ID required", status: 400 };
+  if (!["categories", "subcategories", "accounts"].includes(table))
+    return { error: "Invalid table", status: 400 };
+
+  await d1Run(env.DB, `DELETE FROM ${table} WHERE id=?`, [id]);
+  return { ok: true, id };
+}
 
 async function handleD1UpdateEntity(env, table, id, body) {
   if (!env.DB) return { error: "D1 not configured", status: 500 };
@@ -598,12 +625,30 @@ export default {
           return handleD1Export(env, url);
         }
 
+        // Entity create
+        const entityCreateMatch = url.pathname.match(/^\/api\/d1\/(categories|subcategories|accounts)$/);
+        if (entityCreateMatch && request.method === "POST") {
+          const [, table] = entityCreateMatch;
+          const body = await request.json().catch(() => null);
+          const result = await handleD1CreateEntity(env, table, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+
         // Entity rename + re-icon
         const entityMatch = url.pathname.match(/^\/api\/d1\/(categories|subcategories|accounts)\/([^/]+)$/);
         if (entityMatch && request.method === "PUT") {
           const [, table, id] = entityMatch;
           const body = await request.json().catch(() => null);
           const result = await handleD1UpdateEntity(env, table, id, body);
+          if (result.error) return json(result, result.status || 400);
+          return json(result);
+        }
+
+        // Entity delete
+        if (entityMatch && request.method === "DELETE") {
+          const [, table, id] = entityMatch;
+          const result = await handleD1DeleteEntity(env, table, id);
           if (result.error) return json(result, result.status || 400);
           return json(result);
         }

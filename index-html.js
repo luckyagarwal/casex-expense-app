@@ -619,6 +619,25 @@ export const HTML = /* html */ `<!doctype html>
     border-radius: 8px;
   }
   .settings-row-edit:hover { background: var(--surface-2); }
+  .settings-row-delete {
+    width: 32px; height: 32px;
+    border: none; background: transparent;
+    color: var(--color-status-error);
+    opacity: 0.45;
+    cursor: pointer; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+    transition: opacity 140ms ease, background 140ms ease;
+  }
+  .settings-row-delete:hover { opacity: 1; background: rgba(244,106,106,0.12); }
+  .settings-add-cat-select {
+    width: 100%; margin-top: 6px;
+    background: var(--color-bg-surface-3);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px; padding: 6px 10px;
+    color: var(--color-text-primary);
+    font-size: var(--text-sm); height: 36px;
+  }
 
   /* ── Icon picker sheet ── */
   .icon-picker-overlay {
@@ -1782,6 +1801,10 @@ export const HTML = /* html */ `<!doctype html>
     align-items: center;
     justify-content: space-around;
     z-index: 50;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+  .bottom-nav.nav-ready {
     transition: transform var(--dur-normal) var(--ease);
   }
   .bottom-nav.hidden {
@@ -2419,8 +2442,8 @@ export const HTML = /* html */ `<!doctype html>
     </div>
 
     <div class="home-recent-label">
-      <span class="home-recent-title">Recent</span>
-      <button class="home-see-all" id="homeSeeAllBtn">See all</button>
+      <span class="home-recent-title">Transactions</span>
+      <button class="home-see-all" id="homeSeeAllBtn">All txns →</button>
     </div>
     <div class="list-stack" id="homeRecentList">
       <div class="loader-state"><div class="big">...</div>Loading...</div>
@@ -2490,7 +2513,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="catChips"></div>
       <button type="button" class="expand-toggle" id="catExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="catSearchRow" hidden>
-        <input id="catSearch" class="text-input" type="text" placeholder="Search or create category..." autocomplete="off" />
+        <input id="catSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="catDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2500,7 +2523,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="subChips"></div>
       <button type="button" class="expand-toggle" id="subExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="subSearchRow" hidden>
-        <input id="subSearch" class="text-input" type="text" placeholder="Search or create subcategory..." autocomplete="off" />
+        <input id="subSearch" class="text-input" type="text" placeholder="Search subcategory..." autocomplete="off" />
         <div id="subDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2510,7 +2533,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="acctChips"></div>
       <button type="button" class="expand-toggle" id="acctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="acctSearchRow" hidden>
-        <input id="acctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="acctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="acctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2561,7 +2584,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="transferFromAcctChips"></div>
       <button type="button" class="expand-toggle" id="transferFromAcctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="transferFromAcctSearchRow" hidden>
-        <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="transferFromAcctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2571,7 +2594,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="incomeCatChips"></div>
       <button type="button" class="expand-toggle" id="incomeCatExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="incomeCatSearchRow" hidden>
-        <input id="incomeCatSearch" class="text-input" type="text" placeholder="Search or create category..." autocomplete="off" />
+        <input id="incomeCatSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="incomeCatDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2581,7 +2604,7 @@ export const HTML = /* html */ `<!doctype html>
       <div class="chips" id="incomeAcctChips"></div>
       <button type="button" class="expand-toggle" id="incomeAcctExpandBtn" hidden>Show all ⌄</button>
       <div class="search-row" id="incomeAcctSearchRow" hidden>
-        <input id="incomeAcctSearch" class="text-input" type="text" placeholder="Search or create account..." autocomplete="off" />
+        <input id="incomeAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="incomeAcctDropdown" class="dropdown hidden"></div>
       </div>
     </div>
@@ -2768,7 +2791,9 @@ export const HTML = /* html */ `<!doctype html>
         <button class="back-btn" data-back-from-settings>‹ Back</button>
         <h1 class="screen-title">Settings</h1>
       </div>
-      <div class="topbar-actions"></div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="settingsAddBtn" aria-label="Add new" title="Add new" style="font-size:22px; font-weight:300; color:var(--color-accent-expense);">+</button>
+      </div>
     </div>
     <div class="settings-tabs" id="settingsTabs" role="tablist" aria-label="Settings sections">
       <button class="settings-tab active" data-settings-tab="categories" role="tab" aria-selected="true">Categories</button>
@@ -3054,6 +3079,7 @@ ${ICONS_LIB_SOURCE}
           (meta ? '<div class="settings-row-meta">in ' + escapeHtml(meta) + '</div>' : '') +
         '</div>' +
         '<button class="settings-row-edit" data-edit-icon aria-label="Edit icon">✎</button>' +
+        '<button class="settings-row-delete" data-delete-item aria-label="Delete ' + escapeHtml(item.name) + '">✕</button>' +
       '</div>';
     }).join("");
 
@@ -3084,6 +3110,73 @@ ${ICONS_LIB_SOURCE}
       row.querySelectorAll("[data-edit-icon]").forEach((btn) => {
         btn.addEventListener("click", () => openIconPicker(state.settingsTab, item));
       });
+      const deleteBtn = row.querySelector("[data-delete-item]");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete "' + item.name + '"?')) return;
+          try {
+            await api("/api/d1/" + state.settingsTab + "/" + id, { method: "DELETE" });
+            await invalidateBootstrap();
+            toast("Deleted", "ok");
+            renderSettings();
+          } catch (err) {
+            toast("Couldn't delete: " + err.message, "err");
+          }
+        });
+      }
+    });
+  }
+
+  function showAddSettingsForm() {
+    const list = $("settingsList");
+    if (!list || list.querySelector(".settings-add-form")) return;
+    const tab = state.settingsTab;
+    const labels = { categories: "Category", subcategories: "Subcategory", accounts: "Account" };
+    const label = labels[tab] || tab;
+    const formEl = document.createElement("div");
+    formEl.className = "settings-row settings-add-form";
+    formEl.style.cssText = "border-color: var(--color-border-focus);";
+    let catSelectHtml = "";
+    if (tab === "subcategories" && state.data) {
+      const cats = [...(state.data.categories || [])].sort((a, b) => a.name.localeCompare(b.name));
+      catSelectHtml = '<select class="settings-add-cat-select" id="settingsNewCatSelect">' +
+        '<option value="">No parent category</option>' +
+        cats.map(c => '<option value="' + escapeHtml(c.id) + '">' + escapeHtml(c.name) + '</option>').join("") +
+        '</select>';
+    }
+    formEl.innerHTML =
+      '<div style="flex:1; min-width:0;">' +
+        '<input class="settings-row-name" id="settingsNewName" placeholder="' + label + ' name…" />' +
+        catSelectHtml +
+      '</div>' +
+      '<button class="save-btn" id="settingsNewSaveBtn" style="padding:0 14px; height:34px; font-size:var(--text-sm); flex-shrink:0;">Add</button>' +
+      '<button class="settings-row-delete" id="settingsNewCancelBtn" aria-label="Cancel" style="opacity:0.6;">✕</button>';
+    list.insertBefore(formEl, list.firstChild);
+    const nameInput = $("settingsNewName");
+    nameInput.focus();
+    async function doSave() {
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      const body = { name };
+      if (tab === "subcategories") {
+        const sel = $("settingsNewCatSelect");
+        if (sel && sel.value) body.categoryId = sel.value;
+      }
+      try {
+        await api("/api/d1/" + tab, { method: "POST", body: JSON.stringify(body) });
+        await invalidateBootstrap();
+        toast(label + " added", "ok");
+        renderSettings();
+      } catch (err) {
+        toast("Couldn't add: " + err.message, "err");
+      }
+    }
+    $("settingsNewSaveBtn").onclick = doSave;
+    $("settingsNewCancelBtn").onclick = () => { formEl.remove(); };
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSave();
+      if (e.key === "Escape") formEl.remove();
     });
   }
 
@@ -3334,16 +3427,23 @@ ${ICONS_LIB_SOURCE}
     return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
   }
 
+  const TOP_LEVEL_VIEWS = new Set(["home", "expenses", "analytics", "search", "settings"]);
+
   function setActiveView(view) {
     state.currentView = view;
     ["expenses", "add", "income", "analytics", "search", "categoryDetail", "settings"].forEach((key) => {
       const node = $(key + "View");
       if (!node) return;
-      node.classList.toggle("active", key === view);
+      const becoming = key === view;
+      if (becoming && TOP_LEVEL_VIEWS.has(key)) node.scrollTop = 0;
+      node.classList.toggle("active", becoming);
     });
     // home view toggle
     const homeNode = $("homeView");
-    if (homeNode) homeNode.classList.toggle("active", view === "home");
+    if (homeNode) {
+      if (view === "home") homeNode.scrollTop = 0;
+      homeNode.classList.toggle("active", view === "home");
+    }
 
     // Bottom nav active state
     document.querySelectorAll("[data-nav-view]").forEach((btn) => {
@@ -3354,7 +3454,13 @@ ${ICONS_LIB_SOURCE}
 
     // Hide bottom nav on drill-down views
     const nav = $("bottomNav");
-    if (nav) nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail");
+    if (nav) {
+      nav.classList.toggle("hidden", view === "add" || view === "income" || view === "categoryDetail");
+      // Enable transition only after first nav interaction (prevents load jitter)
+      if (!nav.classList.contains("nav-ready")) {
+        requestAnimationFrame(() => nav.classList.add("nav-ready"));
+      }
+    }
 
     if (view !== "categoryDetail" && view !== "settings") state.lastNonDetailView = view;
     if (view !== "search" && view !== "categoryDetail" && view !== "settings") state.lastNonSearchView = view;
@@ -3549,7 +3655,7 @@ ${ICONS_LIB_SOURCE}
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
       expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search / Add ⌄";
+      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
       expandBtn.onclick = () => {
         state.expanded[prefix] = !state.expanded[prefix];
         renderChips(prefix, idField, nameField, fullList, recentIds);
@@ -3598,21 +3704,6 @@ ${ICONS_LIB_SOURCE}
         };
         dropdown.appendChild(row);
       });
-
-      const exact = matches.some((item) => item.name.toLowerCase() === normalized);
-      if (normalized && !exact) {
-        const row = document.createElement("div");
-        row.className = "dropdown-item create";
-        row.textContent = '+ Create "' + query.trim() + '"';
-        row.onclick = () => {
-          state.chosen[idField] = null;
-          state.chosen[nameField] = query.trim();
-          input.value = "";
-          close();
-          renderChips(prefix, idField, nameField, items, recentFor(prefix));
-        };
-        dropdown.appendChild(row);
-      }
 
       const isOpen = !!dropdown.children.length;
       dropdown.classList.toggle("hidden", !isOpen);
@@ -3685,7 +3776,7 @@ ${ICONS_LIB_SOURCE}
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
       expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search / Add ⌄";
+      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
       expandBtn.onclick = () => {
         state.incomeExpanded[prefix] = !state.incomeExpanded[prefix];
         renderIncomeChips(prefix, idField, nameField, fullList, recentIds);
@@ -3725,21 +3816,6 @@ ${ICONS_LIB_SOURCE}
         };
         dropdown.appendChild(row);
       });
-
-      const exact = matches.some((item) => item.name.toLowerCase() === normalized);
-      if (normalized && !exact) {
-        const row = document.createElement("div");
-        row.className = "dropdown-item create";
-        row.textContent = '+ Create "' + query.trim() + '"';
-        row.onclick = () => {
-          state.incomeChosen[idField] = null;
-          state.incomeChosen[nameField] = query.trim();
-          input.value = "";
-          close();
-          renderIncomeChips(prefix, idField, nameField, items, recentFor(prefix === "incomeCat" ? "cat" : "acct"));
-        };
-        dropdown.appendChild(row);
-      }
 
       const isOpen = !!dropdown.children.length;
       dropdown.classList.toggle("hidden", !isOpen);
@@ -4214,7 +4290,7 @@ ${ICONS_LIB_SOURCE}
     const expenseTotal = expenseEntries.reduce((s, e) => s + e.amount, 0);
     const balance = incomeTotal - expenseTotal;
     const count = expenseEntries.length;
-    const recent5 = expenses.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+    const allTxns = expenses.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
     $("homeBalanceAmount").innerHTML = formatCurrencyParts(balance);
     $("homeBalanceMeta").textContent = count + " expense" + (count !== 1 ? "s" : "") + " this " + (PERIOD_LABELS[data.period] || data.period);
@@ -4226,13 +4302,13 @@ ${ICONS_LIB_SOURCE}
     $("homeExpenseAmount").innerHTML = formatCurrencyParts(expenseTotal);
     $("homeExpenseCount").textContent = count + " entr" + (count !== 1 ? "ies" : "y");
 
-    if (!recent5.length) {
+    if (!allTxns.length) {
       $("homeRecentList").innerHTML = makeEmptyState("📊", "Nothing logged yet",
         "Start tracking to see your balance",
         '<button class="empty-state-cta" onclick="openAddTypeSheet()">+ Add Expense</button>');
       return;
     }
-    $("homeRecentList").innerHTML = recent5.map(renderExpenseCard).join("");
+    $("homeRecentList").innerHTML = allTxns.map(renderExpenseCard).join("");
   }
 
   async function ensureHomeLoaded(period, hardRefresh) {
@@ -4999,10 +5075,12 @@ ${ICONS_LIB_SOURCE}
       });
     });
 
-    // Settings tabs + back
+    // Settings tabs + back + add
     document.querySelectorAll("[data-back-from-settings]").forEach((btn) => {
       btn.addEventListener("click", () => setActiveView("home"));
     });
+    const settingsAddBtn = $("settingsAddBtn");
+    if (settingsAddBtn) settingsAddBtn.addEventListener("click", showAddSettingsForm);
     document.querySelectorAll("[data-settings-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.settingsTab = btn.dataset.settingsTab;
