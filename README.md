@@ -92,23 +92,17 @@ https://YOUR-APP-NAME.YOUR-SUBDOMAIN.workers.dev
 
 ---
 
-## Step 6 — Add categories, subcategories and accounts
+## Step 6 — Seed categories, subcategories and accounts
 
-The app ships empty. Add your data through the **Settings** tab in the app, or bulk-insert via a SQL file:
+The repo includes `seed.sql` with a full set of categories, subcategories, and accounts — complete with icons and emojis. Run it once after the schema:
 
 ```bash
-npx wrangler d1 execute YOUR-APP-NAME-db --remote --file seed.sql
+npx wrangler d1 execute YOUR-APP-NAME-db --file seed.sql --remote
 ```
 
-A seed file should contain `INSERT` statements like:
+This is safe to re-run — all inserts use `INSERT OR IGNORE` so existing data is never overwritten.
 
-```sql
-INSERT INTO categories (id, name, emoji, icon_url, type)
-VALUES (lower(hex(randomblob(16))), 'Food', '🍔', NULL, 'expense');
-
-INSERT INTO accounts (id, name, emoji, icon_url)
-VALUES (lower(hex(randomblob(16))), 'Cash', '💵', NULL);
-```
+After seeding, the app has 19 categories (Apparel, Beauty, Food, Transport etc.), 35 subcategories (Swiggy, Blinkit, Cab, Grocery etc.) and 12 accounts (ICICI, SBI, Cash etc.) ready to use. Delete or rename any of them from the Settings tab inside the app.
 
 ---
 
