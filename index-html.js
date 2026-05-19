@@ -74,7 +74,7 @@ export const HTML = /* html */ `<!doctype html>
     --color-backdrop:    rgba(5, 5, 5, 0.38);
 
     /* Navigation (bottom tab bar) */
-    --color-nav-bg:         rgba(18, 18, 18, 0.92);
+    --color-nav-bg:         rgba(18, 18, 18, 0.98);
     --color-nav-border:     rgba(255, 255, 255, 0.06);
     --color-nav-item:       rgba(218, 212, 205, 0.45);
     --color-nav-item-active: #eb7c55;
@@ -260,7 +260,7 @@ export const HTML = /* html */ `<!doctype html>
     --color-backdrop:    rgba(255, 255, 255, 0.34);
 
     /* Navigation */
-    --color-nav-bg:          rgba(255, 252, 247, 0.92);
+    --color-nav-bg:          rgba(255, 252, 247, 0.98);
     --color-nav-border:      rgba(31, 26, 23, 0.07);
     --color-nav-item:        rgba(94, 84, 72, 0.50);
     --color-nav-item-active: #e87750;
@@ -344,7 +344,6 @@ export const HTML = /* html */ `<!doctype html>
   body {
     background-color: var(--bg);
     background-image: var(--bg-accent);
-    background-attachment: fixed;
   }
 
   button, input {
@@ -1669,6 +1668,7 @@ export const HTML = /* html */ `<!doctype html>
 
   .search-row {
     position: relative;
+    margin-bottom: 10px;
   }
 
   .dropdown {
@@ -1836,14 +1836,14 @@ export const HTML = /* html */ `<!doctype html>
     padding-bottom: env(safe-area-inset-bottom, 0px);
     background: var(--color-nav-bg);
     border-top: 1px solid var(--color-nav-border);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: space-around;
     z-index: 50;
     will-change: transform;
     transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
   .bottom-nav.nav-ready {
     transition: transform var(--dur-normal) var(--ease);
@@ -2551,32 +2551,32 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card" id="catCard">
       <div class="field-label">Category <span class="required-dot">*</span></div>
-      <div class="chips" id="catChips"></div>
-      <button type="button" class="expand-toggle" id="catExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="catSearchRow" hidden>
+      <div class="search-row" id="catSearchRow">
         <input id="catSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="catDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="catChips"></div>
+      <button type="button" class="expand-toggle" id="catExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card" id="subCard">
       <div class="field-label">Subcategory <span class="field-optional">(optional)</span></div>
-      <div class="chips" id="subChips"></div>
-      <button type="button" class="expand-toggle" id="subExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="subSearchRow" hidden>
+      <div class="search-row" id="subSearchRow">
         <input id="subSearch" class="text-input" type="text" placeholder="Search subcategory..." autocomplete="off" />
         <div id="subDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="subChips"></div>
+      <button type="button" class="expand-toggle" id="subExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card" id="acctCard">
       <div class="field-label">Account <span class="required-dot">*</span></div>
-      <div class="chips" id="acctChips"></div>
-      <button type="button" class="expand-toggle" id="acctExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="acctSearchRow" hidden>
+      <div class="search-row" id="acctSearchRow">
         <input id="acctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="acctDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="acctChips"></div>
+      <button type="button" class="expand-toggle" id="acctExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card">
@@ -2622,32 +2622,32 @@ export const HTML = /* html */ `<!doctype html>
 
     <div class="input-card" id="transferFromAcctCard" hidden>
       <div class="field-label">From Account <span class="required-dot">*</span></div>
-      <div class="chips" id="transferFromAcctChips"></div>
-      <button type="button" class="expand-toggle" id="transferFromAcctExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="transferFromAcctSearchRow" hidden>
+      <div class="search-row" id="transferFromAcctSearchRow">
         <input id="transferFromAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="transferFromAcctDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="transferFromAcctChips"></div>
+      <button type="button" class="expand-toggle" id="transferFromAcctExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card" id="incomeCatCard">
       <div class="field-label">Category <span class="required-dot">*</span></div>
-      <div class="chips" id="incomeCatChips"></div>
-      <button type="button" class="expand-toggle" id="incomeCatExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="incomeCatSearchRow" hidden>
+      <div class="search-row" id="incomeCatSearchRow">
         <input id="incomeCatSearch" class="text-input" type="text" placeholder="Search category..." autocomplete="off" />
         <div id="incomeCatDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="incomeCatChips"></div>
+      <button type="button" class="expand-toggle" id="incomeCatExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card" id="incomeAcctCard">
       <div class="field-label" id="incomeAcctLabel">Account <span class="required-dot">*</span></div>
-      <div class="chips" id="incomeAcctChips"></div>
-      <button type="button" class="expand-toggle" id="incomeAcctExpandBtn" hidden>Show all ⌄</button>
-      <div class="search-row" id="incomeAcctSearchRow" hidden>
+      <div class="search-row" id="incomeAcctSearchRow">
         <input id="incomeAcctSearch" class="text-input" type="text" placeholder="Search account..." autocomplete="off" />
         <div id="incomeAcctDropdown" class="dropdown hidden"></div>
       </div>
+      <div class="chips" id="incomeAcctChips"></div>
+      <button type="button" class="expand-toggle" id="incomeAcctExpandBtn" hidden>Show all ⌄</button>
     </div>
 
     <div class="input-card">
@@ -3694,15 +3694,15 @@ ${ICONS_LIB_SOURCE}
     // Toggle + search row visibility.
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
-      expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
+      expandBtn.hidden = !hasMore;
+      expandBtn.textContent = expanded ? "Show less ⌃" : "Show all ⌄";
       expandBtn.onclick = () => {
         state.expanded[prefix] = !state.expanded[prefix];
         renderChips(prefix, idField, nameField, fullList, recentIds);
       };
     }
     if (searchRow) {
-      searchRow.hidden = !expanded;
+      searchRow.hidden = false;
     }
   }
 
@@ -3815,14 +3815,14 @@ ${ICONS_LIB_SOURCE}
 
     const hasMore = (fullList || []).length > suggestedIds.slice(0, 6).length;
     if (expandBtn) {
-      expandBtn.hidden = false;
-      expandBtn.textContent = expanded ? "Show less ⌃" : hasMore ? "Show all ⌄" : "Search ⌄";
+      expandBtn.hidden = !hasMore;
+      expandBtn.textContent = expanded ? "Show less ⌃" : "Show all ⌄";
       expandBtn.onclick = () => {
         state.incomeExpanded[prefix] = !state.incomeExpanded[prefix];
         renderIncomeChips(prefix, idField, nameField, fullList, recentIds);
       };
     }
-    if (searchRow) searchRow.hidden = !expanded;
+    if (searchRow) searchRow.hidden = false;
   }
 
   function wireIncomeSearch(prefix, idField, nameField, getList) {
