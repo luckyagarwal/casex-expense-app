@@ -118,6 +118,7 @@ async function handleD1Bootstrap(env) {
       if (iconUrl.startsWith("bank:"))   return { type: "bank",   value: iconUrl.slice(5) };
       if (iconUrl.startsWith("brand:"))  return { type: "brand",  value: iconUrl.slice(6) };
       if (iconUrl.startsWith("/"))       return { type: "image",  value: iconUrl };
+      return { type: "emoji", value: iconUrl };
     }
     return emoji ? { type: "emoji", value: emoji } : null;
   };
@@ -170,7 +171,8 @@ async function handleD1CreateEntity(env, table, body) {
 
   if (table === "subcategories") {
     const categoryId = body?.categoryId || null;
-    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id,icon_url) VALUES (?,?,?,?)", [id, name, categoryId, iconUrl]);
+    const subIconUrl = iconUrl || emoji || null; // no emoji column; store emoji in icon_url
+    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id,icon_url) VALUES (?,?,?,?)", [id, name, categoryId, subIconUrl]);
   } else if (table === "categories") {
     await d1Run(env.DB, "INSERT INTO categories (id,name,emoji,icon_url,type) VALUES (?,?,?,?,?)", [id, name, emoji, iconUrl, "expense"]);
   } else {
@@ -202,11 +204,19 @@ async function handleD1UpdateEntity(env, table, id, body) {
     if (!name) return { error: "Name cannot be empty", status: 400 };
     sets.push("name=?"); params.push(name);
   }
-  if (body && "emoji" in body) {
-    sets.push("emoji=?"); params.push(typeof body.emoji === "string" ? body.emoji : "");
-  }
-  if (body && "iconUrl" in body) {
-    sets.push("icon_url=?"); params.push(body.iconUrl || null);
+  if (table === "subcategories") {
+    // subcategories has no emoji column; emoji maps to icon_url
+    const emojiVal   = "emoji"   in (body || {}) ? (body.emoji   || null) : undefined;
+    const iconUrlVal = "iconUrl" in (body || {}) ? (body.iconUrl || null) : undefined;
+    const finalIcon  = iconUrlVal !== undefined ? iconUrlVal : emojiVal;
+    if (finalIcon !== undefined) { sets.push("icon_url=?"); params.push(finalIcon); }
+  } else {
+    if (body && "emoji" in body) {
+      sets.push("emoji=?"); params.push(typeof body.emoji === "string" ? body.emoji : "");
+    }
+    if (body && "iconUrl" in body) {
+      sets.push("icon_url=?"); params.push(body.iconUrl || null);
+    }
   }
   if (!sets.length) return { error: "Nothing to update", status: 400 };
 
@@ -249,6 +259,7 @@ async function handleD1Expenses(env, url) {
       if (iconUrl.startsWith("bank:"))   return { type: "bank",   value: iconUrl.slice(5) };
       if (iconUrl.startsWith("brand:"))  return { type: "brand",  value: iconUrl.slice(6) };
       if (iconUrl.startsWith("/"))       return { type: "image",  value: iconUrl };
+      return { type: "emoji", value: iconUrl };
     }
     return emoji ? { type: "emoji", value: emoji } : null;
   };
