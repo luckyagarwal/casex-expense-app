@@ -164,12 +164,18 @@ async function handleD1CreateEntity(env, table, body) {
   const name = (body?.name || "").trim();
   if (!name) return { error: "Name required", status: 400 };
 
+  const emoji   = body?.emoji   || null;
+  const iconUrl = body?.iconUrl || null;
   const id = crypto.randomUUID();
+
   if (table === "subcategories") {
     const categoryId = body?.categoryId || null;
-    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id) VALUES (?,?,?)", [id, name, categoryId]);
+    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id,icon_url) VALUES (?,?,?,?)", [id, name, categoryId, iconUrl]);
+  } else if (table === "categories") {
+    await d1Run(env.DB, "INSERT INTO categories (id,name,emoji,icon_url,type) VALUES (?,?,?,?,?)", [id, name, emoji, iconUrl, "expense"]);
   } else {
-    await d1Run(env.DB, `INSERT INTO ${table} (id,name) VALUES (?,?)`, [id, name]);
+    // accounts
+    await d1Run(env.DB, "INSERT INTO accounts (id,name,emoji,icon_url) VALUES (?,?,?,?)", [id, name, emoji, iconUrl]);
   }
   return { ok: true, id };
 }

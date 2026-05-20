@@ -2435,6 +2435,140 @@ export const HTML = /* html */ `<!doctype html>
     color: #fff;
     font-weight: var(--weight-semibold);
   }
+
+  /* ── Liquid Glass Design System ─────────────────────────────────────── */
+  /* CSS translation of Apple .glassEffect() API for web/mobile */
+
+  :root, [data-theme="dark"] {
+    --glass-blur:        blur(28px) saturate(180%);
+    --glass-blur-soft:   blur(16px) saturate(160%);
+    --glass-bg:          rgba(255,255,255,0.055);
+    --glass-bg-hover:    rgba(255,255,255,0.09);
+    --glass-bg-strong:   rgba(255,255,255,0.08);
+    --glass-border:      rgba(255,255,255,0.10);
+    --glass-border-hi:   rgba(255,255,255,0.16);
+    --glass-tint-accent: rgba(235,124,85,0.18);
+    --glass-tint-income: rgba(102,198,140,0.14);
+    --spring:            cubic-bezier(0.34,1.56,0.64,1);
+    --spring-quick:      cubic-bezier(0.22,1.0,0.36,1);
+    --dur-spring:        320ms;
+  }
+  [data-theme="light"] {
+    --glass-bg:          rgba(255,255,255,0.60);
+    --glass-bg-hover:    rgba(255,255,255,0.75);
+    --glass-bg-strong:   rgba(255,255,255,0.70);
+    --glass-border:      rgba(31,26,23,0.07);
+    --glass-border-hi:   rgba(31,26,23,0.12);
+    --glass-tint-accent: rgba(232,119,80,0.14);
+    --glass-tint-income: rgba(42,157,104,0.12);
+  }
+
+  /* Cards → glass surfaces (.glassEffect(in: .rect(cornerRadius:))) */
+  .expense-card,
+  .chart-card,
+  .legend-card {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    backdrop-filter: var(--glass-blur-soft) !important;
+    -webkit-backdrop-filter: var(--glass-blur-soft) !important;
+    transition: transform 280ms var(--spring), box-shadow 280ms var(--spring-quick) !important;
+  }
+  .expense-card:active {
+    transform: scale(0.975) !important;
+  }
+
+  /* Input cards → frosted glass */
+  .input-card {
+    background: var(--glass-bg-strong) !important;
+    border: 1px solid var(--glass-border) !important;
+    backdrop-filter: var(--glass-blur-soft);
+    -webkit-backdrop-filter: var(--glass-blur-soft);
+  }
+  .input-card.dropdown-open {
+    border-color: var(--glass-border-hi) !important;
+  }
+
+  /* Home balance card → elevated glass hero */
+  .home-balance-card {
+    background: var(--glass-bg-strong) !important;
+    border: 1px solid var(--glass-border-hi) !important;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.06) !important;
+  }
+  [data-theme="light"] .home-balance-card {
+    box-shadow: 0 12px 40px rgba(67,51,36,0.08), 0 1px 0 rgba(255,255,255,0.8) !important;
+  }
+
+  /* Chips → spring interactive (.glassEffect(.regular.interactive())) */
+  .chip {
+    background: var(--glass-bg) !important;
+    border: 1px solid var(--glass-border) !important;
+    transition: background var(--dur-spring) var(--spring-quick),
+                transform var(--dur-spring) var(--spring),
+                border-color var(--dur-spring) var(--spring-quick) !important;
+  }
+  .chip:active {
+    transform: scale(0.94) !important;
+  }
+  .chip.selected {
+    background: var(--glass-tint-accent) !important;
+    border-color: rgba(235,124,85,0.30) !important;
+    box-shadow: 0 0 0 1px rgba(235,124,85,0.15), 0 2px 8px rgba(235,124,85,0.18) !important;
+    color: var(--accent) !important;
+  }
+  [data-theme="light"] .chip.selected {
+    color: var(--accent) !important;
+  }
+
+  /* Save button → glass prominent (.buttonStyle(.glassProminent)) */
+  .save-btn {
+    box-shadow: 0 4px 20px rgba(235,124,85,0.38) !important;
+    transition: background var(--dur-fast),
+                transform var(--dur-spring) var(--spring),
+                box-shadow var(--dur-spring) var(--spring-quick) !important;
+  }
+  .save-btn:active {
+    transform: scale(0.96) !important;
+    box-shadow: 0 2px 8px rgba(235,124,85,0.22) !important;
+  }
+
+  /* Bottom nav → stable glass (no backdrop-filter to avoid Safari flicker) */
+  .bottom-nav {
+    background: rgba(18,18,18,0.98) !important;
+    border-top: 1px solid var(--glass-border-hi) !important;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.28), 0 -1px 0 rgba(255,255,255,0.05) !important;
+  }
+  [data-theme="light"] .bottom-nav {
+    background: rgba(255,252,247,0.98) !important;
+    border-top-color: rgba(31,26,23,0.10) !important;
+    box-shadow: 0 -4px 20px rgba(67,51,36,0.08), 0 -1px 0 rgba(0,0,0,0.06) !important;
+  }
+
+  /* Dropdown → glass */
+  .dropdown {
+    background: rgba(22,22,22,0.88) !important;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-hi) !important;
+  }
+  [data-theme="light"] .dropdown {
+    background: rgba(255,253,250,0.92) !important;
+  }
+
+  /* Icon picker sheet → deep glass */
+  .icon-picker-sheet {
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--glass-border-hi) !important;
+  }
+
+  /* Hero/analytics cards */
+  .hero-card {
+    backdrop-filter: var(--glass-blur-soft);
+    -webkit-backdrop-filter: var(--glass-blur-soft);
+    border: 1px solid var(--glass-border) !important;
+  }
 </style>
 </head>
 <body>
@@ -3030,6 +3164,7 @@ ${ICONS_LIB_SOURCE}
     settingsTab: "categories",
     drawerOpen: false,
     iconPickerCtx: null, // { table, id, currentIcon }
+    iconPickerNewCallback: null, // set when picker is opened for a new (unsaved) item
   };
 
   function applyTheme(theme) {
@@ -3175,6 +3310,8 @@ ${ICONS_LIB_SOURCE}
     const tab = state.settingsTab;
     const labels = { categories: "Category", subcategories: "Subcategory", accounts: "Account" };
     const label = labels[tab] || tab;
+    let pendingAddIcon = null;
+
     const formEl = document.createElement("div");
     formEl.className = "settings-add-form";
     let catSelectHtml = "";
@@ -3186,7 +3323,10 @@ ${ICONS_LIB_SOURCE}
         '</select>';
     }
     formEl.innerHTML =
-      '<input class="settings-add-input" id="settingsNewName" placeholder="' + label + ' name…" />' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<button class="settings-row-icon" id="settingsNewIconBtn" type="button" aria-label="Choose icon" title="Choose icon" style="flex-shrink:0;">+</button>' +
+        '<input class="settings-add-input" id="settingsNewName" placeholder="' + label + ' name…" style="flex:1;width:auto;" />' +
+      '</div>' +
       catSelectHtml +
       '<div class="settings-add-actions">' +
         '<button class="settings-add-cancel-btn" id="settingsNewCancelBtn" type="button" aria-label="Cancel">Cancel</button>' +
@@ -3195,10 +3335,43 @@ ${ICONS_LIB_SOURCE}
     list.insertBefore(formEl, list.firstChild);
     const nameInput = $("settingsNewName");
     nameInput.focus();
+
+    // Icon picker button
+    const iconBtn = $("settingsNewIconBtn");
+    iconBtn.addEventListener("click", () => {
+      state.iconPickerCtx = { table: tab, id: "__new__", name: nameInput.value || label };
+      state.iconPickerNewCallback = (payload) => {
+        pendingAddIcon = payload;
+        // Update button preview
+        let preview = "+";
+        if (payload.emoji) {
+          preview = payload.emoji;
+        } else if (payload.iconUrl) {
+          const key = payload.iconUrl;
+          if (key.startsWith("lucide:")) {
+            const it = ICONS_LIB.find((x) => x.key === key);
+            preview = it ? '<span style="display:inline-flex;width:22px;height:22px;">' + it.svg + "</span>" : "+";
+          } else if (key.startsWith("bank:")) {
+            const b = BANK_LOGOS.find((x) => x.key === key);
+            preview = b ? '<span style="display:inline-flex;width:28px;height:28px;border-radius:6px;overflow:hidden;">' + b.svg + "</span>" : "+";
+          } else if (key.startsWith("brand:")) {
+            const b = BRANDS_LIB.find((x) => x.key === key);
+            preview = b ? '<span style="display:inline-flex;width:28px;height:28px;border-radius:6px;overflow:hidden;">' + b.svg + "</span>" : "+";
+          }
+        }
+        iconBtn.innerHTML = preview;
+      };
+      openIconPicker(tab, { id: "__new__", name: nameInput.value || label, icon: null });
+    });
+
     async function doSave() {
       const name = nameInput.value.trim();
       if (!name) { nameInput.focus(); return; }
       const body = { name };
+      if (pendingAddIcon) {
+        if (pendingAddIcon.emoji)   body.emoji   = pendingAddIcon.emoji;
+        if (pendingAddIcon.iconUrl) body.iconUrl = pendingAddIcon.iconUrl;
+      }
       if (tab === "subcategories") {
         const sel = $("settingsNewCatSelect");
         if (sel && sel.value) body.categoryId = sel.value;
@@ -3309,6 +3482,14 @@ ${ICONS_LIB_SOURCE}
     state.iconPickerCtx = null;
   }
   async function commitPicker(payload) {
+    // New-item mode: just invoke callback, don't save to API
+    if (state.iconPickerNewCallback) {
+      const cb = state.iconPickerNewCallback;
+      state.iconPickerNewCallback = null;
+      closeIconPicker();
+      cb(payload);
+      return;
+    }
     const ctx = state.iconPickerCtx;
     if (!ctx) return;
     try {

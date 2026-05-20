@@ -952,6 +952,24 @@ body {
   color: var(--color-accent);
 }
 
+/* Chip search */
+.chip-search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+  color: var(--fg);
+  outline: none;
+  margin-bottom: var(--s3);
+  transition: border-color var(--dur-fast);
+}
+.chip-search-input:focus { border-color: var(--color-border-focus); }
+.date-time-row { display: flex; gap: var(--s4); }
+.date-time-row .form-input { flex: 1; min-width: 0; }
+
 /* Detail view */
 .detail-field { margin-bottom: var(--s6); }
 .detail-label {
@@ -1141,6 +1159,267 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--r-full); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Liquid Glass Design System ────────────────────────────────────── */
+/* CSS translation of Apple's .glassEffect() API for web */
+
+:root {
+  --glass-blur:          blur(28px) saturate(180%);
+  --glass-blur-light:    blur(16px) saturate(160%);
+  --glass-bg:            rgba(255,255,255,0.055);
+  --glass-bg-hover:      rgba(255,255,255,0.095);
+  --glass-bg-strong:     rgba(255,255,255,0.09);
+  --glass-border:        rgba(255,255,255,0.10);
+  --glass-border-bright: rgba(255,255,255,0.16);
+  --glass-tint-accent:   rgba(235,124,85,0.18);
+  --glass-tint-income:   rgba(102,198,140,0.14);
+  --spring:              cubic-bezier(0.34,1.56,0.64,1);
+  --spring-quick:        cubic-bezier(0.22,1.0,0.36,1);
+  --dur-spring:          320ms;
+}
+[data-theme="light"] {
+  --glass-bg:            rgba(255,255,255,0.58);
+  --glass-bg-hover:      rgba(255,255,255,0.72);
+  --glass-bg-strong:     rgba(255,255,255,0.68);
+  --glass-border:        rgba(31,26,23,0.07);
+  --glass-border-bright: rgba(31,26,23,0.12);
+  --glass-tint-accent:   rgba(232,119,80,0.14);
+  --glass-tint-income:   rgba(42,157,104,0.12);
+}
+
+/* GlassEffectContainer equivalent — isolation layer */
+.glass-container {
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* Base glass surface — .glassEffect(in: .rect(cornerRadius:)) */
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Sidebar → glass material */
+.sidebar {
+  background: rgba(16,16,16,0.72) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border-bright);
+  box-shadow: none !important;
+}
+[data-theme="light"] .sidebar {
+  background: rgba(250,246,240,0.75) !important;
+}
+
+/* Topbar → glass bar */
+.topbar {
+  background: rgba(15,15,15,0.70) !important;
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+[data-theme="light"] .topbar {
+  background: rgba(246,241,233,0.78) !important;
+}
+
+/* Right panel → frosted glass panel */
+.right-panel {
+  background: rgba(14,14,14,0.82) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border-bright) !important;
+}
+[data-theme="light"] .right-panel {
+  background: rgba(255,252,248,0.88) !important;
+}
+
+/* Command palette → deep glass */
+.palette-box {
+  background: rgba(18,18,18,0.86) !important;
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  border: 1px solid var(--glass-border-bright) !important;
+}
+[data-theme="light"] .palette-box {
+  background: rgba(255,253,250,0.90) !important;
+}
+
+/* Summary cards → glass cards (.glassEffect(in: .rect(cornerRadius:))) */
+.summary-card {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  transition: background var(--dur-spring) var(--spring-quick),
+              transform var(--dur-spring) var(--spring),
+              box-shadow var(--dur-spring) var(--spring-quick) !important;
+}
+.summary-card:hover {
+  background: var(--glass-bg-hover) !important;
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+}
+.summary-card:active {
+  transform: scale(0.97);
+}
+.summary-card.income {
+  border-color: rgba(102,198,140,0.18) !important;
+}
+.summary-card.expense {
+  border-color: rgba(235,124,85,0.18) !important;
+}
+
+/* Transaction rows → glass cards with spring */
+.txn-row {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.12) !important;
+  transition: background var(--dur-spring) var(--spring-quick),
+              transform 220ms var(--spring),
+              box-shadow 220ms var(--spring-quick) !important;
+}
+.txn-row:hover {
+  background: var(--glass-bg-hover) !important;
+  transform: translateY(-1px) scale(1.003);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.20), 0 1px 0 rgba(255,255,255,0.07) !important;
+}
+.txn-row:active { transform: scale(0.995) !important; }
+
+/* Chips → spring interactive (.glassEffect(.regular.interactive())) */
+.chip-item {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  transition: background var(--dur-spring) var(--spring-quick),
+              transform var(--dur-spring) var(--spring),
+              border-color var(--dur-spring) var(--spring-quick) !important;
+}
+.chip-item:hover {
+  background: var(--glass-bg-hover) !important;
+  border-color: var(--glass-border-bright) !important;
+  transform: scale(1.04);
+}
+.chip-item:active { transform: scale(0.96) !important; }
+.chip-item.selected {
+  background: var(--glass-tint-accent) !important;
+  border-color: rgba(235,124,85,0.32) !important;
+  box-shadow: 0 0 0 1px rgba(235,124,85,0.18), 0 2px 8px rgba(235,124,85,0.15);
+}
+
+/* Add button → glass prominent (.buttonStyle(.glassProminent)) */
+.sidebar-add-btn {
+  background: var(--color-accent) !important;
+  box-shadow: 0 4px 16px rgba(235,124,85,0.35);
+  transition: background var(--dur-fast) var(--ease),
+              transform var(--dur-spring) var(--spring),
+              box-shadow var(--dur-spring) var(--spring-quick) !important;
+}
+.sidebar-add-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 24px rgba(235,124,85,0.45) !important;
+}
+.sidebar-add-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(235,124,85,0.25) !important;
+}
+
+/* Save/action buttons → spring */
+.panel-save-btn {
+  box-shadow: 0 3px 12px rgba(235,124,85,0.30);
+  transition: background var(--dur-fast),
+              transform var(--dur-spring) var(--spring),
+              box-shadow var(--dur-spring) var(--spring-quick) !important;
+}
+.panel-save-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 5px 18px rgba(235,124,85,0.40) !important;
+}
+.panel-save-btn:active { transform: scale(0.96) !important; }
+
+/* Form inputs → glass input */
+.form-input {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast), background var(--dur-fast) !important;
+}
+.form-input:focus {
+  background: var(--glass-bg-strong) !important;
+  border-color: var(--color-border-focus) !important;
+}
+
+/* Sidebar nav items → glass interactive */
+.sidebar-nav-item.active {
+  background: var(--glass-tint-accent) !important;
+  color: var(--color-accent) !important;
+}
+.sidebar-nav-item:hover {
+  background: var(--glass-bg-hover) !important;
+}
+
+/* Period tabs → glass pills */
+.type-tab.active, .period-tab.active {
+  box-shadow: 0 2px 8px rgba(235,124,85,0.20);
+}
+
+/* Overview hero → elevated glass area */
+.overview-hero {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-xl);
+  padding: var(--s7) var(--s8);
+  margin-bottom: var(--s8);
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.06);
+}
+[data-theme="light"] .overview-hero {
+  box-shadow: 0 8px 32px rgba(67,51,36,0.08), 0 1px 0 rgba(255,255,255,0.8);
+}
+
+/* Icon row in panel → glass icon cell */
+.txn-row-icon {
+  border-radius: var(--r-md);
+  background: var(--glass-bg-strong) !important;
+  border: 1px solid var(--glass-border);
+}
+.txn-row-icon.expense-icon {
+  background: rgba(235,124,85,0.12) !important;
+  border-color: rgba(235,124,85,0.14);
+}
+.txn-row-icon.income-icon {
+  background: rgba(102,198,140,0.10) !important;
+  border-color: rgba(102,198,140,0.14);
+}
+
+/* Panel overlay → glass-tinted backdrop */
+.panel-overlay {
+  background: rgba(0,0,0,0.38) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Toast → glass */
+.toast {
+  backdrop-filter: var(--glass-blur-light) !important;
+  -webkit-backdrop-filter: var(--glass-blur-light) !important;
+  border: 1px solid var(--glass-border-bright) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.06) !important;
+}
+.toast.success { background: rgba(28,28,28,0.82) !important; }
+.toast.error   { background: rgba(244,106,106,0.18) !important; }
+[data-theme="light"] .toast.success { background: rgba(255,252,248,0.90) !important; }
+
+/* Dropdown → glass */
+.dropdown {
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-bright) !important;
+  background: rgba(22,22,22,0.88) !important;
+}
+[data-theme="light"] .dropdown {
+  background: rgba(255,253,250,0.92) !important;
+}
 </style>
 </head>
 <body>
@@ -1287,6 +1566,59 @@ const chipIcon = (icon, def) => {
   return def;
 };
 
+function rankByRecency(items, recentIds) {
+  const recentSet = new Set(recentIds);
+  return [
+    ...recentIds.map(id => items.find(x => x.id === id)).filter(Boolean),
+    ...items.filter(x => !recentSet.has(x.id)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  ];
+}
+
+function buildDateTime(dateVal, timeVal) {
+  if (!dateVal) return new Date().toISOString().split('T')[0];
+  if (!timeVal) return dateVal;
+  const off = -new Date().getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const absOff = Math.abs(off);
+  const hh = String(Math.floor(absOff / 60)).padStart(2, '0');
+  const mm = String(absOff % 60).padStart(2, '0');
+  return dateVal + 'T' + timeVal + ':00' + sign + hh + ':' + mm;
+}
+
+function queueOfflineTxn(txnBody) {
+  const pending = JSON.parse(localStorage.getItem('desktopPendingTxns') || '[]');
+  pending.push(txnBody);
+  localStorage.setItem('desktopPendingTxns', JSON.stringify(pending));
+}
+
+async function syncPendingTxns() {
+  const pendingStr = localStorage.getItem('desktopPendingTxns');
+  if (!pendingStr) return;
+  const pending = JSON.parse(pendingStr);
+  if (!pending.length) { localStorage.removeItem('desktopPendingTxns'); return; }
+  if (!navigator.onLine) return;
+  showToast('Syncing ' + pending.length + ' offline transaction(s)…', 'success');
+  const failed = [];
+  let synced = 0;
+  for (const body of pending) {
+    try {
+      const r = await fetch('/api/d1/expense', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error('failed');
+      synced++;
+    } catch { failed.push(body); }
+  }
+  if (failed.length) {
+    localStorage.setItem('desktopPendingTxns', JSON.stringify(failed));
+    if (synced) showToast('Synced ' + synced + '. ' + failed.length + ' still pending.', 'error');
+  } else {
+    localStorage.removeItem('desktopPendingTxns');
+    showToast('All offline transactions synced!', 'success');
+    state.txnsByPeriod = {};
+    state.summaryByPeriod = {};
+    renderView();
+  }
+}
+
 const fmt = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const fmtAmt = (n) => fmt.format(Math.abs(n));
 const fmtDate = (s) => {
@@ -1425,7 +1757,7 @@ function renderView() {
     renderSearch(area);
   } else if (state.view === 'settings') {
     topbarTitle.textContent = 'Settings';
-    renderSettings(area);
+    renderSettings(area, topbarActions);
   }
 }
 
@@ -1470,7 +1802,6 @@ function renderOverview(area) {
       const body = document.getElementById('overview-body');
       if (!body) return;
       const bal = summary.balance;
-      const recent = txns.slice(0,10);
       body.innerHTML = \`
         <div class="overview-hero">
           <div class="overview-hero-label">Balance</div>
@@ -1490,11 +1821,11 @@ function renderOverview(area) {
           </div>
         </div>
         <div class="section-header">
-          <span class="section-title">Recent Transactions</span>
+          <span class="section-title">Transactions</span>
         </div>
         <div class="txn-cards-wrap" style="max-width:720px">
           <div class="txn-list" id="recent-txn-list">
-            \${recent.length ? renderTxnRows(recent) : '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No transactions yet</div><div class="empty-state-body">Add your first transaction with the + button.</div></div>'}
+            \${txns.length ? renderTxnRows(txns) : '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No transactions yet</div><div class="empty-state-body">Add your first transaction with the + button.</div></div>'}
           </div>
         </div>\`;
       body.querySelectorAll('[data-nav-type]').forEach(el => {
@@ -2043,7 +2374,14 @@ const SETTINGS_EMOJI_QUICKPICK = ["🍽️","🍕","☕","🛒","🚗","✈️",
 let settingsTab = 'categories';
 let settingsPickerCtx = null;
 
-function renderSettings(area) {
+function renderSettings(area, topbarActions) {
+  // Add new item button in topbar
+  if (topbarActions) {
+    topbarActions.innerHTML = \`
+      <button class="panel-save-btn" id="settings-add-btn" style="height:36px;padding:0 var(--s5);font-size:var(--text-sm);">+ Add</button>\`;
+    document.getElementById('settings-add-btn').addEventListener('click', () => openAddSettingsModal(area, topbarActions));
+  }
+
   area.innerHTML = \`
     <div style="max-width:760px;margin:0 auto;">
       <div class="settings-tabs" style="display:flex;gap:6px;padding:4px;background:var(--color-bg-surface);border-radius:var(--r-md);margin-bottom:var(--s5);">
@@ -2058,7 +2396,7 @@ function renderSettings(area) {
   area.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
       settingsTab = btn.dataset.tab;
-      renderSettings(area);
+      renderSettings(area, topbarActions);
     });
   });
 
@@ -2088,7 +2426,8 @@ function renderSettings(area) {
             <input class="settings-name-input" data-edit-name value="\${escapeAttr(item.name||'')}" style="width:100%;border:none;background:transparent;color:var(--fg);font-size:var(--text-base);font-weight:500;padding:6px 0;outline:none;border-bottom:1px solid transparent;" />
             \${meta ? \`<div style="font-size:var(--text-xs);color:var(--fg-soft);margin-top:2px;">in \${escapeAttr(meta)}</div>\` : ''}
           </div>
-          <button class="icon-btn" data-edit-icon aria-label="Edit icon" style="width:36px;height:36px;border:none;background:transparent;color:var(--fg-soft);border-radius:var(--r-sm);cursor:pointer;">✎</button>
+          <button class="icon-btn" data-edit-icon aria-label="Edit icon" style="width:36px;height:36px;border:none;background:transparent;color:var(--fg-soft);border-radius:var(--r-sm);cursor:pointer;" title="Edit icon">✎</button>
+          <button class="icon-btn" data-delete-item aria-label="Delete" style="width:36px;height:36px;border:none;background:transparent;color:var(--color-status-error);border-radius:var(--r-sm);cursor:pointer;opacity:.7;" title="Delete">✕</button>
         </div>\`;
       }).join('');
 
@@ -2111,7 +2450,7 @@ function renderSettings(area) {
             item.name = next;
             invalidateBootstrapCache();
             showToast('Renamed');
-          } catch (err) {
+          } catch {
             nameInput.value = originalName;
             showToast('Couldn\\'t rename');
           }
@@ -2123,8 +2462,216 @@ function renderSettings(area) {
         row.querySelectorAll('[data-edit-icon]').forEach(btn => {
           btn.addEventListener('click', () => openSettingsPicker(settingsTab, item));
         });
+        row.querySelector('[data-delete-item]')?.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete "' + item.name + '"?')) return;
+          try {
+            const r = await fetch('/api/d1/' + settingsTab + '/' + id, { method: 'DELETE' });
+            if (!r.ok) throw new Error('delete failed');
+            invalidateBootstrapCache();
+            showToast('Deleted');
+            renderSettings(area, topbarActions);
+          } catch {
+            showToast('Couldn\\'t delete');
+          }
+        });
       });
     });
+}
+
+let addSettingsIconPayload = null;
+
+function openAddSettingsModal(area, topbarActions) {
+  let modal = document.getElementById('add-settings-modal');
+  if (modal) modal.remove();
+  addSettingsIconPayload = null;
+  const labels = { categories: 'Category', subcategories: 'Subcategory', accounts: 'Account' };
+  const label = labels[settingsTab] || settingsTab;
+  const isAccount = settingsTab === 'accounts';
+  const isSubcat  = settingsTab === 'subcategories';
+
+  modal = document.createElement('div');
+  modal.id = 'add-settings-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;padding:var(--s4);';
+
+  let catSelectHtml = '';
+  if (isSubcat && state.bootstrap) {
+    const cats = [...(state.bootstrap.categories || [])].sort((a, b) => a.name.localeCompare(b.name));
+    catSelectHtml = \`<div style="margin-bottom:var(--s4);">
+      <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:var(--s2);">Parent Category</label>
+      <select id="add-settings-cat-sel" style="width:100%;height:44px;padding:0 var(--s5);border:1px solid var(--border);border-radius:var(--r-md);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);">
+        <option value="">No parent category</option>
+        \${cats.map(c => \`<option value="\${escapeAttr(c.id)}">\${escapeAttr(c.name)}</option>\`).join('')}
+      </select>
+    </div>\`;
+  }
+
+  modal.innerHTML = \`
+    <div role="dialog" aria-modal="true" style="background:var(--color-bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md);width:460px;max-width:100%;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--s5);border-bottom:1px solid var(--border);">
+        <div style="font-size:var(--text-lg);font-weight:600;">Add \${label}</div>
+        <button id="add-settings-close" style="border:none;background:transparent;font-size:24px;color:var(--fg-soft);cursor:pointer;">×</button>
+      </div>
+      <div style="padding:var(--s5);display:flex;flex-direction:column;gap:var(--s4);">
+        <div style="display:flex;align-items:center;gap:var(--s4);">
+          <button id="add-settings-icon-btn" title="Choose icon" style="width:52px;height:52px;border-radius:var(--r-md);background:var(--color-bg-surface-raised);border:1px dashed var(--border);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;" aria-label="Choose icon">
+            <span id="add-settings-icon-preview" style="display:inline-flex;width:32px;height:32px;align-items:center;justify-content:center;">+</span>
+          </button>
+          <input id="add-settings-name" type="text" placeholder="\${label} name…" style="flex:1;height:44px;padding:0 var(--s5);border:1px solid var(--border);border-radius:var(--r-md);background:var(--color-bg-surface-raised);color:var(--fg);font-size:var(--text-base);outline:none;" autofocus/>
+        </div>
+        \${catSelectHtml}
+      </div>
+      <div style="padding:0 var(--s5) var(--s5);display:flex;gap:var(--s3);">
+        <button id="add-settings-cancel" style="flex:1;height:40px;border:1px solid var(--border);border-radius:var(--r-md);background:transparent;color:var(--fg-soft);font-weight:500;cursor:pointer;">Cancel</button>
+        <button id="add-settings-save" style="flex:2;height:40px;border:none;border-radius:var(--r-md);background:var(--color-accent);color:#fff;font-weight:600;cursor:pointer;">Add \${label}</button>
+      </div>
+    </div>
+  \`;
+  document.body.appendChild(modal);
+
+  const nameInput = modal.querySelector('#add-settings-name');
+  modal.querySelector('#add-settings-close').addEventListener('click', () => modal.remove());
+  modal.querySelector('#add-settings-cancel').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  modal.querySelector('#add-settings-icon-btn').addEventListener('click', () => {
+    const ctx = { table: settingsTab, id: '__new__', name: nameInput.value || label };
+    openSettingsPickerForNew(ctx, (payload) => {
+      addSettingsIconPayload = payload;
+      // Update preview
+      const preview = document.getElementById('add-settings-icon-preview');
+      if (!preview) return;
+      if (payload.emoji) {
+        preview.textContent = payload.emoji;
+      } else if (payload.iconUrl) {
+        const key = payload.iconUrl;
+        if (key.startsWith('lucide:')) {
+          const it = ICONS_LIB.find(x => x.key === key);
+          preview.innerHTML = it ? \`<span style="display:inline-flex;width:24px;height:24px;">\${it.svg}</span>\` : key;
+        } else if (key.startsWith('bank:')) {
+          const b = BANK_LOGOS.find(x => x.key === key);
+          preview.innerHTML = b ? \`<span style="display:inline-flex;width:32px;height:32px;border-radius:6px;overflow:hidden;">\${b.svg}</span>\` : key;
+        } else if (key.startsWith('brand:')) {
+          const b = BRANDS_LIB.find(x => x.key === key);
+          preview.innerHTML = b ? \`<span style="display:inline-flex;width:32px;height:32px;border-radius:6px;overflow:hidden;">\${b.svg}</span>\` : key;
+        }
+      }
+    });
+  });
+
+  async function doSave() {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const body = { name };
+    if (addSettingsIconPayload) {
+      if (addSettingsIconPayload.emoji)   body.emoji   = addSettingsIconPayload.emoji;
+      if (addSettingsIconPayload.iconUrl) body.iconUrl = addSettingsIconPayload.iconUrl;
+    }
+    if (isSubcat) {
+      const sel = document.getElementById('add-settings-cat-sel');
+      if (sel && sel.value) body.categoryId = sel.value;
+    }
+    const saveBtn = document.getElementById('add-settings-save');
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      const r = await fetch('/api/d1/' + settingsTab, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'Create failed'); }
+      modal.remove();
+      addSettingsIconPayload = null;
+      invalidateBootstrapCache();
+      showToast(label + ' added');
+      renderSettings(area, topbarActions);
+    } catch (err) {
+      showToast('Couldn\\'t add: ' + err.message);
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+  modal.querySelector('#add-settings-save').addEventListener('click', doSave);
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSave(); });
+}
+
+function openSettingsPickerForNew(ctx, onCommit) {
+  let pickerModal = document.getElementById('new-icon-picker-modal');
+  if (pickerModal) pickerModal.remove();
+  const isAccount = ctx.table === 'accounts';
+  const defaultTab = isAccount ? 'banks' : 'icons';
+
+  pickerModal = document.createElement('div');
+  pickerModal.id = 'new-icon-picker-modal';
+  pickerModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1100;padding:var(--s4);';
+  pickerModal.innerHTML = \`
+    <div role="dialog" aria-modal="true" style="background:var(--color-bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-md);width:560px;max-width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--s5);border-bottom:1px solid var(--border);">
+        <div style="font-size:var(--text-lg);font-weight:600;">Choose Icon</div>
+        <button id="nip-close" style="border:none;background:transparent;font-size:24px;color:var(--fg-soft);cursor:pointer;">×</button>
+      </div>
+      <div style="display:flex;gap:var(--s2);padding:0 var(--s5);border-bottom:1px solid var(--border);">
+        <button class="nip-tab" data-ntab="icons" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Icons</button>
+        <button class="nip-tab" data-ntab="emoji" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Emoji</button>
+        <button class="nip-tab" data-ntab="brands" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Brands</button>
+        \${isAccount ? '<button class="nip-tab" data-ntab="banks" style="padding:var(--s3) var(--s4);border:none;background:transparent;color:var(--fg);font-weight:500;cursor:pointer;border-bottom:2px solid transparent;">Banks</button>' : ''}
+      </div>
+      <div style="padding:var(--s5);overflow-y:auto;flex:1;">
+        <div data-npanel="icons" style="display:none;"><div id="nip-icons-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div></div>
+        <div data-npanel="emoji" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:var(--s3);margin-bottom:var(--s4);align-items:stretch;">
+            <input id="nip-emoji-input" type="text" placeholder="Type any emoji…" maxlength="8" style="height:52px;padding:0 var(--s5);border:1px solid var(--border);border-radius:var(--r-sm);background:var(--color-bg-surface-raised);color:var(--fg);font-size:28px;text-align:center;" />
+            <button id="nip-emoji-use" style="height:52px;padding:0 var(--s6);border:none;background:var(--color-accent);color:#fff;border-radius:var(--r-sm);font-weight:600;cursor:pointer;">Use</button>
+          </div>
+          <div id="nip-emoji-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:var(--s2);"></div>
+        </div>
+        <div data-npanel="brands" style="display:none;"><div id="nip-brands-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);"></div></div>
+        \${isAccount ? '<div data-npanel="banks" style="display:none;"><div id="nip-banks-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);"></div></div>' : ''}
+      </div>
+    </div>
+  \`;
+  document.body.appendChild(pickerModal);
+
+  const setNTab = (tab) => {
+    pickerModal.querySelectorAll('[data-ntab]').forEach(b => {
+      const a = b.dataset.ntab === tab;
+      b.style.borderBottomColor = a ? 'var(--color-accent)' : 'transparent';
+      b.style.color = a ? 'var(--fg)' : 'var(--fg-soft)';
+    });
+    pickerModal.querySelectorAll('[data-npanel]').forEach(p => {
+      p.style.display = p.dataset.npanel === tab ? 'block' : 'none';
+    });
+  };
+  pickerModal.querySelectorAll('[data-ntab]').forEach(b => b.addEventListener('click', () => setNTab(b.dataset.ntab)));
+
+  const commit = (payload) => { pickerModal.remove(); onCommit(payload); };
+  pickerModal.querySelector('#nip-close').addEventListener('click', () => pickerModal.remove());
+  pickerModal.addEventListener('click', e => { if (e.target === pickerModal) pickerModal.remove(); });
+
+  const iconsGrid = pickerModal.querySelector('#nip-icons-grid');
+  iconsGrid.innerHTML = ICONS_LIB.map(it => \`<button data-nipkey="\${escapeAttr(it.key)}" aria-label="\${escapeAttr(it.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:var(--color-bg-surface-raised);border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--fg);"><span style="width:24px;height:24px;display:inline-flex;">\${it.svg}</span></button>\`).join('');
+  iconsGrid.querySelectorAll('[data-nipkey]').forEach(c => c.addEventListener('click', () => commit({ emoji: null, iconUrl: c.dataset.nipkey })));
+
+  const emojiGrid = pickerModal.querySelector('#nip-emoji-grid');
+  emojiGrid.innerHTML = SETTINGS_EMOJI_QUICKPICK.map(e => \`<button style="aspect-ratio:1;border:1px solid var(--border);background:var(--color-bg-surface-raised);border-radius:var(--r-sm);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\${e}</button>\`).join('');
+  emojiGrid.querySelectorAll('button').forEach((c, i) => c.addEventListener('click', () => commit({ emoji: SETTINGS_EMOJI_QUICKPICK[i], iconUrl: null })));
+  const nipEmojiInput = pickerModal.querySelector('#nip-emoji-input');
+  pickerModal.querySelector('#nip-emoji-use').addEventListener('click', () => {
+    const v = nipEmojiInput.value.trim();
+    if (v) commit({ emoji: v, iconUrl: null });
+  });
+  nipEmojiInput.addEventListener('keydown', e => { if (e.key === 'Enter') { const v = nipEmojiInput.value.trim(); if (v) commit({ emoji: v, iconUrl: null }); } });
+
+  const brandsGrid = pickerModal.querySelector('#nip-brands-grid');
+  brandsGrid.innerHTML = BRANDS_LIB.map(b => \`<button data-nipbrand="\${escapeAttr(b.key)}" aria-label="\${escapeAttr(b.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:transparent;border-radius:var(--r-md);cursor:pointer;overflow:hidden;padding:0;"><span style="display:block;width:100%;height:100%;">\${b.svg}</span></button>\`).join('');
+  brandsGrid.querySelectorAll('[data-nipbrand]').forEach(c => c.addEventListener('click', () => commit({ emoji: null, iconUrl: c.dataset.nipbrand })));
+
+  if (isAccount) {
+    const banksGrid = pickerModal.querySelector('#nip-banks-grid');
+    banksGrid.innerHTML = BANK_LOGOS.map(b => \`<button data-nipbank="\${escapeAttr(b.key)}" aria-label="\${escapeAttr(b.name)}" style="aspect-ratio:1;border:1px solid var(--border);background:transparent;border-radius:var(--r-md);cursor:pointer;overflow:hidden;padding:0;"><span style="display:block;width:100%;height:100%;">\${b.svg}</span></button>\`).join('');
+    banksGrid.querySelectorAll('[data-nipbank]').forEach(c => c.addEventListener('click', () => commit({ emoji: null, iconUrl: c.dataset.nipbank })));
+  }
+
+  setNTab(defaultTab);
 }
 
 function renderSettingsIcon(icon, fallback) {
@@ -2387,8 +2934,14 @@ function renderPanelAdd() {
 
 function renderPanelAddBody(body) {
   const bs = state.bootstrap || { categories: [], subcategories: [], accounts: [] };
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const curTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   const mode  = state.panelTxnType;
+
+  const rankedCats  = rankByRecency(bs.categories    || [], (bs.recent && bs.recent.categories)    || []);
+  const rankedAccts = rankByRecency(bs.accounts      || [], (bs.recent && bs.recent.accounts)      || []);
+  const rankedSubs  = rankByRecency(bs.subcategories || [], (bs.recent && bs.recent.subcategories) || []);
 
   if (mode === 'transfer') {
     body.innerHTML = \`
@@ -2398,14 +2951,16 @@ function renderPanelAddBody(body) {
       </div>
       <div class="form-field">
         <label class="form-label">From Account</label>
+        <input type="text" class="chip-search-input" placeholder="Search accounts…" autocomplete="off"/>
         <div class="chip-grid" id="pf-from-acct">
-          \${bs.accounts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
+          \${rankedAccts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field">
         <label class="form-label">To Account</label>
+        <input type="text" class="chip-search-input" placeholder="Search accounts…" autocomplete="off"/>
         <div class="chip-grid" id="pf-to-acct">
-          \${bs.accounts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
+          \${rankedAccts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field">
@@ -2413,8 +2968,11 @@ function renderPanelAddBody(body) {
         <input type="text" class="form-input" id="pf-note" placeholder="Optional"/>
       </div>
       <div class="form-field">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+        <label class="form-label">Date &amp; Time</label>
+        <div class="date-time-row">
+          <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+          <input type="time" class="form-input" id="pf-time" value="\${curTime}"/>
+        </div>
       </div>\`;
   } else if (mode === 'income') {
     body.innerHTML = \`
@@ -2428,19 +2986,24 @@ function renderPanelAddBody(body) {
       </div>
       <div class="form-field">
         <label class="form-label">Category</label>
+        <input type="text" class="chip-search-input" placeholder="Search categories…" autocomplete="off"/>
         <div class="chip-grid" id="pf-category">
-          \${bs.categories.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
+          \${rankedCats.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field">
         <label class="form-label">Account</label>
+        <input type="text" class="chip-search-input" placeholder="Search accounts…" autocomplete="off"/>
         <div class="chip-grid" id="pf-account">
-          \${bs.accounts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
+          \${rankedAccts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+        <label class="form-label">Date &amp; Time</label>
+        <div class="date-time-row">
+          <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+          <input type="time" class="form-input" id="pf-time" value="\${curTime}"/>
+        </div>
       </div>\`;
   } else {
     body.innerHTML = \`
@@ -2450,18 +3013,21 @@ function renderPanelAddBody(body) {
       </div>
       <div class="form-field">
         <label class="form-label">Category</label>
+        <input type="text" class="chip-search-input" placeholder="Search categories…" autocomplete="off"/>
         <div class="chip-grid" id="pf-category">
-          \${bs.categories.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
+          \${rankedCats.map(c => \`<button class="chip-item" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field" id="pf-subcat-field">
         <label class="form-label">Subcategory</label>
+        <input type="text" class="chip-search-input" placeholder="Search subcategories…" autocomplete="off"/>
         <div class="chip-grid" id="pf-subcategory"></div>
       </div>
       <div class="form-field">
         <label class="form-label">Account</label>
+        <input type="text" class="chip-search-input" placeholder="Search accounts…" autocomplete="off"/>
         <div class="chip-grid" id="pf-account">
-          \${bs.accounts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
+          \${rankedAccts.map(a => \`<button class="chip-item" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
         </div>
       </div>
       <div class="form-field">
@@ -2469,43 +3035,43 @@ function renderPanelAddBody(body) {
         <input type="text" class="form-input" id="pf-note" placeholder="Optional"/>
       </div>
       <div class="form-field">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+        <label class="form-label">Date &amp; Time</label>
+        <div class="date-time-row">
+          <input type="date" class="form-input" id="pf-date" value="\${today}"/>
+          <input type="time" class="form-input" id="pf-time" value="\${curTime}"/>
+        </div>
       </div>\`;
   }
 
-  // Single-select chips
+  // Populate subcategory grid
+  const subGrid = body.querySelector('#pf-subcategory');
+  if (subGrid) {
+    subGrid.innerHTML = rankedSubs.length
+      ? rankedSubs.map(s => \`<button class="chip-item" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('')
+      : '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
+  }
+
+  // Wire chip single-select
   body.querySelectorAll('.chip-grid').forEach(grid => {
     grid.querySelectorAll('.chip-item').forEach(chip => {
       chip.addEventListener('click', () => {
         grid.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
-        chip.classList.toggle('selected', !chip.classList.contains('selected'));
         chip.classList.add('selected');
       });
     });
   });
 
-  // Subcategory list — independent of category. Show all subs ranked by
-  // global recency (recent.subcategories first), alphabetical secondary.
-  const subGrid = body.querySelector('#pf-subcategory');
-  if (subGrid) {
-    const allSubs = bs.subcategories || [];
-    const recentIds = (bs.recent && bs.recent.subcategories) || [];
-    const recentSet = new Set(recentIds);
-    const ranked = [
-      ...recentIds.map(id => allSubs.find(s => s.id === id)).filter(Boolean),
-      ...allSubs.filter(s => !recentSet.has(s.id)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    ];
-    subGrid.innerHTML = ranked.length
-      ? ranked.map(s => \`<button class="chip-item" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('')
-      : '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
-    subGrid.querySelectorAll('.chip-item').forEach(chip => {
-      chip.addEventListener('click', () => {
-        subGrid.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
+  // Wire chip search inputs (after grids populated)
+  body.querySelectorAll('.chip-search-input').forEach(search => {
+    const grid = search.nextElementSibling;
+    if (!grid || !grid.classList.contains('chip-grid')) return;
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase();
+      grid.querySelectorAll('.chip-item').forEach(chip => {
+        chip.style.display = q && !chip.dataset.name.toLowerCase().includes(q) ? 'none' : '';
       });
     });
-  }
+  });
 
   // Focus amount
   const amtInput = document.getElementById('pf-amount');
@@ -2515,46 +3081,56 @@ function renderPanelAddBody(body) {
 async function saveTransaction() {
   const btn = document.getElementById('panel-save');
   if (btn) btn.disabled = true;
+  let txnBody = null;
   try {
     const amount = parseFloat(document.getElementById('pf-amount')?.value || '0');
     if (!amount || isNaN(amount)) { showToast('Enter an amount', 'error'); return; }
-    const note = document.getElementById('pf-note')?.value?.trim() || '';
-    const date = document.getElementById('pf-date')?.value || new Date().toISOString().split('T')[0];
-    const mode = state.panelTxnType;
+    const note    = document.getElementById('pf-note')?.value?.trim() || '';
+    const dateVal = document.getElementById('pf-date')?.value || new Date().toISOString().split('T')[0];
+    const timeVal = document.getElementById('pf-time')?.value || '';
+    const date    = buildDateTime(dateVal, timeVal);
+    const mode    = state.panelTxnType;
 
-    const body = { amount, note, date, txnType: mode };
+    txnBody = { amount, note, date, txnType: mode };
 
     if (mode === 'transfer') {
       const fromChip = document.getElementById('pf-from-acct')?.querySelector('.chip-item.selected');
       const toChip   = document.getElementById('pf-to-acct')?.querySelector('.chip-item.selected');
       if (!fromChip || !toChip) { showToast('Select From and To accounts', 'error'); return; }
-      body.fromAccountId = fromChip.dataset.id;
-      body.toAccountId   = toChip.dataset.id;
+      txnBody.fromAccountId = fromChip.dataset.id;
+      txnBody.toAccountId   = toChip.dataset.id;
     } else if (mode === 'income') {
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
-      if (catChip)  body.categoryId = catChip.dataset.id;
-      if (acctChip) body.accountId  = acctChip.dataset.id;
+      if (catChip)  txnBody.categoryId = catChip.dataset.id;
+      if (acctChip) txnBody.accountId  = acctChip.dataset.id;
     } else {
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
       const subChip  = document.getElementById('pf-subcategory')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
-      if (catChip)  body.categoryId    = catChip.dataset.id;
-      if (subChip)  body.subcategoryId = subChip.dataset.id;
-      if (acctChip) body.accountId     = acctChip.dataset.id;
+      if (catChip)  txnBody.categoryId    = catChip.dataset.id;
+      if (subChip)  txnBody.subcategoryId = subChip.dataset.id;
+      if (acctChip) txnBody.accountId     = acctChip.dataset.id;
     }
 
-    const r = await fetch('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!navigator.onLine) throw new TypeError('offline');
+
+    const r = await fetch('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(txnBody) });
     if (!r.ok) { const e = await r.json(); throw new Error(e.error || 'Save failed'); }
 
     closePanel();
     showToast('Transaction saved', 'success');
-    // Invalidate cache and refresh
     state.txnsByPeriod = {};
     state.summaryByPeriod = {};
     renderView();
   } catch(err) {
-    showToast(err.message, 'error');
+    if (txnBody && (err instanceof TypeError || !navigator.onLine)) {
+      queueOfflineTxn(txnBody);
+      closePanel();
+      showToast('Saved offline — will sync when back online', 'success');
+    } else {
+      showToast(err.message, 'error');
+    }
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2589,8 +3165,9 @@ function renderPanelDetail() {
       <div class="detail-label">Note</div>
       <div class="detail-value">\${t.name || '—'}</div>
     </div>
-    \${t.category ? \`<div class="detail-field"><div class="detail-label">Category</div><div class="detail-value">\${t.category}</div></div>\` : ''}
-    \${t.account  ? \`<div class="detail-field"><div class="detail-label">Account</div><div class="detail-value">\${t.account}</div></div>\` : ''}
+    \${t.category    ? \`<div class="detail-field"><div class="detail-label">Category</div><div class="detail-value">\${t.category}</div></div>\` : ''}
+    \${t.subcategory ? \`<div class="detail-field"><div class="detail-label">Subcategory</div><div class="detail-value">\${t.subcategory}</div></div>\` : ''}
+    \${t.account     ? \`<div class="detail-field"><div class="detail-label">Account</div><div class="detail-value">\${t.account}</div></div>\` : ''}
     <div class="detail-field">
       <div class="detail-label">Date</div>
       <div class="detail-value">\${fmtDate(t.date)}</div>
@@ -2636,6 +3213,11 @@ function renderPanelEdit() {
 
   const bs = state.bootstrap || { categories: [], subcategories: [], accounts: [] };
   const isExpense = (t.txnType || 'expense') === 'expense';
+  const existingTime = t.date && t.date.includes('T') ? t.date.substring(11, 16) : '';
+  const rankedCats  = rankByRecency(bs.categories   || [], (bs.recent && bs.recent.categories)    || []);
+  const rankedAccts = rankByRecency(bs.accounts     || [], (bs.recent && bs.recent.accounts)      || []);
+  const rankedSubs  = rankByRecency(bs.subcategories || [], (bs.recent && bs.recent.subcategories) || []);
+
   body.innerHTML = \`
     <div class="form-field">
       <label class="form-label">Amount</label>
@@ -2643,18 +3225,21 @@ function renderPanelEdit() {
     </div>
     <div class="form-field">
       <label class="form-label">Category</label>
+      <input type="text" class="chip-search-input" placeholder="Search categories…" autocomplete="off"/>
       <div class="chip-grid" id="pf-category">
-        \${bs.categories.map(c => \`<button class="chip-item \${c.id===t.categoryId?'selected':''}" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
+        \${rankedCats.map(c => \`<button class="chip-item \${c.id===t.categoryId?'selected':''}" data-id="\${c.id}" data-name="\${c.name}">\${chipIcon(c.icon,'📁')} \${c.name}</button>\`).join('')}
       </div>
     </div>
     \${isExpense ? \`<div class="form-field">
       <label class="form-label">Subcategory</label>
+      <input type="text" class="chip-search-input" placeholder="Search subcategories…" autocomplete="off"/>
       <div class="chip-grid" id="pf-subcategory"></div>
     </div>\` : ''}
     <div class="form-field">
       <label class="form-label">Account</label>
+      <input type="text" class="chip-search-input" placeholder="Search accounts…" autocomplete="off"/>
       <div class="chip-grid" id="pf-account">
-        \${bs.accounts.map(a => \`<button class="chip-item \${a.id===t.accountId?'selected':''}" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
+        \${rankedAccts.map(a => \`<button class="chip-item \${a.id===t.accountId?'selected':''}" data-id="\${a.id}" data-name="\${a.name}">\${chipIcon(a.icon,'🏦')} \${a.name}</button>\`).join('')}
       </div>
     </div>
     <div class="form-field">
@@ -2662,10 +3247,22 @@ function renderPanelEdit() {
       <input type="text" class="form-input" id="pf-note" value="\${t.name||''}"/>
     </div>
     <div class="form-field">
-      <label class="form-label">Date</label>
-      <input type="date" class="form-input" id="pf-date" value="\${(t.date||'').split('T')[0]}"/>
+      <label class="form-label">Date &amp; Time</label>
+      <div class="date-time-row">
+        <input type="date" class="form-input" id="pf-date" value="\${(t.date||'').split('T')[0]}"/>
+        <input type="time" class="form-input" id="pf-time" value="\${existingTime}"/>
+      </div>
     </div>\`;
 
+  // Populate subcategory grid
+  const subGridEdit = body.querySelector('#pf-subcategory');
+  if (isExpense && subGridEdit) {
+    subGridEdit.innerHTML = rankedSubs.length
+      ? rankedSubs.map(s => \`<button class="chip-item \${s.id===t.subcategoryId?'selected':''}" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('')
+      : '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
+  }
+
+  // Wire chip single-select
   body.querySelectorAll('.chip-grid').forEach(grid => {
     grid.querySelectorAll('.chip-item').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -2675,26 +3272,17 @@ function renderPanelEdit() {
     });
   });
 
-  // Subcategory list for edit form — independent of category, ranked by recency.
-  const subGridEdit = body.querySelector('#pf-subcategory');
-  if (isExpense && subGridEdit) {
-    const allSubs = bs.subcategories || [];
-    const recentIds = (bs.recent && bs.recent.subcategories) || [];
-    const recentSet = new Set(recentIds);
-    const ranked = [
-      ...recentIds.map(id => allSubs.find(s => s.id === id)).filter(Boolean),
-      ...allSubs.filter(s => !recentSet.has(s.id)).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    ];
-    subGridEdit.innerHTML = ranked.length
-      ? ranked.map(s => \`<button class="chip-item \${s.id===t.subcategoryId?'selected':''}" data-id="\${s.id}" data-name="\${s.name}">\${chipIcon(s.icon,'📂')} \${s.name}</button>\`).join('')
-      : '<span style="color:var(--fg-soft);font-size:var(--text-sm)">No subcategories</span>';
-    subGridEdit.querySelectorAll('.chip-item').forEach(chip => {
-      chip.addEventListener('click', () => {
-        subGridEdit.querySelectorAll('.chip-item').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
+  // Wire chip search inputs
+  body.querySelectorAll('.chip-search-input').forEach(search => {
+    const grid = search.nextElementSibling;
+    if (!grid || !grid.classList.contains('chip-grid')) return;
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase();
+      grid.querySelectorAll('.chip-item').forEach(chip => {
+        chip.style.display = q && !chip.dataset.name.toLowerCase().includes(q) ? 'none' : '';
       });
     });
-  }
+  });
 
   footer.innerHTML = \`
     <button class="panel-save-btn" id="panel-save">Save Changes</button>
@@ -2704,10 +3292,12 @@ function renderPanelEdit() {
     const btn = document.getElementById('panel-save');
     if (btn) btn.disabled = true;
     try {
-      const amount = parseFloat(document.getElementById('pf-amount')?.value || '0');
+      const amount  = parseFloat(document.getElementById('pf-amount')?.value || '0');
       if (!amount || isNaN(amount)) { showToast('Enter an amount', 'error'); return; }
       const note     = document.getElementById('pf-note')?.value?.trim() || '';
-      const date     = document.getElementById('pf-date')?.value || t.date;
+      const dateVal  = document.getElementById('pf-date')?.value || (t.date || '').split('T')[0];
+      const timeVal  = document.getElementById('pf-time')?.value || '';
+      const date     = buildDateTime(dateVal, timeVal);
       const catChip  = document.getElementById('pf-category')?.querySelector('.chip-item.selected');
       const subChip  = document.getElementById('pf-subcategory')?.querySelector('.chip-item.selected');
       const acctChip = document.getElementById('pf-account')?.querySelector('.chip-item.selected');
@@ -2722,7 +3312,6 @@ function renderPanelEdit() {
       showToast('Transaction updated', 'success');
       state.txnsByPeriod = {};
       state.summaryByPeriod = {};
-      // Return to detail view
       state.panelTxn = { ...t, amount, name: note, date, categoryId: body.categoryId, accountId: body.accountId };
       state.panelMode = 'detail';
       renderPanelDetail();
@@ -2887,7 +3476,12 @@ window.addEventListener('resize', updateSidebarCollapse);
 updateSidebarCollapse();
 
 // ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('online', () => syncPendingTxns().catch(() => {}));
+
 (async function init() {
+  // Sync any offline-queued transactions
+  syncPendingTxns().catch(() => {});
+
   // Load bootstrap in background
   loadBootstrap().catch(() => {});
 
