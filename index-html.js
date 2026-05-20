@@ -813,8 +813,8 @@ export const HTML = /* html */ `<!doctype html>
     border-radius: 24px;
     background: var(--surface);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
   }
 
   .hero-card {
@@ -915,8 +915,8 @@ export const HTML = /* html */ `<!doctype html>
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border-primary);
     background: var(--color-bg-surface);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
     cursor: pointer;
     transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
     -webkit-tap-highlight-color: transparent;
@@ -1311,8 +1311,8 @@ export const HTML = /* html */ `<!doctype html>
     border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-lg);
     background: var(--color-bg-surface);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     margin-bottom: var(--space-5);
@@ -2450,8 +2450,8 @@ export const HTML = /* html */ `<!doctype html>
   /* CSS translation of Apple .glassEffect() API for web/mobile */
 
   :root, [data-theme="dark"] {
-    --glass-blur:        blur(28px) saturate(180%);
-    --glass-blur-soft:   blur(16px) saturate(160%);
+    --glass-blur:        blur(48px) saturate(200%);
+    --glass-blur-soft:   blur(32px) saturate(190%);
     --glass-bg:          rgba(255,255,255,0.05);
     --glass-bg-hover:    rgba(255,255,255,0.08);
     --glass-bg-strong:   rgba(255,255,255,0.07);
@@ -2464,8 +2464,8 @@ export const HTML = /* html */ `<!doctype html>
     --dur-spring:        320ms;
   }
   [data-theme="light"] {
-    --glass-blur:        blur(28px) saturate(180%);
-    --glass-blur-soft:   blur(16px) saturate(160%);
+    --glass-blur:        blur(48px) saturate(200%);
+    --glass-blur-soft:   blur(32px) saturate(190%);
     --glass-bg:          rgba(255,255,255,0.85);
     --glass-bg-hover:    rgba(255,255,255,0.92);
     --glass-bg-strong:   rgba(255,255,255,0.90);
@@ -2592,8 +2592,8 @@ export const HTML = /* html */ `<!doctype html>
     background: rgba(0,230,118,0.09) !important;
     border: 1px solid rgba(0,230,118,0.22) !important;
     box-shadow: 0 4px 24px rgba(0,230,118,0.12), inset 0 1px 0 rgba(0,230,118,0.12) !important;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
   }
   .home-summary-card.income .home-summary-type  { color: #00c060 !important; }
   .home-summary-card.income .home-summary-amount { color: #00c060 !important; }
@@ -2603,8 +2603,8 @@ export const HTML = /* html */ `<!doctype html>
     background: rgba(255,70,70,0.07) !important;
     border: 1px solid rgba(255,70,70,0.18) !important;
     box-shadow: 0 4px 24px rgba(255,70,70,0.10), inset 0 1px 0 rgba(255,70,70,0.08) !important;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
   }
   .home-summary-card.expense .home-summary-type  { color: #e04444 !important; }
   .home-summary-card.expense .home-summary-amount { color: #e04444 !important; }
@@ -3583,6 +3583,7 @@ ${ICONS_LIB_SOURCE}
       localStorage.setItem(LS_CACHE, JSON.stringify(fresh));
       localStorage.setItem(LS_CACHE_AT, String(Date.now()));
       renderFormChips();
+      state.expensesByPeriod = {};
       clearExpCache();
     } catch (e) { /* tolerate */ }
   }

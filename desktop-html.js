@@ -1179,8 +1179,8 @@ body {
 /* CSS translation of Apple's .glassEffect() API for web */
 
 :root {
-  --glass-blur:          blur(28px) saturate(180%);
-  --glass-blur-light:    blur(16px) saturate(160%);
+  --glass-blur:          blur(48px) saturate(200%);
+  --glass-blur-light:    blur(32px) saturate(190%);
   --glass-bg:            rgba(255,255,255,0.05);
   --glass-bg-hover:      rgba(255,255,255,0.08);
   --glass-bg-strong:     rgba(255,255,255,0.07);
@@ -1226,8 +1226,8 @@ body {
 }
 [data-theme="light"] .sidebar {
   background: rgba(255,255,255,0.80) !important;
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
   border-right: 1px solid rgba(0,0,0,0.08) !important;
 }
 
@@ -1259,8 +1259,8 @@ body {
 /* Command palette → deep glass */
 .palette-box {
   background: rgba(18,18,18,0.92) !important;
-  backdrop-filter: blur(48px) saturate(200%);
-  -webkit-backdrop-filter: blur(48px) saturate(200%);
+  backdrop-filter: blur(64px) saturate(220%);
+  -webkit-backdrop-filter: blur(64px) saturate(220%);
   border: 1px solid var(--glass-border-bright) !important;
 }
 [data-theme="light"] .palette-box {
@@ -1458,8 +1458,8 @@ body {
   background: rgba(0,230,118,0.09) !important;
   border: 1px solid rgba(0,230,118,0.22) !important;
   box-shadow: 0 4px 24px rgba(0,230,118,0.12), inset 0 1px 0 rgba(0,230,118,0.12) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
 }
 .summary-card.income .summary-card-label  { color: #007a40 !important; }
 .summary-card.income .summary-card-amount { color: #00a050 !important; }
@@ -1473,8 +1473,8 @@ body {
   background: rgba(255,70,70,0.07) !important;
   border: 1px solid rgba(255,70,70,0.18) !important;
   box-shadow: 0 4px 24px rgba(255,70,70,0.10), inset 0 1px 0 rgba(255,70,70,0.08) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
 }
 .summary-card.expense .summary-card-label  { color: #a02828 !important; }
 .summary-card.expense .summary-card-amount { color: #d03838 !important; }
@@ -2938,6 +2938,7 @@ async function commitSettingsPicker(payload) {
 
 function invalidateBootstrapCache() {
   state.bootstrap = null;
+  state.txnsByPeriod = {};
 }
 
 // ── Right panel ────────────────────────────────────────────────────────────
