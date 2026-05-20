@@ -3775,6 +3775,10 @@ ${ICONS_LIB_SOURCE}
   function openAddTypeSheet() { openAddSheet(); }
   function openAddExpense()   { closeAddSheet(); setActiveView("add"); }
   function openAddIncome()    { closeAddSheet(); setActiveView("income"); }
+  // Expose to global scope for onclick attributes in dynamic HTML
+  window.openAddTypeSheet = openAddTypeSheet;
+  window.openAddExpense   = openAddExpense;
+  window.openAddIncome    = openAddIncome;
 
   function closeAddSheet() {
     $("addSheet").classList.remove("open");
