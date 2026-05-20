@@ -1450,6 +1450,94 @@ body {
   border-color: rgba(255,255,255,0.90) !important;
   box-shadow: 0 8px 32px rgba(100,100,200,0.16) !important;
 }
+
+/* ── Neon Contextual Themes: Income (green) + Expense (red) ── */
+
+/* Income summary card — neon green on dark */
+.summary-card.income {
+  background: rgba(8,18,12,0.94) !important;
+  border: 1px solid rgba(0,230,118,0.24) !important;
+  box-shadow: 0 4px 24px rgba(0,230,118,0.16), inset 0 1px 0 rgba(0,230,118,0.10) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.summary-card.income .summary-card-label  { color: rgba(0,230,118,0.70) !important; }
+.summary-card.income .summary-card-amount {
+  color: #00e676 !important;
+  text-shadow: 0 0 18px rgba(0,230,118,0.55);
+}
+.summary-card.income:hover {
+  box-shadow: 0 8px 32px rgba(0,230,118,0.22) !important;
+  border-color: rgba(0,230,118,0.35) !important;
+}
+
+/* Expense summary card — neon red on dark (faded) */
+.summary-card.expense {
+  background: rgba(18,8,8,0.94) !important;
+  border: 1px solid rgba(255,80,80,0.20) !important;
+  box-shadow: 0 4px 24px rgba(255,80,80,0.13), inset 0 1px 0 rgba(255,80,80,0.08) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.summary-card.expense .summary-card-label  { color: rgba(255,110,110,0.70) !important; }
+.summary-card.expense .summary-card-amount {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 18px rgba(255,80,80,0.45);
+}
+.summary-card.expense:hover {
+  box-shadow: 0 8px 32px rgba(255,80,80,0.18) !important;
+  border-color: rgba(255,80,80,0.30) !important;
+}
+
+/* Transaction rows — green/red dark */
+.txn-row.txn-income {
+  background: rgba(8,18,12,0.88) !important;
+  border-left: 4px solid #00e676 !important;
+  box-shadow: 0 1px 0 rgba(0,230,118,0.08), 0 2px 10px rgba(0,230,118,0.10) !important;
+}
+.txn-row.txn-income:hover {
+  background: rgba(10,24,16,0.95) !important;
+  box-shadow: 0 4px 16px rgba(0,230,118,0.16) !important;
+}
+.txn-row.txn-expense {
+  background: rgba(18,8,8,0.88) !important;
+  border-left: 4px solid #ff6b6b !important;
+  box-shadow: 0 1px 0 rgba(255,80,80,0.06), 0 2px 10px rgba(255,80,80,0.08) !important;
+}
+.txn-row.txn-expense:hover {
+  background: rgba(24,10,10,0.95) !important;
+  box-shadow: 0 4px 16px rgba(255,80,80,0.14) !important;
+}
+
+/* Transaction row amounts */
+.txn-row-amount.income {
+  color: #00e676 !important;
+  text-shadow: 0 0 12px rgba(0,230,118,0.45);
+}
+.txn-row-amount.expense {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 12px rgba(255,80,80,0.38);
+}
+
+/* Transaction icon cells */
+.txn-row-icon.income-icon {
+  background: rgba(0,230,118,0.12) !important;
+  border: 1px solid rgba(0,230,118,0.22) !important;
+}
+.txn-row-icon.expense-icon {
+  background: rgba(255,80,80,0.10) !important;
+  border: 1px solid rgba(255,80,80,0.18) !important;
+}
+
+/* Overview hero amount */
+.overview-hero-amount.positive {
+  color: #00e676 !important;
+  text-shadow: 0 0 20px rgba(0,230,118,0.40);
+}
+.overview-hero-amount.negative {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 20px rgba(255,80,80,0.35);
+}
 </style>
 </head>
 <body>
