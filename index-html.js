@@ -14,7 +14,7 @@ export const HTML = /* html */ `<!doctype html>
 <meta name="format-detection" content="telephone=no" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="theme-color" id="themeColorMeta" content="#eaebf8" />
+<meta name="theme-color" id="themeColorMeta" content="#f5f5f5" />
 <link rel="manifest" href="/manifest.json" />
 <title>Expense Tracker</title>
 <style>
@@ -22,34 +22,34 @@ export const HTML = /* html */ `<!doctype html>
 
   :root,
   [data-theme="dark"] {
-    /* Backgrounds — Deep Purple Space */
-    --color-bg-primary:        #0e0e1a;
-    --color-bg-accent:         radial-gradient(circle at top left, rgba(124, 92, 246, 0.22), transparent 38%),
-                                radial-gradient(circle at bottom right, rgba(180, 100, 255, 0.14), transparent 35%);
-    --color-bg-surface:        rgba(22, 20, 42, 0.90);
-    --color-bg-surface-2:      rgba(28, 26, 52, 0.96);
-    --color-bg-surface-3:      rgba(36, 34, 62, 0.98);
-    --color-bg-surface-raised: rgba(124, 92, 246, 0.08);
-    --color-bg-inverse:        rgba(240, 238, 255, 0.96);
-    --color-sheet-bg:          rgba(18, 16, 36, 0.98);
+    /* Backgrounds — True Black */
+    --color-bg-primary:        #111111;
+    --color-bg-accent:         radial-gradient(circle at top left, rgba(220, 70, 70, 0.10), transparent 40%),
+                                radial-gradient(circle at bottom right, rgba(180, 50, 50, 0.07), transparent 38%);
+    --color-bg-surface:        rgba(26, 26, 26, 0.90);
+    --color-bg-surface-2:      rgba(32, 32, 32, 0.96);
+    --color-bg-surface-3:      rgba(40, 40, 40, 0.98);
+    --color-bg-surface-raised: rgba(255, 255, 255, 0.04);
+    --color-bg-inverse:        rgba(245, 245, 245, 0.96);
+    --color-sheet-bg:          rgba(18, 18, 18, 0.98);
 
     /* Text */
-    --color-text-primary:   rgba(240, 238, 255, 0.95);
-    --color-text-secondary: rgba(200, 196, 230, 0.75);
-    --color-text-tertiary:  rgba(170, 165, 210, 0.50);
-    --color-text-inverse:   #1a1a3e;
-    --color-text-link:      #a78bfa;
+    --color-text-primary:   rgba(245, 245, 245, 0.95);
+    --color-text-secondary: rgba(160, 160, 160, 0.80);
+    --color-text-tertiary:  rgba(120, 120, 120, 0.60);
+    --color-text-inverse:   #111111;
+    --color-text-link:      #e05050;
 
     /* Borders */
-    --color-border-primary:   rgba(124, 92, 246, 0.15);
-    --color-border-secondary: rgba(124, 92, 246, 0.08);
-    --color-border-focus:     rgba(124, 92, 246, 0.60);
+    --color-border-primary:   rgba(255, 255, 255, 0.08);
+    --color-border-secondary: rgba(255, 255, 255, 0.05);
+    --color-border-focus:     rgba(220, 70, 70, 0.55);
 
-    /* Accent — purple */
-    --color-accent-expense:        #a78bfa;
-    --color-accent-expense-hover:  #b89ffc;
-    --color-accent-expense-active: #967be8;
-    --color-accent-expense-subtle: rgba(167, 139, 250, 0.12);
+    /* Accent — faded red */
+    --color-accent-expense:        #e05050;
+    --color-accent-expense-hover:  #e86060;
+    --color-accent-expense-active: #cc3a3a;
+    --color-accent-expense-subtle: rgba(220, 70, 70, 0.12);
 
     /* Accent — Income (green) */
     --color-income:        #4ade80;
@@ -68,21 +68,21 @@ export const HTML = /* html */ `<!doctype html>
     --color-status-info:    #22d3ee;
 
     /* Surfaces / overlays */
-    --color-pill:        rgba(124, 92, 246, 0.10);
-    --color-pill-active: rgba(124, 92, 246, 0.22);
-    --color-overlay:     rgba(5, 5, 20, 0.65);
-    --color-backdrop:    rgba(5, 5, 20, 0.45);
+    --color-pill:        rgba(255, 255, 255, 0.06);
+    --color-pill-active: rgba(220, 70, 70, 0.15);
+    --color-overlay:     rgba(0, 0, 0, 0.65);
+    --color-backdrop:    rgba(0, 0, 0, 0.45);
 
     /* Navigation (bottom tab bar) */
-    --color-nav-bg:          rgba(14, 14, 28, 0.98);
-    --color-nav-border:      rgba(124, 92, 246, 0.12);
-    --color-nav-item:        rgba(170, 165, 210, 0.45);
-    --color-nav-item-active: #a78bfa;
-    --color-nav-add-bg:      #7c5cf6;
+    --color-nav-bg:          rgba(10, 10, 10, 0.98);
+    --color-nav-border:      rgba(255, 255, 255, 0.06);
+    --color-nav-item:        rgba(255, 255, 255, 0.35);
+    --color-nav-item-active: #e05050;
+    --color-nav-add-bg:      #e05050;
     --color-nav-add-fg:      #ffffff;
 
     /* Chart palette */
-    --color-chart-1: #a78bfa;
+    --color-chart-1: #e05050;
     --color-chart-2: #22d3ee;
     --color-chart-3: #fbbf24;
     --color-chart-4: #f472b6;
@@ -96,7 +96,7 @@ export const HTML = /* html */ `<!doctype html>
     --shadow-md:    0 8px 22px rgba(0, 0, 0, 0.40);
     --shadow-lg:    0 14px 36px rgba(0, 0, 0, 0.50);
     --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.50);
-    --shadow-focus: 0 0 0 3px rgba(124, 92, 246, 0.35);
+    --shadow-focus: 0 0 0 3px rgba(220, 70, 70, 0.30);
 
     /* Spacing scale (4px base) */
     --space-0: 0px;
@@ -208,34 +208,34 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   [data-theme="light"] {
-    /* Backgrounds — Lavender Glass */
-    --color-bg-primary:        #eaebf8;
-    --color-bg-accent:         radial-gradient(circle at 78% 12%, rgba(124, 92, 246, 0.18), transparent 45%),
-                                radial-gradient(circle at 18% 82%, rgba(160, 130, 255, 0.12), transparent 42%);
-    --color-bg-surface:        rgba(255, 255, 255, 0.62);
-    --color-bg-surface-2:      rgba(255, 255, 255, 0.80);
-    --color-bg-surface-3:      rgba(255, 255, 255, 0.93);
-    --color-bg-surface-raised: rgba(124, 92, 246, 0.06);
-    --color-bg-inverse:        #1a1a3e;
-    --color-sheet-bg:          rgba(255, 255, 255, 0.97);
+    /* Backgrounds — Clean White/Gray */
+    --color-bg-primary:        #f5f5f5;
+    --color-bg-accent:         radial-gradient(circle at 78% 12%, rgba(212, 68, 68, 0.08), transparent 45%),
+                                radial-gradient(circle at 18% 82%, rgba(180, 50, 50, 0.05), transparent 42%);
+    --color-bg-surface:        rgba(255, 255, 255, 0.85);
+    --color-bg-surface-2:      rgba(255, 255, 255, 0.92);
+    --color-bg-surface-3:      rgba(255, 255, 255, 0.96);
+    --color-bg-surface-raised: rgba(0, 0, 0, 0.03);
+    --color-bg-inverse:        #111111;
+    --color-sheet-bg:          rgba(255, 255, 255, 0.98);
 
     /* Text */
-    --color-text-primary:   #1a1a3e;
-    --color-text-secondary: #5b5b8a;
-    --color-text-tertiary:  #9090bc;
+    --color-text-primary:   #111111;
+    --color-text-secondary: #666666;
+    --color-text-tertiary:  #999999;
     --color-text-inverse:   rgba(255, 255, 255, 0.96);
-    --color-text-link:      #7c5cf6;
+    --color-text-link:      #d44444;
 
     /* Borders */
-    --color-border-primary:   rgba(255, 255, 255, 0.75);
-    --color-border-secondary: rgba(255, 255, 255, 0.50);
-    --color-border-focus:     rgba(124, 92, 246, 0.50);
+    --color-border-primary:   rgba(0, 0, 0, 0.08);
+    --color-border-secondary: rgba(0, 0, 0, 0.05);
+    --color-border-focus:     rgba(212, 68, 68, 0.45);
 
-    /* Accent — purple */
-    --color-accent-expense:        #7c5cf6;
-    --color-accent-expense-hover:  #8f72f8;
-    --color-accent-expense-active: #6a4ae0;
-    --color-accent-expense-subtle: rgba(124, 92, 246, 0.10);
+    /* Accent — faded red */
+    --color-accent-expense:        #d44444;
+    --color-accent-expense-hover:  #de5555;
+    --color-accent-expense-active: #c03030;
+    --color-accent-expense-subtle: rgba(212, 68, 68, 0.10);
 
     /* Accent — Income */
     --color-income:        #16a34a;
@@ -254,21 +254,21 @@ export const HTML = /* html */ `<!doctype html>
     --color-status-info:    #0891b2;
 
     /* Surfaces / overlays */
-    --color-pill:        rgba(255, 255, 255, 0.55);
-    --color-pill-active: rgba(124, 92, 246, 0.12);
-    --color-overlay:     rgba(20, 20, 60, 0.45);
-    --color-backdrop:    rgba(20, 20, 60, 0.25);
+    --color-pill:        rgba(0, 0, 0, 0.05);
+    --color-pill-active: rgba(212, 68, 68, 0.10);
+    --color-overlay:     rgba(0, 0, 0, 0.35);
+    --color-backdrop:    rgba(0, 0, 0, 0.20);
 
     /* Navigation */
-    --color-nav-bg:          rgba(255, 255, 255, 0.94);
-    --color-nav-border:      rgba(255, 255, 255, 0.85);
-    --color-nav-item:        rgba(90, 90, 140, 0.45);
-    --color-nav-item-active: #7c5cf6;
-    --color-nav-add-bg:      #7c5cf6;
+    --color-nav-bg:          rgba(255, 255, 255, 0.96);
+    --color-nav-border:      rgba(0, 0, 0, 0.08);
+    --color-nav-item:        rgba(0, 0, 0, 0.35);
+    --color-nav-item-active: #d44444;
+    --color-nav-add-bg:      #d44444;
     --color-nav-add-fg:      #ffffff;
 
     /* Chart palette */
-    --color-chart-1: #7c5cf6;
+    --color-chart-1: #d44444;
     --color-chart-2: #0891b2;
     --color-chart-3: #d97706;
     --color-chart-4: #ec4899;
@@ -278,11 +278,11 @@ export const HTML = /* html */ `<!doctype html>
     --color-chart-8: #9333ea;
 
     /* Shadows */
-    --shadow-sm:    0 2px 8px rgba(100, 100, 200, 0.10);
-    --shadow-md:    0 8px 24px rgba(100, 100, 200, 0.14);
-    --shadow-lg:    0 16px 40px rgba(100, 100, 200, 0.18);
-    --shadow-sheet: 0 -8px 32px rgba(100, 100, 200, 0.16);
-    --shadow-focus: 0 0 0 3px rgba(124, 92, 246, 0.25);
+    --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-lg:    0 16px 40px rgba(0, 0, 0, 0.14);
+    --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-focus: 0 0 0 3px rgba(212, 68, 68, 0.20);
 
     /* Legacy aliases */
     --bg:          var(--color-bg-primary);
@@ -2450,29 +2450,29 @@ export const HTML = /* html */ `<!doctype html>
   /* CSS translation of Apple .glassEffect() API for web/mobile */
 
   :root, [data-theme="dark"] {
-    --glass-blur:        blur(28px) saturate(200%);
-    --glass-blur-soft:   blur(16px) saturate(180%);
-    --glass-bg:          rgba(124,92,246,0.08);
-    --glass-bg-hover:    rgba(124,92,246,0.14);
-    --glass-bg-strong:   rgba(124,92,246,0.12);
-    --glass-border:      rgba(124,92,246,0.18);
-    --glass-border-hi:   rgba(167,139,250,0.28);
-    --glass-tint-accent: rgba(167,139,250,0.18);
-    --glass-tint-income: rgba(74,222,128,0.14);
+    --glass-blur:        blur(28px) saturate(180%);
+    --glass-blur-soft:   blur(16px) saturate(160%);
+    --glass-bg:          rgba(255,255,255,0.05);
+    --glass-bg-hover:    rgba(255,255,255,0.08);
+    --glass-bg-strong:   rgba(255,255,255,0.07);
+    --glass-border:      rgba(255,255,255,0.10);
+    --glass-border-hi:   rgba(255,255,255,0.16);
+    --glass-tint-accent: rgba(220,70,70,0.14);
+    --glass-tint-income: rgba(74,222,128,0.12);
     --spring:            cubic-bezier(0.34,1.56,0.64,1);
     --spring-quick:      cubic-bezier(0.22,1.0,0.36,1);
     --dur-spring:        320ms;
   }
   [data-theme="light"] {
-    --glass-blur:        blur(28px) saturate(200%);
-    --glass-blur-soft:   blur(16px) saturate(180%);
-    --glass-bg:          rgba(255,255,255,0.62);
-    --glass-bg-hover:    rgba(255,255,255,0.80);
-    --glass-bg-strong:   rgba(255,255,255,0.72);
-    --glass-border:      rgba(255,255,255,0.80);
-    --glass-border-hi:   rgba(255,255,255,0.95);
-    --glass-tint-accent: rgba(124,92,246,0.12);
-    --glass-tint-income: rgba(22,163,74,0.10);
+    --glass-blur:        blur(28px) saturate(180%);
+    --glass-blur-soft:   blur(16px) saturate(160%);
+    --glass-bg:          rgba(255,255,255,0.85);
+    --glass-bg-hover:    rgba(255,255,255,0.92);
+    --glass-bg-strong:   rgba(255,255,255,0.90);
+    --glass-border:      rgba(0,0,0,0.07);
+    --glass-border-hi:   rgba(0,0,0,0.10);
+    --glass-tint-accent: rgba(212,68,68,0.10);
+    --glass-tint-income: rgba(22,163,74,0.08);
   }
 
   /* Cards → glass surfaces (.glassEffect(in: .rect(cornerRadius:))) */
@@ -2509,7 +2509,7 @@ export const HTML = /* html */ `<!doctype html>
     box-shadow: 0 12px 40px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.06) !important;
   }
   [data-theme="light"] .home-balance-card {
-    box-shadow: 0 16px 48px rgba(100,100,200,0.18), 0 1px 0 rgba(255,255,255,0.95) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.95) !important;
   }
 
   /* Chips → spring interactive (.glassEffect(.regular.interactive())) */
@@ -2525,50 +2525,50 @@ export const HTML = /* html */ `<!doctype html>
   }
   .chip.selected {
     background: var(--glass-tint-accent) !important;
-    border-color: rgba(124,92,246,0.35) !important;
-    box-shadow: 0 0 0 1px rgba(124,92,246,0.18), 0 2px 8px rgba(124,92,246,0.18) !important;
+    border-color: rgba(220,70,70,0.35) !important;
+    box-shadow: 0 0 0 1px rgba(220,70,70,0.18), 0 2px 8px rgba(220,70,70,0.18) !important;
     color: var(--accent) !important;
   }
   [data-theme="light"] .chip.selected {
-    border-color: rgba(124,92,246,0.30) !important;
+    border-color: rgba(212,68,68,0.30) !important;
     color: var(--accent) !important;
   }
 
   /* Save button → glass prominent (.buttonStyle(.glassProminent)) */
   .save-btn {
-    box-shadow: 0 4px 20px rgba(124,92,246,0.38) !important;
+    box-shadow: 0 4px 20px rgba(220,70,70,0.30) !important;
     transition: background var(--dur-fast),
                 transform var(--dur-spring) var(--spring),
                 box-shadow var(--dur-spring) var(--spring-quick) !important;
   }
   .save-btn:active {
     transform: scale(0.96) !important;
-    box-shadow: 0 2px 8px rgba(124,92,246,0.22) !important;
+    box-shadow: 0 2px 8px rgba(220,70,70,0.18) !important;
   }
 
   /* Bottom nav → stable glass (no backdrop-filter to avoid Safari flicker) */
   .bottom-nav {
-    background: rgba(14,14,28,0.98) !important;
-    border-top: 1px solid rgba(124,92,246,0.15) !important;
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.40), 0 -1px 0 rgba(124,92,246,0.10) !important;
+    background: rgba(10,10,10,0.98) !important;
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.50), 0 -1px 0 rgba(255,255,255,0.04) !important;
   }
   [data-theme="light"] .bottom-nav {
     background: rgba(255,255,255,0.96) !important;
-    border-top: 1px solid rgba(255,255,255,0.90) !important;
-    box-shadow: 0 -4px 24px rgba(100,100,200,0.12), 0 -1px 0 rgba(124,92,246,0.08) !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.10), 0 -1px 0 rgba(0,0,0,0.05) !important;
   }
 
   /* Dropdown → glass */
   .dropdown {
-    background: rgba(22,20,42,0.90) !important;
+    background: rgba(22,22,22,0.92) !important;
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border-hi) !important;
   }
   [data-theme="light"] .dropdown {
-    background: rgba(255,255,255,0.90) !important;
-    border-color: rgba(255,255,255,0.90) !important;
-    box-shadow: 0 8px 32px rgba(100,100,200,0.16) !important;
+    background: rgba(255,255,255,0.95) !important;
+    border-color: rgba(0,0,0,0.08) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
   }
 
   /* Icon picker sheet → deep glass */
@@ -2621,8 +2621,8 @@ export const HTML = /* html */ `<!doctype html>
     box-shadow: 0 2px 10px rgba(255,70,70,0.07) !important;
   }
   .expense-card.txn-transfer {
-    background: rgba(124,92,246,0.07) !important;
-    border: 1px solid rgba(124,92,246,0.15) !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
   }
   .income-amount { color: #00a050 !important; }
   .expense-amount:not(.income-amount) { color: #d03838 !important; }
@@ -3226,7 +3226,7 @@ ${ICONS_LIB_SOURCE}
 
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    $("themeColorMeta").content = theme === "dark" ? "#0e0e1a" : "#eaebf8";
+    $("themeColorMeta").content = theme === "dark" ? "#111111" : "#f5f5f5";
     const icon = theme === "dark" ? "☀" : "☾";
     ["themeBtn","addThemeBtn","analyticsThemeBtn","searchThemeBtn"].forEach(id => { const el = $(id); if (el) el.textContent = icon; });
     const homeTheme = $("homeThemeBtn"); if (homeTheme) homeTheme.textContent = icon;
@@ -5149,7 +5149,7 @@ ${ICONS_LIB_SOURCE}
     renderInlineList(incSrcRows, incSrcTotal, INC_COLORS, "incomeSrcList", "analyticsIncSrcSubtitle", "No income yet for this period.");
 
     // ── Account spending aggregation ──────────────────────────────────────
-    const ACCT_COLORS = ["#7f8cff","#a78bfa","#818cf8","#6366f1","#8b5cf6","#4f46e5","#c4b5fd","#9fa8da"];
+    const ACCT_COLORS = ["#e05050","#d44444","#cc3a3a","#b83232","#e86060","#f08080","#c84040","#a83030"];
     const acctMap = {};
     for (const e of expenseEntries) {
       const key = e.account || "Unknown";
