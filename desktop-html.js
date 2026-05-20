@@ -1451,93 +1451,67 @@ body {
   box-shadow: 0 8px 32px rgba(100,100,200,0.16) !important;
 }
 
-/* ── Neon Contextual Themes: Income (green) + Expense (red) ── */
+/* ── Neon Tint: Income (green) + Expense (faded red) over glass ── */
 
-/* Income summary card — neon green on dark */
+/* Income summary card — green glass tint */
 .summary-card.income {
-  background: rgba(8,18,12,0.94) !important;
-  border: 1px solid rgba(0,230,118,0.24) !important;
-  box-shadow: 0 4px 24px rgba(0,230,118,0.16), inset 0 1px 0 rgba(0,230,118,0.10) !important;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(0,230,118,0.09) !important;
+  border: 1px solid rgba(0,230,118,0.22) !important;
+  box-shadow: 0 4px 24px rgba(0,230,118,0.12), inset 0 1px 0 rgba(0,230,118,0.12) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
-.summary-card.income .summary-card-label  { color: rgba(0,230,118,0.70) !important; }
-.summary-card.income .summary-card-amount {
-  color: #00e676 !important;
-  text-shadow: 0 0 18px rgba(0,230,118,0.55);
-}
+.summary-card.income .summary-card-label  { color: #007a40 !important; }
+.summary-card.income .summary-card-amount { color: #00a050 !important; }
 .summary-card.income:hover {
-  box-shadow: 0 8px 32px rgba(0,230,118,0.22) !important;
-  border-color: rgba(0,230,118,0.35) !important;
+  background: rgba(0,230,118,0.13) !important;
+  border-color: rgba(0,230,118,0.30) !important;
 }
 
-/* Expense summary card — neon red on dark (faded) */
+/* Expense summary card — faded red glass tint */
 .summary-card.expense {
-  background: rgba(18,8,8,0.94) !important;
-  border: 1px solid rgba(255,80,80,0.20) !important;
-  box-shadow: 0 4px 24px rgba(255,80,80,0.13), inset 0 1px 0 rgba(255,80,80,0.08) !important;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(255,70,70,0.07) !important;
+  border: 1px solid rgba(255,70,70,0.18) !important;
+  box-shadow: 0 4px 24px rgba(255,70,70,0.10), inset 0 1px 0 rgba(255,70,70,0.08) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
-.summary-card.expense .summary-card-label  { color: rgba(255,110,110,0.70) !important; }
-.summary-card.expense .summary-card-amount {
-  color: #ff6b6b !important;
-  text-shadow: 0 0 18px rgba(255,80,80,0.45);
-}
+.summary-card.expense .summary-card-label  { color: #a02828 !important; }
+.summary-card.expense .summary-card-amount { color: #d03838 !important; }
 .summary-card.expense:hover {
-  box-shadow: 0 8px 32px rgba(255,80,80,0.18) !important;
-  border-color: rgba(255,80,80,0.30) !important;
+  background: rgba(255,70,70,0.11) !important;
+  border-color: rgba(255,70,70,0.26) !important;
 }
 
-/* Transaction rows — green/red dark */
+/* Transaction rows — green/red tint */
 .txn-row.txn-income {
-  background: rgba(8,18,12,0.88) !important;
-  border-left: 4px solid #00e676 !important;
-  box-shadow: 0 1px 0 rgba(0,230,118,0.08), 0 2px 10px rgba(0,230,118,0.10) !important;
+  background: rgba(0,230,118,0.06) !important;
+  border-left: 4px solid rgba(0,192,96,0.70) !important;
 }
-.txn-row.txn-income:hover {
-  background: rgba(10,24,16,0.95) !important;
-  box-shadow: 0 4px 16px rgba(0,230,118,0.16) !important;
-}
+.txn-row.txn-income:hover { background: rgba(0,230,118,0.10) !important; }
 .txn-row.txn-expense {
-  background: rgba(18,8,8,0.88) !important;
-  border-left: 4px solid #ff6b6b !important;
-  box-shadow: 0 1px 0 rgba(255,80,80,0.06), 0 2px 10px rgba(255,80,80,0.08) !important;
+  background: rgba(255,70,70,0.05) !important;
+  border-left: 4px solid rgba(220,56,56,0.65) !important;
 }
-.txn-row.txn-expense:hover {
-  background: rgba(24,10,10,0.95) !important;
-  box-shadow: 0 4px 16px rgba(255,80,80,0.14) !important;
-}
+.txn-row.txn-expense:hover { background: rgba(255,70,70,0.09) !important; }
 
 /* Transaction row amounts */
-.txn-row-amount.income {
-  color: #00e676 !important;
-  text-shadow: 0 0 12px rgba(0,230,118,0.45);
-}
-.txn-row-amount.expense {
-  color: #ff6b6b !important;
-  text-shadow: 0 0 12px rgba(255,80,80,0.38);
-}
+.txn-row-amount.income  { color: #00a050 !important; }
+.txn-row-amount.expense { color: #d03838 !important; }
 
 /* Transaction icon cells */
 .txn-row-icon.income-icon {
-  background: rgba(0,230,118,0.12) !important;
-  border: 1px solid rgba(0,230,118,0.22) !important;
+  background: rgba(0,230,118,0.10) !important;
+  border: 1px solid rgba(0,230,118,0.18) !important;
 }
 .txn-row-icon.expense-icon {
-  background: rgba(255,80,80,0.10) !important;
-  border: 1px solid rgba(255,80,80,0.18) !important;
+  background: rgba(255,70,70,0.08) !important;
+  border: 1px solid rgba(255,70,70,0.15) !important;
 }
 
 /* Overview hero amount */
-.overview-hero-amount.positive {
-  color: #00e676 !important;
-  text-shadow: 0 0 20px rgba(0,230,118,0.40);
-}
-.overview-hero-amount.negative {
-  color: #ff6b6b !important;
-  text-shadow: 0 0 20px rgba(255,80,80,0.35);
-}
+.overview-hero-amount.positive { color: #00a050 !important; }
+.overview-hero-amount.negative { color: #d03838 !important; }
 </style>
 </head>
 <body>
@@ -2038,7 +2012,16 @@ function loadAndRenderTxns(area) {
 
 function renderTxnListBody(body, txns) {
   if (!txns.length) {
-    body.innerHTML = \`<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No transactions</div><div class="empty-state-body">No transactions match the current filter.</div></div>\`;
+    const txnType = state.txnType || 'all';
+    const icon  = txnType === 'income' ? '💚' : txnType === 'expense' ? '🧾' : '📭';
+    const title = txnType === 'income' ? 'No income recorded' : txnType === 'expense' ? 'No expenses recorded' : 'No transactions yet';
+    const hint  = txnType === 'income' ? 'Click + Add Transaction and select Income.' : txnType === 'expense' ? 'Click + Add Transaction to log an expense.' : 'Add your first transaction with the + button.';
+    const ctaLabel = txnType === 'income' ? '+ Record Income' : '+ Add Expense';
+    const ctaMode  = txnType === 'income' ? 'income' : 'expense';
+    const ctaStyle = txnType === 'income'
+      ? 'margin-top:16px;padding:10px 20px;border-radius:20px;border:none;cursor:pointer;font-weight:600;font-size:14px;background:rgba(0,192,96,0.15);color:#00a050;border:1px solid rgba(0,192,96,0.30);'
+      : 'margin-top:16px;padding:10px 20px;border-radius:20px;border:none;cursor:pointer;font-weight:600;font-size:14px;background:rgba(255,70,70,0.10);color:#c03030;border:1px solid rgba(255,70,70,0.25);';
+    body.innerHTML = \`<div class="empty-state"><div class="empty-state-icon">\${icon}</div><div class="empty-state-title">\${title}</div><div class="empty-state-body">\${hint}</div><button style="\${ctaStyle}" onclick="openAddPanelForType('\${ctaMode}')">\${ctaLabel}</button></div>\`;
     return;
   }
 
@@ -3573,6 +3556,10 @@ document.querySelectorAll('.sidebar-nav-item').forEach(btn => {
 document.getElementById('sidebar-add-btn').addEventListener('click', () => {
   loadBootstrap().then(() => openPanelAdd('expense'));
 });
+
+function openAddPanelForType(mode) {
+  loadBootstrap().then(() => openPanelAdd(mode));
+}
 
 // Theme toggle
 const savedTheme = localStorage.getItem('ne-theme') || 'light';

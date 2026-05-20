@@ -206,10 +206,15 @@ async function handleD1UpdateEntity(env, table, id, body) {
   }
   if (table === "subcategories") {
     // subcategories has no emoji column; emoji maps to icon_url
-    const emojiVal   = "emoji"   in (body || {}) ? (body.emoji   || null) : undefined;
-    const iconUrlVal = "iconUrl" in (body || {}) ? (body.iconUrl || null) : undefined;
-    const finalIcon  = iconUrlVal !== undefined ? iconUrlVal : emojiVal;
-    if (finalIcon !== undefined) { sets.push("icon_url=?"); params.push(finalIcon); }
+    // iconUrl wins only when non-null; otherwise fall back to emoji value
+    const hasEmoji   = "emoji"   in (body || {});
+    const hasIconUrl = "iconUrl" in (body || {});
+    if (hasEmoji || hasIconUrl) {
+      const finalIcon = (hasIconUrl && body.iconUrl != null) ? body.iconUrl
+                      : (hasEmoji  && body.emoji   != null) ? body.emoji
+                      : null;
+      sets.push("icon_url=?"); params.push(finalIcon);
+    }
   } else {
     if (body && "emoji" in body) {
       sets.push("emoji=?"); params.push(typeof body.emoji === "string" ? body.emoji : "");

@@ -2585,117 +2585,47 @@ export const HTML = /* html */ `<!doctype html>
     border: 1px solid var(--glass-border) !important;
   }
 
-  /* ── Neon Contextual Themes: Income (green) + Expense (red) ── */
+  /* ── Neon Tint: Income (green) + Expense (faded red) over glass ── */
 
-  /* Income summary card — neon green on dark */
+  /* Income summary card — green glass tint */
   .home-summary-card.income {
-    background: rgba(8,18,12,0.94) !important;
-    border: 1px solid rgba(0,230,118,0.24) !important;
-    box-shadow: 0 4px 24px rgba(0,230,118,0.16), inset 0 1px 0 rgba(0,230,118,0.10) !important;
-    color: #c8ffe0 !important;
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    background: rgba(0,230,118,0.09) !important;
+    border: 1px solid rgba(0,230,118,0.22) !important;
+    box-shadow: 0 4px 24px rgba(0,230,118,0.12), inset 0 1px 0 rgba(0,230,118,0.12) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
-  .home-summary-card.income .home-summary-type  { color: #00e676 !important; }
-  .home-summary-card.income .home-summary-amount { color: #00e676 !important; text-shadow: 0 0 18px rgba(0,230,118,0.55); }
+  .home-summary-card.income .home-summary-type  { color: #00c060 !important; }
+  .home-summary-card.income .home-summary-amount { color: #00c060 !important; }
 
-  /* Expense summary card — neon red on dark (faded) */
+  /* Expense summary card — faded red glass tint */
   .home-summary-card.expense {
-    background: rgba(18,8,8,0.94) !important;
-    border: 1px solid rgba(255,80,80,0.20) !important;
-    box-shadow: 0 4px 24px rgba(255,80,80,0.13), inset 0 1px 0 rgba(255,80,80,0.08) !important;
-    color: #ffe0e0 !important;
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    background: rgba(255,70,70,0.07) !important;
+    border: 1px solid rgba(255,70,70,0.18) !important;
+    box-shadow: 0 4px 24px rgba(255,70,70,0.10), inset 0 1px 0 rgba(255,70,70,0.08) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
-  .home-summary-card.expense .home-summary-type  { color: #ff6b6b !important; }
-  .home-summary-card.expense .home-summary-amount { color: #ff6b6b !important; text-shadow: 0 0 18px rgba(255,80,80,0.45); }
+  .home-summary-card.expense .home-summary-type  { color: #e04444 !important; }
+  .home-summary-card.expense .home-summary-amount { color: #e04444 !important; }
 
-  /* Income view (add income form) — neon green dark */
-  #incomeView {
-    background: linear-gradient(180deg, #080f0a 0%, #0a1410 100%) !important;
-  }
-  #incomeView .topbar {
-    background: rgba(8,18,12,0.92) !important;
-    border-bottom: 1px solid rgba(0,230,118,0.16) !important;
-  }
-  #incomeView .screen-title { color: #00e676 !important; }
-  #incomeView .income-badge { color: #00e676 !important; background: rgba(0,230,118,0.12) !important; border-color: rgba(0,230,118,0.25) !important; }
-  #incomeView .input-card {
-    background: rgba(10,22,14,0.82) !important;
-    border-color: rgba(0,230,118,0.16) !important;
-  }
-  #incomeView .field-label { color: rgba(0,230,118,0.70) !important; }
-  #incomeView .save-btn {
-    background: linear-gradient(135deg, #00c060 0%, #00e676 100%) !important;
-    box-shadow: 0 4px 20px rgba(0,230,118,0.42) !important;
-    color: #001a0a !important;
-  }
-  #incomeView .save-btn:active { box-shadow: 0 2px 8px rgba(0,230,118,0.25) !important; }
-  #incomeView .type-tab.active {
-    background: rgba(0,230,118,0.18) !important;
-    color: #00e676 !important;
-    border-color: rgba(0,230,118,0.38) !important;
-    box-shadow: 0 2px 10px rgba(0,230,118,0.28) !important;
-  }
-  #incomeView .chip.selected {
-    background: rgba(0,230,118,0.14) !important;
-    border-color: rgba(0,230,118,0.32) !important;
-    color: #00e676 !important;
-    box-shadow: 0 0 0 1px rgba(0,230,118,0.16), 0 2px 8px rgba(0,230,118,0.20) !important;
-  }
-  #incomeView .period-tab.active, #incomeView .type-tab.active { color: #00e676 !important; }
-
-  /* Expense add view — neon red dark */
-  #addView {
-    background: linear-gradient(180deg, #0f0808 0%, #120a0a 100%) !important;
-  }
-  #addView .topbar {
-    background: rgba(18,8,8,0.92) !important;
-    border-bottom: 1px solid rgba(255,80,80,0.16) !important;
-  }
-  #addView .screen-title { color: #ff6b6b !important; }
-  #addView .expense-badge { color: #ff6b6b !important; background: rgba(255,80,80,0.12) !important; border-color: rgba(255,80,80,0.25) !important; }
-  #addView .input-card {
-    background: rgba(22,10,10,0.82) !important;
-    border-color: rgba(255,80,80,0.16) !important;
-  }
-  #addView .field-label { color: rgba(255,110,110,0.70) !important; }
-  #addView .save-btn {
-    background: linear-gradient(135deg, #cc2222 0%, #ff4444 100%) !important;
-    box-shadow: 0 4px 20px rgba(255,80,80,0.38) !important;
-  }
-  #addView .save-btn:active { box-shadow: 0 2px 8px rgba(255,80,80,0.22) !important; }
-  #addView .chip.selected {
-    background: rgba(255,80,80,0.14) !important;
-    border-color: rgba(255,80,80,0.32) !important;
-    color: #ff6b6b !important;
-    box-shadow: 0 0 0 1px rgba(255,80,80,0.16), 0 2px 8px rgba(255,80,80,0.18) !important;
-  }
-
-  /* Transaction cards — income: green dark, expense: red dark */
+  /* Transaction cards — green/red glass tint */
   .expense-card.txn-income {
-    background: rgba(8,18,12,0.88) !important;
-    border: 1px solid rgba(0,230,118,0.18) !important;
-    box-shadow: 0 2px 12px rgba(0,230,118,0.10) !important;
+    background: rgba(0,230,118,0.07) !important;
+    border: 1px solid rgba(0,230,118,0.16) !important;
+    box-shadow: 0 2px 10px rgba(0,230,118,0.08) !important;
   }
   .expense-card.txn-expense {
-    background: rgba(18,8,8,0.88) !important;
-    border: 1px solid rgba(255,80,80,0.15) !important;
-    box-shadow: 0 2px 12px rgba(255,80,80,0.08) !important;
+    background: rgba(255,70,70,0.06) !important;
+    border: 1px solid rgba(255,70,70,0.13) !important;
+    box-shadow: 0 2px 10px rgba(255,70,70,0.07) !important;
   }
   .expense-card.txn-transfer {
-    background: rgba(10,10,20,0.88) !important;
-    border: 1px solid rgba(124,92,246,0.18) !important;
+    background: rgba(124,92,246,0.07) !important;
+    border: 1px solid rgba(124,92,246,0.15) !important;
   }
-  .income-amount {
-    color: #00e676 !important;
-    text-shadow: 0 0 12px rgba(0,230,118,0.45) !important;
-  }
-  .expense-amount:not(.income-amount) {
-    color: #ff6b6b !important;
-    text-shadow: 0 0 12px rgba(255,80,80,0.38) !important;
-  }
+  .income-amount { color: #00a050 !important; }
+  .expense-amount:not(.income-amount) { color: #d03838 !important; }
 </style>
 </head>
 <body>
@@ -3841,6 +3771,10 @@ ${ICONS_LIB_SOURCE}
     $("addSheetOverlay").classList.add("open");
   }
 
+  function openAddTypeSheet() { openAddSheet(); }
+  function openAddExpense()   { closeAddSheet(); setActiveView("add"); }
+  function openAddIncome()    { closeAddSheet(); setActiveView("income"); }
+
   function closeAddSheet() {
     $("addSheet").classList.remove("open");
     $("addSheetOverlay").classList.remove("open");
@@ -4861,10 +4795,10 @@ ${ICONS_LIB_SOURCE}
     let emptyHtml;
     if (typeFilter === "income") {
       emptyHtml = makeEmptyState("💚", "No income this " + periodLabel, "Tap + to record income",
-        '<button class="empty-state-cta income" onclick="openAddTypeSheet()">+ Record Income</button>');
+        '<button class="empty-state-cta income" onclick="openAddIncome()">+ Record Income</button>');
     } else if (typeFilter === "expense") {
       emptyHtml = makeEmptyState("🧾", "No expenses this " + periodLabel, "Tap + to log a transaction",
-        '<button class="empty-state-cta" onclick="openAddTypeSheet()">+ Add Expense</button>');
+        '<button class="empty-state-cta" onclick="openAddExpense()">+ Add Expense</button>');
     } else {
       emptyHtml = makeEmptyState("📋", "No transactions this " + periodLabel, "Tap + to log income or an expense",
         '<button class="empty-state-cta" onclick="openAddTypeSheet()">+ Add Transaction</button>');
