@@ -201,7 +201,7 @@ function AnalyticsScreen({ txns, period, setPeriod, theme, onToggleTheme }) {
           <div className="empty"><div className="ic">⌀</div>No expenses in this period.</div> :
           catBreakdown.slice(0, 6).map((c) =>
           <div key={c.name} className="cat-row">
-                <div className="ic">{c.icon}</div>
+                <TxnIcon icon={c.icon} size={34} />
                 <div className="meta">
                   <div className="name">{c.name}</div>
                   <div className="bar"><div style={{ width: `${Math.max(6, c.pct * 100)}%` }}></div></div>
@@ -733,7 +733,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
                 <div className="chip-row">
                   {catalog.categories.map((c) =>
               <div key={c.id} className={`chip ${newParent === c.id ? 'active' : ''}`} onClick={() => setNewParent(c.id)}>
-                      <span>{c.icon}</span> {c.name}
+                      <TxnIcon icon={c.icon} size={20} /> {c.name}
                     </div>
               )}
                 </div>

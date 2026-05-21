@@ -201,12 +201,22 @@ function AccountBadge({ account, size = 26 }) {
 }
 
 // ── Transaction row ───────────────────────────────────────────────────
+function TxnIcon({ icon, size }) {
+  if (!size) size = 36;
+  if (!icon) return <div className="ic" style={{width:size,height:size}}></div>;
+  if (icon.startsWith('<svg')) {
+    return <div className="ic" style={{width:size,height:size,display:'flex',alignItems:'center',justifyContent:'center'}}
+      dangerouslySetInnerHTML={{__html: icon.replace('<svg ', '<svg width="' + (size-10) + '" height="' + (size-10) + '" ')}} />;
+  }
+  return <div className="ic">{icon}</div>;
+}
+
 function TxnRow({ t, onClick }) {
   const isIn = t.type === 'income';
   const d = new Date(t.date);
   return (
     <div className={`txn ${isIn ? 'income' : 'expense'}`} onClick={onClick}>
-      <div className="ic">{t.icon}</div>
+      <TxnIcon icon={t.icon} />
       <div className="meta">
         <div className="name">{t.name}</div>
         <div className="sub">{t.category}{t.sub ? ` · ${t.sub}` : ''} · {timeLabel(d)}</div>
@@ -233,7 +243,7 @@ Object.assign(window, {
   hexToRgbTriplet,
   fmtINR, fmtParts, isSameDay, dayLabel, timeLabel,
   filterByPeriod, summarize, groupByDay,
-  Background, GlassCard, PeriodTabs, TypeTabs, TxnRow, DayHead, AccountBadge,
+  Background, GlassCard, PeriodTabs, TypeTabs, TxnRow, TxnIcon, DayHead, AccountBadge,
   ThemeToggle,
 });
 

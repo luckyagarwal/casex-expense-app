@@ -480,7 +480,7 @@ function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter
             ? <div className="empty"><div className="ic">⌀</div>No expenses yet.</div>
             : catBreakdown.slice(0,5).map(c=>(
               <div key={c.name} className="cat-row">
-                <div className="ic">{c.icon}</div>
+                <TxnIcon icon={c.icon} size={34} />
                 <div className="meta">
                   <div className="name">{c.name}</div>
                   <div className="bar"><div style={{width:`${Math.max(6,c.pct*100)}%`}}></div></div>
@@ -629,7 +629,7 @@ function AnalyticsDesktop({ txns, period, setPeriod }) {
             ? <div className="empty"><div className="ic">⌀</div>No expenses.</div>
             : catBreakdown.slice(0,8).map(c=>(
               <div key={c.name} className="cat-row">
-                <div className="ic">{c.icon}</div>
+                <TxnIcon icon={c.icon} size={34} />
                 <div className="meta">
                   <div className="name">{c.name}</div>
                   <div className="bar"><div style={{width:`${Math.max(6,c.pct*100)}%`}}></div></div>
