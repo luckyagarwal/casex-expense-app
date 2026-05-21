@@ -459,10 +459,9 @@ html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--tex
 
 /* ── Bottom nav ────────────────────────────────────────────────────── */
 .bottom-nav-wrap {
-  position: fixed; bottom: 0; left: 0; right: 0;
+  position: fixed; bottom: 24px; left: 0; right: 0;
   z-index: 30;
-  display: flex; justify-content: center; align-items: flex-end;
-  padding: 0 16px calc(14px + env(safe-area-inset-bottom));
+  display: flex; justify-content: center;
   pointer-events: none;
 }
 .bottom-nav-wrap > * { pointer-events: auto; }
