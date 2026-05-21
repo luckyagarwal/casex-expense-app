@@ -248,6 +248,8 @@ function App() {
         </div>
       )}
 
+      <div className="safe-area-cover" aria-hidden="true" />
+
       <div className={`sheet-backdrop ${sheetOpen?'show':''}`} onClick={() => setSheetOpen(false)}></div>
       <div className={`sheet ${sheetOpen?'show':''}`}>
         <div className="grabber"></div>
