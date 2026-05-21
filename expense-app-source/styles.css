@@ -116,7 +116,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--text-1); font-family: var(--font-body); }
+html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1); font-family: var(--font-body); }
 
 /* ── Page-level outside the iPhone ─────────────────────────────────── */
 .page {
@@ -162,7 +162,7 @@ html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--tex
 }
 
 /* ── Backgrounds ───────────────────────────────────────────────────── */
-.bg-layer { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.bg-layer { position: fixed; top: 0; left: 0; right: 0; bottom: -200px; pointer-events: none; z-index: 0; overflow: hidden; }
 
 /* MESH — Monokai accent bloom on near-black */
 .bg-mesh {
@@ -469,8 +469,7 @@ html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--tex
   position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 30;
   display: flex; justify-content: center;
-  padding-bottom: max(5px, env(safe-area-inset-bottom));
-  background: var(--bg-base);
+  padding-bottom: 8px;
   pointer-events: none;
 }
 .bottom-nav-wrap > * { pointer-events: auto; }
