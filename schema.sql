@@ -11,10 +11,9 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 
 CREATE TABLE IF NOT EXISTS subcategories (
-  id          TEXT PRIMARY KEY,
-  name        TEXT NOT NULL,
-  category_id TEXT NOT NULL REFERENCES categories(id),
-  icon_url    TEXT
+  id       TEXT PRIMARY KEY,
+  name     TEXT NOT NULL,
+  icon_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
@@ -67,4 +66,3 @@ CREATE INDEX IF NOT EXISTS idx_expenses_account     ON expenses(account_id);
 CREATE INDEX IF NOT EXISTS idx_income_date          ON income(date DESC);
 CREATE INDEX IF NOT EXISTS idx_income_account       ON income(account_id);
 CREATE INDEX IF NOT EXISTS idx_transfers_date       ON transfers(date DESC);
-CREATE INDEX IF NOT EXISTS idx_subcategories_cat    ON subcategories(category_id);
