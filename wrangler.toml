@@ -7,3 +7,9 @@ account_id = "a214e1a172a482b1400e954b9b8205c5"
 binding = "DB"
 database_name = "casex-expense-db"
 database_id = "53c0bba8-17e9-440e-97c5-8eff1369ba1c"
+
+# Inline CSS / JSX / icons-data as raw text strings.
+[[rules]]
+type = "Text"
+globs = ["**/*.css", "**/*.jsx", "**/icons-lib-data.js"]
+fallthrough = true
