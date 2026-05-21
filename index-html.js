@@ -18,85 +18,96 @@ export const HTML = /* html */ `<!doctype html>
 <link rel="manifest" href="/manifest.json" />
 <title>Expense Tracker</title>
 <style>
-  /* ── DESIGN TOKENS: Warm Ledger ─────────────────────────────── */
+  /* ── DESIGN TOKENS: Monokai Spectrum × Apple Vision Glass ──────── */
 
   :root,
   [data-theme="dark"] {
     /* Backgrounds — True Black */
-    --color-bg-primary:        #111111;
-    --color-bg-accent:         radial-gradient(circle at top left, rgba(220, 70, 70, 0.10), transparent 40%),
-                                radial-gradient(circle at bottom right, rgba(180, 50, 50, 0.07), transparent 38%);
-    --color-bg-surface:        rgba(26, 26, 26, 0.90);
-    --color-bg-surface-2:      rgba(32, 32, 32, 0.96);
-    --color-bg-surface-3:      rgba(40, 40, 40, 0.98);
-    --color-bg-surface-raised: rgba(255, 255, 255, 0.04);
+    --color-bg-primary:        #080808;
+    --color-bg-accent:         radial-gradient(circle at 18% 12%, rgba(252,97,141,0.10) 0%, transparent 38%),
+                                radial-gradient(circle at 82% 88%, rgba(148,138,227,0.10) 0%, transparent 42%),
+                                linear-gradient(160deg, #050507 0%, #0a0808 100%);
+    --color-bg-surface:        rgba(227,190,174,0.06);
+    --color-bg-surface-2:      rgba(227,190,174,0.11);
+    --color-bg-surface-3:      rgba(227,190,174,0.11);
+    --color-bg-surface-raised: rgba(227,190,174,0.03);
     --color-bg-inverse:        rgba(245, 245, 245, 0.96);
     --color-sheet-bg:          rgba(18, 18, 18, 0.98);
 
+    /* Glass fill tokens */
+    --glass-fill:        rgba(227,190,174,0.06);
+    --glass-fill-strong: rgba(227,190,174,0.11);
+    --glass-fill-soft:   rgba(227,190,174,0.03);
+    --inner-highlight:   rgba(255,255,255,0.14);
+    --glass-border-grad: linear-gradient(135deg, rgba(227,190,174,0.38) 0%, rgba(227,190,174,0.06) 28%, rgba(227,190,174,0.04) 60%, rgba(252,97,141,0.32) 100%);
+    --surface-active:    #fc618d;
+    --surface-active-fg: #14080f;
+
     /* Text */
-    --color-text-primary:   rgba(245, 245, 245, 0.95);
-    --color-text-secondary: rgba(160, 160, 160, 0.80);
-    --color-text-tertiary:  rgba(120, 120, 120, 0.60);
-    --color-text-inverse:   #111111;
-    --color-text-link:      #e05050;
+    --color-text-primary:   rgba(227,190,174,0.96);
+    --color-text-secondary: rgba(227,190,174,0.62);
+    --color-text-tertiary:  rgba(227,190,174,0.42);
+    --color-text-inverse:   #080808;
+    --color-text-link:      #fc618d;
 
     /* Borders */
-    --color-border-primary:   rgba(255, 255, 255, 0.08);
-    --color-border-secondary: rgba(255, 255, 255, 0.05);
-    --color-border-focus:     rgba(220, 70, 70, 0.55);
+    --color-border-primary:   rgba(227,190,174,0.12);
+    --color-border-secondary: rgba(227,190,174,0.07);
+    --color-border-focus:     rgba(252,97,141,0.55);
 
-    /* Accent — faded red */
-    --color-accent-expense:        #e05050;
-    --color-accent-expense-hover:  #e86060;
-    --color-accent-expense-active: #cc3a3a;
-    --color-accent-expense-subtle: rgba(220, 70, 70, 0.12);
+    /* Accent — Monokai pink */
+    --color-accent-expense:        #fc618d;
+    --color-accent-expense-hover:  #fd7aa2;
+    --color-accent-expense-active: #e04070;
+    --color-accent-expense-subtle: rgba(252,97,141,0.16);
+    --accent-rgb:                  252,97,141;
 
-    /* Accent — Income (green) */
-    --color-income:        #4ade80;
-    --color-income-hover:  #6ee89a;
-    --color-income-active: #38c86a;
-    --color-income-subtle: rgba(74, 222, 128, 0.12);
+    /* Accent — Income (Monokai green) */
+    --color-income:        #7bd88f;
+    --color-income-hover:  #95e3a6;
+    --color-income-active: #5fca76;
+    --color-income-subtle: rgba(123,216,143,0.16);
 
     /* Supporting accents */
     --color-accent-teal: #22d3ee;
-    --color-accent-gold: #fbbf24;
+    --color-accent-gold: #fce566;
 
     /* Status */
-    --color-status-success: #4ade80;
-    --color-status-warning: #fbbf24;
-    --color-status-error:   #f87171;
+    --color-status-success: #7bd88f;
+    --color-status-warning: #fce566;
+    --color-status-error:   #fc618d;
     --color-status-info:    #22d3ee;
 
     /* Surfaces / overlays */
-    --color-pill:        rgba(255, 255, 255, 0.06);
-    --color-pill-active: rgba(220, 70, 70, 0.15);
+    --color-pill:        rgba(227,190,174,0.06);
+    --color-pill-active: rgba(252,97,141,0.16);
     --color-overlay:     rgba(0, 0, 0, 0.65);
     --color-backdrop:    rgba(0, 0, 0, 0.45);
 
     /* Navigation (bottom tab bar) */
-    --color-nav-bg:          rgba(10, 10, 10, 0.98);
-    --color-nav-border:      rgba(255, 255, 255, 0.06);
-    --color-nav-item:        rgba(255, 255, 255, 0.35);
-    --color-nav-item-active: #e05050;
-    --color-nav-add-bg:      #e05050;
-    --color-nav-add-fg:      #ffffff;
+    --color-nav-bg:          rgba(8,8,8,0.55);
+    --color-nav-border:      rgba(227,190,174,0.12);
+    --color-nav-item:        rgba(227,190,174,0.42);
+    --color-nav-item-active: #fc618d;
+    --color-nav-add-bg:      #fc618d;
+    --color-nav-add-fg:      #14080f;
 
     /* Chart palette */
-    --color-chart-1: #e05050;
+    --color-chart-1: #fc618d;
     --color-chart-2: #22d3ee;
-    --color-chart-3: #fbbf24;
-    --color-chart-4: #f472b6;
-    --color-chart-5: #34d399;
+    --color-chart-3: #fce566;
+    --color-chart-4: #9482e8;
+    --color-chart-5: #7bd88f;
     --color-chart-6: #60a5fa;
-    --color-chart-7: #fb923c;
+    --color-chart-7: #fd9353;
     --color-chart-8: #e879f9;
 
     /* Shadows */
-    --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.30);
-    --shadow-md:    0 8px 22px rgba(0, 0, 0, 0.40);
-    --shadow-lg:    0 14px 36px rgba(0, 0, 0, 0.50);
+    --shadow-sm:    0 8px 22px rgba(0,0,0,0.42);
+    --shadow-md:    0 8px 22px rgba(0,0,0,0.42);
+    --shadow-lg:    0 20px 50px rgba(0,0,0,0.65);
     --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.50);
-    --shadow-focus: 0 0 0 3px rgba(220, 70, 70, 0.30);
+    --shadow-focus: 0 0 0 3px rgba(252,97,141,0.30);
 
     /* Spacing scale (4px base) */
     --space-0: 0px;
@@ -205,84 +216,100 @@ export const HTML = /* html */ `<!doctype html>
     --pill:        var(--color-pill);
     --nav-bg:      var(--color-nav-bg);
     --backdrop:    var(--color-backdrop);
+
+    /* Blur system */
+    --blur-card:  blur(56px) saturate(200%);
+    --blur-nav:   blur(48px) saturate(220%);
+    --blur-sheet: blur(60px) saturate(200%);
   }
 
   [data-theme="light"] {
-    /* Backgrounds — Clean White/Gray */
-    --color-bg-primary:        #f5f5f5;
-    --color-bg-accent:         radial-gradient(circle at 78% 12%, rgba(212, 68, 68, 0.08), transparent 45%),
-                                radial-gradient(circle at 18% 82%, rgba(180, 50, 50, 0.05), transparent 42%);
-    --color-bg-surface:        rgba(255, 255, 255, 0.85);
-    --color-bg-surface-2:      rgba(255, 255, 255, 0.92);
-    --color-bg-surface-3:      rgba(255, 255, 255, 0.96);
-    --color-bg-surface-raised: rgba(0, 0, 0, 0.03);
-    --color-bg-inverse:        #111111;
-    --color-sheet-bg:          rgba(255, 255, 255, 0.98);
+    /* Backgrounds — Warm Cream */
+    --color-bg-primary:        #f6efe7;
+    --color-bg-accent:         radial-gradient(circle at 18% 12%, rgba(252,97,141,0.14) 0%, transparent 42%),
+                                radial-gradient(circle at 82% 88%, rgba(253,147,83,0.12) 0%, transparent 46%),
+                                linear-gradient(160deg, #f5ece2 0%, #ece1d3 100%);
+    --color-bg-surface:        rgba(255,252,248,0.62);
+    --color-bg-surface-2:      rgba(255,252,248,0.82);
+    --color-bg-surface-3:      rgba(255,252,248,0.82);
+    --color-bg-surface-raised: rgba(255,252,248,0.46);
+    --color-bg-inverse:        #14080f;
+    --color-sheet-bg:          rgba(255, 252, 248, 0.98);
+
+    /* Glass fill tokens */
+    --glass-fill:        rgba(255,252,248,0.62);
+    --glass-fill-strong: rgba(255,252,248,0.82);
+    --glass-fill-soft:   rgba(255,252,248,0.46);
+    --inner-highlight:   rgba(255,255,255,0.85);
+    --glass-border-grad: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.30) 28%, rgba(40,22,18,0.06) 60%, rgba(252,97,141,0.38) 100%);
+    --surface-active:    #fc618d;
+    --surface-active-fg: #fff6f9;
 
     /* Text */
-    --color-text-primary:   #111111;
-    --color-text-secondary: #666666;
-    --color-text-tertiary:  #999999;
+    --color-text-primary:   rgba(40,22,18,0.94);
+    --color-text-secondary: rgba(40,22,18,0.60);
+    --color-text-tertiary:  rgba(40,22,18,0.42);
     --color-text-inverse:   rgba(255, 255, 255, 0.96);
-    --color-text-link:      #d44444;
+    --color-text-link:      #fc618d;
 
     /* Borders */
-    --color-border-primary:   rgba(0, 0, 0, 0.08);
-    --color-border-secondary: rgba(0, 0, 0, 0.05);
-    --color-border-focus:     rgba(212, 68, 68, 0.45);
+    --color-border-primary:   rgba(40,22,18,0.10);
+    --color-border-secondary: rgba(40,22,18,0.06);
+    --color-border-focus:     rgba(252,97,141,0.45);
 
-    /* Accent — faded red */
-    --color-accent-expense:        #d44444;
-    --color-accent-expense-hover:  #de5555;
-    --color-accent-expense-active: #c03030;
-    --color-accent-expense-subtle: rgba(212, 68, 68, 0.10);
+    /* Accent — Monokai pink */
+    --color-accent-expense:        #fc618d;
+    --color-accent-expense-hover:  #fd7aa2;
+    --color-accent-expense-active: #d3326b;
+    --color-accent-expense-subtle: rgba(252,97,141,0.14);
+    --accent-rgb:                  252,97,141;
 
-    /* Accent — Income */
-    --color-income:        #16a34a;
-    --color-income-hover:  #15803d;
-    --color-income-active: #166534;
-    --color-income-subtle: rgba(22, 163, 74, 0.10);
+    /* Accent — Income (Monokai green) */
+    --color-income:        #2e9f64;
+    --color-income-hover:  #3ab574;
+    --color-income-active: #238050;
+    --color-income-subtle: rgba(46,159,100,0.14);
 
     /* Supporting accents */
     --color-accent-teal: #0891b2;
     --color-accent-gold: #d97706;
 
     /* Status */
-    --color-status-success: #16a34a;
+    --color-status-success: #2e9f64;
     --color-status-warning: #d97706;
-    --color-status-error:   #dc2626;
+    --color-status-error:   #d3326b;
     --color-status-info:    #0891b2;
 
     /* Surfaces / overlays */
-    --color-pill:        rgba(0, 0, 0, 0.05);
-    --color-pill-active: rgba(212, 68, 68, 0.10);
+    --color-pill:        rgba(40,22,18,0.06);
+    --color-pill-active: rgba(252,97,141,0.14);
     --color-overlay:     rgba(0, 0, 0, 0.35);
     --color-backdrop:    rgba(0, 0, 0, 0.20);
 
     /* Navigation */
-    --color-nav-bg:          rgba(255, 255, 255, 0.96);
-    --color-nav-border:      rgba(0, 0, 0, 0.08);
-    --color-nav-item:        rgba(0, 0, 0, 0.35);
-    --color-nav-item-active: #d44444;
-    --color-nav-add-bg:      #d44444;
-    --color-nav-add-fg:      #ffffff;
+    --color-nav-bg:          rgba(255,251,245,0.72);
+    --color-nav-border:      rgba(40,22,18,0.10);
+    --color-nav-item:        rgba(40,22,18,0.42);
+    --color-nav-item-active: #fc618d;
+    --color-nav-add-bg:      #fc618d;
+    --color-nav-add-fg:      #fff6f9;
 
     /* Chart palette */
-    --color-chart-1: #d44444;
+    --color-chart-1: #fc618d;
     --color-chart-2: #0891b2;
     --color-chart-3: #d97706;
-    --color-chart-4: #ec4899;
-    --color-chart-5: #16a34a;
+    --color-chart-4: #9482e8;
+    --color-chart-5: #2e9f64;
     --color-chart-6: #2563eb;
-    --color-chart-7: #ea580c;
+    --color-chart-7: #fd9353;
     --color-chart-8: #9333ea;
 
     /* Shadows */
-    --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.12);
-    --shadow-lg:    0 16px 40px rgba(0, 0, 0, 0.14);
-    --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.12);
-    --shadow-focus: 0 0 0 3px rgba(212, 68, 68, 0.20);
+    --shadow-sm:    0 8px 22px rgba(80,30,50,0.10);
+    --shadow-md:    0 8px 22px rgba(80,30,50,0.10);
+    --shadow-lg:    0 20px 50px rgba(80,30,50,0.16);
+    --shadow-sheet: 0 -8px 32px rgba(80,30,50,0.12);
+    --shadow-focus: 0 0 0 3px rgba(252,97,141,0.25);
 
     /* Legacy aliases */
     --bg:          var(--color-bg-primary);
@@ -327,7 +354,7 @@ export const HTML = /* html */ `<!doctype html>
 
   html, body {
     margin: 0;
-    background: var(--bg);
+    background: var(--color-bg-accent);
     color: var(--fg);
     font-family: "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Inter", "Avenir Next", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -527,6 +554,14 @@ export const HTML = /* html */ `<!doctype html>
     color: white;
     display: inline-flex; align-items: center; justify-content: center;
     font-weight: 700;
+  }
+
+  /* CASEX brand mark gradient on home screen title */
+  h1.screen-title.brand-gradient {
+    background: linear-gradient(95deg, #fc618d 0%, #fd9353 60%, #fce566 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
   }
   .drawer-nav { flex: 1; overflow-y: auto; padding: 8px 8px; }
   .drawer-item {
@@ -2447,43 +2482,57 @@ export const HTML = /* html */ `<!doctype html>
   }
 
   /* ── Liquid Glass Design System ─────────────────────────────────────── */
-  /* CSS translation of Apple .glassEffect() API for web/mobile */
+  /* Monokai Spectrum × Apple Vision Glass */
 
   :root, [data-theme="dark"] {
-    --glass-blur:        blur(48px) saturate(200%);
+    --glass-blur:        var(--blur-card);
     --glass-blur-soft:   blur(32px) saturate(190%);
-    --glass-bg:          rgba(255,255,255,0.05);
-    --glass-bg-hover:    rgba(255,255,255,0.08);
-    --glass-bg-strong:   rgba(255,255,255,0.07);
-    --glass-border:      rgba(255,255,255,0.10);
-    --glass-border-hi:   rgba(255,255,255,0.16);
-    --glass-tint-accent: rgba(220,70,70,0.14);
-    --glass-tint-income: rgba(74,222,128,0.12);
+    --glass-bg:          var(--glass-fill);
+    --glass-bg-hover:    var(--glass-fill-strong);
+    --glass-bg-strong:   var(--glass-fill-strong);
+    --glass-border:      rgba(227,190,174,0.10);
+    --glass-border-hi:   rgba(227,190,174,0.18);
+    --glass-tint-accent: rgba(252,97,141,0.14);
+    --glass-tint-income: rgba(123,216,143,0.14);
     --spring:            cubic-bezier(0.34,1.56,0.64,1);
     --spring-quick:      cubic-bezier(0.22,1.0,0.36,1);
     --dur-spring:        320ms;
   }
   [data-theme="light"] {
-    --glass-blur:        blur(48px) saturate(200%);
+    --glass-blur:        var(--blur-card);
     --glass-blur-soft:   blur(32px) saturate(190%);
-    --glass-bg:          rgba(255,255,255,0.85);
-    --glass-bg-hover:    rgba(255,255,255,0.92);
-    --glass-bg-strong:   rgba(255,255,255,0.90);
-    --glass-border:      rgba(0,0,0,0.07);
-    --glass-border-hi:   rgba(0,0,0,0.10);
-    --glass-tint-accent: rgba(212,68,68,0.10);
-    --glass-tint-income: rgba(22,163,74,0.08);
+    --glass-bg:          var(--glass-fill);
+    --glass-bg-hover:    var(--glass-fill-strong);
+    --glass-bg-strong:   var(--glass-fill-strong);
+    --glass-border:      rgba(40,22,18,0.08);
+    --glass-border-hi:   rgba(40,22,18,0.12);
+    --glass-tint-accent: rgba(252,97,141,0.12);
+    --glass-tint-income: rgba(46,159,100,0.12);
   }
 
-  /* Cards → glass surfaces (.glassEffect(in: .rect(cornerRadius:))) */
+  /* Cards → glass surfaces */
   .expense-card,
   .chart-card,
   .legend-card {
-    background: var(--glass-bg) !important;
-    border: 1px solid var(--glass-border) !important;
-    backdrop-filter: var(--glass-blur-soft) !important;
-    -webkit-backdrop-filter: var(--glass-blur-soft) !important;
+    position: relative;
+    background: var(--glass-fill) !important;
+    border: none !important;
+    backdrop-filter: var(--blur-card) !important;
+    -webkit-backdrop-filter: var(--blur-card) !important;
+    box-shadow: inset 0 1px 0 var(--inner-highlight), var(--shadow-sm) !important;
     transition: transform 280ms var(--spring), box-shadow 280ms var(--spring-quick) !important;
+  }
+  .expense-card::after,
+  .chart-card::after,
+  .legend-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    padding: 1px; border-radius: inherit;
+    background: var(--glass-border-grad);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
   }
   .expense-card:active {
     transform: scale(0.975) !important;
@@ -2491,10 +2540,10 @@ export const HTML = /* html */ `<!doctype html>
 
   /* Input cards → frosted glass */
   .input-card {
-    background: var(--glass-bg-strong) !important;
+    background: var(--glass-fill-strong) !important;
     border: 1px solid var(--glass-border) !important;
-    backdrop-filter: var(--glass-blur-soft);
-    -webkit-backdrop-filter: var(--glass-blur-soft);
+    backdrop-filter: var(--blur-card);
+    -webkit-backdrop-filter: var(--blur-card);
   }
   .input-card.dropdown-open {
     border-color: var(--glass-border-hi) !important;
@@ -2502,130 +2551,180 @@ export const HTML = /* html */ `<!doctype html>
 
   /* Home balance card → elevated glass hero */
   .home-balance-card {
-    background: var(--glass-bg-strong) !important;
-    border: 1px solid var(--glass-border-hi) !important;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.06) !important;
+    position: relative;
+    background: var(--glass-fill-strong) !important;
+    border: none !important;
+    backdrop-filter: var(--blur-card);
+    -webkit-backdrop-filter: var(--blur-card);
+    box-shadow: var(--shadow-lg), inset 0 1px 0 var(--inner-highlight) !important;
   }
-  [data-theme="light"] .home-balance-card {
-    box-shadow: 0 16px 48px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.95) !important;
+  .home-balance-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    padding: 1px; border-radius: inherit;
+    background: var(--glass-border-grad);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
   }
 
-  /* Chips → spring interactive (.glassEffect(.regular.interactive())) */
+  /* Chips → spring interactive */
   .chip {
-    background: var(--glass-bg) !important;
-    border: 1px solid var(--glass-border) !important;
+    position: relative;
+    background: var(--glass-fill) !important;
+    border: none !important;
     transition: background var(--dur-spring) var(--spring-quick),
                 transform var(--dur-spring) var(--spring),
                 border-color var(--dur-spring) var(--spring-quick) !important;
+  }
+  .chip::after {
+    content: '';
+    position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
   }
   .chip:active {
     transform: scale(0.94) !important;
   }
   .chip.selected {
-    background: var(--glass-tint-accent) !important;
-    border-color: rgba(220,70,70,0.35) !important;
-    box-shadow: 0 0 0 1px rgba(220,70,70,0.18), 0 2px 8px rgba(220,70,70,0.18) !important;
-    color: var(--accent) !important;
+    background: var(--surface-active) !important;
+    color: var(--surface-active-fg) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
   }
-  [data-theme="light"] .chip.selected {
-    border-color: rgba(212,68,68,0.30) !important;
-    color: var(--accent) !important;
-  }
+  .chip.selected::after { display: none; }
 
-  /* Save button → glass prominent (.buttonStyle(.glassProminent)) */
+  /* Save button → glass prominent */
   .save-btn {
-    box-shadow: 0 4px 20px rgba(220,70,70,0.30) !important;
+    box-shadow: 0 4px 20px rgba(252,97,141,0.36) !important;
     transition: background var(--dur-fast),
                 transform var(--dur-spring) var(--spring),
                 box-shadow var(--dur-spring) var(--spring-quick) !important;
   }
   .save-btn:active {
     transform: scale(0.96) !important;
-    box-shadow: 0 2px 8px rgba(220,70,70,0.18) !important;
+    box-shadow: 0 2px 8px rgba(252,97,141,0.20) !important;
   }
 
-  /* Bottom nav → stable glass (no backdrop-filter to avoid Safari flicker) */
+  /* Bottom nav → pill-shaped glass */
   .bottom-nav {
-    background: rgba(10,10,10,0.98) !important;
-    border-top: 1px solid rgba(255,255,255,0.06) !important;
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.50), 0 -1px 0 rgba(255,255,255,0.04) !important;
+    position: relative;
+    background: var(--color-nav-bg) !important;
+    border-top: none !important;
+    backdrop-filter: var(--blur-nav) !important;
+    -webkit-backdrop-filter: var(--blur-nav) !important;
+    box-shadow: var(--shadow-lg), inset 0 1px 0 var(--inner-highlight) !important;
   }
-  [data-theme="light"] .bottom-nav {
-    background: rgba(255,255,255,0.96) !important;
-    border-top: 1px solid rgba(0,0,0,0.06) !important;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.10), 0 -1px 0 rgba(0,0,0,0.05) !important;
+  .bottom-nav::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+    background: var(--glass-border-grad);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
   }
 
   /* Dropdown → glass */
   .dropdown {
-    background: rgba(22,22,22,0.92) !important;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border-hi) !important;
+    position: relative;
+    background: var(--glass-fill-strong) !important;
+    backdrop-filter: var(--blur-card);
+    -webkit-backdrop-filter: var(--blur-card);
+    border: none !important;
+    box-shadow: var(--shadow-lg), inset 0 1px 0 var(--inner-highlight) !important;
   }
-  [data-theme="light"] .dropdown {
-    background: rgba(255,255,255,0.95) !important;
-    border-color: rgba(0,0,0,0.08) !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+  .dropdown::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+    background: var(--glass-border-grad);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
   }
 
   /* Icon picker sheet → deep glass */
   .icon-picker-sheet {
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--blur-sheet);
+    -webkit-backdrop-filter: var(--blur-sheet);
     border-top: 1px solid var(--glass-border-hi) !important;
   }
 
   /* Hero/analytics cards */
   .hero-card {
-    backdrop-filter: var(--glass-blur-soft);
-    -webkit-backdrop-filter: var(--glass-blur-soft);
+    backdrop-filter: var(--blur-card);
+    -webkit-backdrop-filter: var(--blur-card);
     border: 1px solid var(--glass-border) !important;
   }
 
-  /* ── Neon Tint: Income (green) + Expense (faded red) over glass ── */
+  /* ── Neon Tint: Income (green) + Expense (Monokai pink) over glass ── */
 
   /* Income summary card — green glass tint */
   .home-summary-card.income {
-    background: rgba(0,230,118,0.09) !important;
-    border: 1px solid rgba(0,230,118,0.22) !important;
-    box-shadow: 0 4px 24px rgba(0,230,118,0.12), inset 0 1px 0 rgba(0,230,118,0.12) !important;
+    background: rgba(123,216,143,0.09) !important;
+    border: 1px solid rgba(123,216,143,0.22) !important;
+    box-shadow: 0 4px 24px rgba(123,216,143,0.12), inset 0 1px 0 rgba(123,216,143,0.12) !important;
     backdrop-filter: blur(40px) saturate(200%);
     -webkit-backdrop-filter: blur(40px) saturate(200%);
   }
-  .home-summary-card.income .home-summary-type  { color: #00c060 !important; }
-  .home-summary-card.income .home-summary-amount { color: #00c060 !important; }
+  .home-summary-card.income .home-summary-type  { color: #7bd88f !important; }
+  .home-summary-card.income .home-summary-amount { color: #7bd88f !important; }
+  [data-theme="light"] .home-summary-card.income {
+    background: rgba(46,159,100,0.09) !important;
+    border: 1px solid rgba(46,159,100,0.22) !important;
+    box-shadow: 0 4px 24px rgba(46,159,100,0.12), inset 0 1px 0 rgba(46,159,100,0.12) !important;
+  }
+  [data-theme="light"] .home-summary-card.income .home-summary-type  { color: #2e9f64 !important; }
+  [data-theme="light"] .home-summary-card.income .home-summary-amount { color: #2e9f64 !important; }
 
-  /* Expense summary card — faded red glass tint */
+  /* Expense summary card — Monokai pink glass tint */
   .home-summary-card.expense {
-    background: rgba(255,70,70,0.07) !important;
-    border: 1px solid rgba(255,70,70,0.18) !important;
-    box-shadow: 0 4px 24px rgba(255,70,70,0.10), inset 0 1px 0 rgba(255,70,70,0.08) !important;
+    background: rgba(252,97,141,0.08) !important;
+    border: 1px solid rgba(252,97,141,0.20) !important;
+    box-shadow: 0 4px 24px rgba(252,97,141,0.10), inset 0 1px 0 rgba(252,97,141,0.08) !important;
     backdrop-filter: blur(40px) saturate(200%);
     -webkit-backdrop-filter: blur(40px) saturate(200%);
   }
-  .home-summary-card.expense .home-summary-type  { color: #e04444 !important; }
-  .home-summary-card.expense .home-summary-amount { color: #e04444 !important; }
+  .home-summary-card.expense .home-summary-type  { color: #fc618d !important; }
+  .home-summary-card.expense .home-summary-amount { color: #fc618d !important; }
+  [data-theme="light"] .home-summary-card.expense {
+    background: rgba(211,50,107,0.08) !important;
+    border: 1px solid rgba(211,50,107,0.20) !important;
+    box-shadow: 0 4px 24px rgba(211,50,107,0.10), inset 0 1px 0 rgba(211,50,107,0.08) !important;
+  }
+  [data-theme="light"] .home-summary-card.expense .home-summary-type  { color: #d3326b !important; }
+  [data-theme="light"] .home-summary-card.expense .home-summary-amount { color: #d3326b !important; }
 
-  /* Transaction cards — green/red glass tint */
+  /* Transaction cards — Monokai green/pink glass tint + gradient borders */
   .expense-card.txn-income {
-    background: rgba(0,230,118,0.07) !important;
-    border: 1px solid rgba(0,230,118,0.16) !important;
-    box-shadow: 0 2px 10px rgba(0,230,118,0.08) !important;
+    background: rgba(123,216,143,0.07) !important;
+    box-shadow: inset 0 1px 0 var(--inner-highlight), 0 4px 14px -8px rgba(123,216,143,0.30) !important;
+  }
+  .expense-card.txn-income::after {
+    padding: 1.2px;
+    background: linear-gradient(135deg,
+      rgba(123,216,143,0.55) 0%, rgba(123,216,143,0.10) 35%,
+      rgba(123,216,143,0.04) 65%, rgba(123,216,143,0.45) 100%);
   }
   .expense-card.txn-expense {
-    background: rgba(255,70,70,0.06) !important;
-    border: 1px solid rgba(255,70,70,0.13) !important;
-    box-shadow: 0 2px 10px rgba(255,70,70,0.07) !important;
+    background: rgba(252,97,141,0.07) !important;
+    box-shadow: inset 0 1px 0 var(--inner-highlight), 0 4px 14px -8px rgba(252,97,141,0.30) !important;
+  }
+  .expense-card.txn-expense::after {
+    padding: 1.2px;
+    background: linear-gradient(135deg,
+      rgba(252,97,141,0.55) 0%, rgba(252,97,141,0.10) 35%,
+      rgba(252,97,141,0.04) 65%, rgba(252,97,141,0.45) 100%);
+  }
+  [data-theme="light"] .expense-card.txn-income::after {
+    background: linear-gradient(135deg, rgba(46,159,100,0.60) 0%, rgba(46,159,100,0.10) 35%, rgba(46,159,100,0.06) 65%, rgba(46,159,100,0.50) 100%);
+  }
+  [data-theme="light"] .expense-card.txn-expense::after {
+    background: linear-gradient(135deg, rgba(211,50,107,0.60) 0%, rgba(211,50,107,0.10) 35%, rgba(211,50,107,0.06) 65%, rgba(211,50,107,0.50) 100%);
   }
   .expense-card.txn-transfer {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: var(--glass-fill) !important;
   }
-  .income-amount { color: #00a050 !important; }
-  .expense-amount:not(.income-amount) { color: #d03838 !important; }
+  .income-amount { color: #7bd88f !important; }
+  [data-theme="light"] .income-amount { color: #2e9f64 !important; }
+  .expense-amount:not(.income-amount) { color: #fc618d !important; }
+  [data-theme="light"] .expense-amount:not(.income-amount) { color: #d3326b !important; }
 </style>
 </head>
 <body>
@@ -2640,7 +2739,7 @@ export const HTML = /* html */ `<!doctype html>
     <div class="topbar">
       <div class="topbar-leading">
         <button class="menu-btn" data-open-drawer aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
-        <h1 class="screen-title">Overview</h1>
+        <h1 class="screen-title brand-gradient">CASEX</h1>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" id="homeThemeBtn" title="Toggle theme" aria-label="Toggle theme">☀</button>
