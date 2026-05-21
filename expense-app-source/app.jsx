@@ -177,7 +177,6 @@ function App() {
         for (const item of newList) {
           if (!oldById.has(item.id)) {
             const payload = { name: item.name, ...iconToApiPayload(item.icon) };
-            if (table === 'subcategories') payload.categoryId = item.categoryId || null;
             try { await apiJson('/api/d1/' + table, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
             catch (e) { console.warn('add failed', e); }
           }

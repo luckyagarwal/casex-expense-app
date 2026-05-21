@@ -571,7 +571,6 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
   const [adding, setAdding] = useStateS(false);
   const [newName, setNewName] = useStateS('');
   const [newIcon, setNewIcon] = useStateS('');
-  const [newParent, setNewParent] = useStateS('');
   const [editingId, setEditingId] = useStateS(null);
   const [editValue, setEditValue] = useStateS('');
   const [editingTailId, setEditingTailId] = useStateS(null);
@@ -589,12 +588,10 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
     const sorted = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     const q = query.trim().toLowerCase();
     if (!q) return sorted;
-    const parentName = (id) => (catalog.categories.find(c => c.id === id) || {}).name || '';
     return sorted.filter(x => {
       const name = (x.name || '').toLowerCase();
       const tail = (x.tail || '').toString().toLowerCase();
-      const parent = x.categoryId ? parentName(x.categoryId).toLowerCase() : '';
-      return name.includes(q) || tail.includes(q) || parent.includes(q);
+      return name.includes(q) || tail.includes(q);
     });
   }, [tab, catalog, query]);
 
@@ -602,12 +599,11 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
 
   function flash(msg) {setToast(msg);setTimeout(() => setToast(null), 1400);}
 
-  function startAdd() {setAdding(true);setNewName('');setNewIcon('');setNewParent('');setNewTail('');}
-  function cancelAdd() {setAdding(false);setNewName('');setNewIcon('');setNewParent('');setNewTail('');}
+  function startAdd() {setAdding(true);setNewName('');setNewIcon('');setNewTail('');}
+  function cancelAdd() {setAdding(false);setNewName('');setNewIcon('');setNewTail('');}
   function commitAdd() {
     const name = newName.trim();
     if (!name) return flash('Name required');
-    if (tab === 'subcategories' && !newParent) return flash('Pick a parent category');
     const tailDigits = newTail.replace(/\D/g, '').slice(0, 4);
     if (tab === 'accounts' && newTail.trim() && tailDigits.length < 4) {
       return flash('Card / account number must be 4 digits');
@@ -617,7 +613,6 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
       name,
       icon: newIcon || defaultIcon(tab)
     };
-    if (tab === 'subcategories') newItem.categoryId = newParent;
     if (tab === 'accounts') newItem.tail = tailDigits || null;
     setCatalog({ ...catalog, [tab]: [...catalog[tab], newItem] });
     cancelAdd();
@@ -647,11 +642,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
 
   function removeItem(item) {
     if (!window.confirm(`Delete "${item.name}"?`)) return;
-    let next = { ...catalog, [tab]: catalog[tab].filter((x) => x.id !== item.id) };
-    // also remove orphaned subcategories if a category is deleted
-    if (tab === 'categories') {
-      next.subcategories = next.subcategories.filter((s) => s.categoryId !== item.id);
-    }
+    const next = { ...catalog, [tab]: catalog[tab].filter((x) => x.id !== item.id) };
     setCatalog(next);
     flash('Deleted');
   }
@@ -661,8 +652,6 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
     setCatalog({ ...catalog, [tab]: catalog[tab].map((x) => x.id === item.id ? { ...x, icon } : x) });
     setIconPickFor(null);
   }
-
-  const parentName = (categoryId) => (catalog.categories.find((c) => c.id === categoryId) || {}).name || '';
 
   return (
     <div className="screen-enter">
@@ -727,18 +716,6 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
               }} />
             
             </div>
-            {tab === 'subcategories' &&
-          <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Parent category</div>
-                <div className="chip-row">
-                  {catalog.categories.map((c) =>
-              <div key={c.id} className={`chip ${newParent === c.id ? 'active' : ''}`} onClick={() => setNewParent(c.id)}>
-                      <TxnIcon icon={c.icon} size={20} /> {c.name}
-                    </div>
-              )}
-                </div>
-              </div>
-          }
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={commitAdd}
             style={{ flex: 1, padding: '10px 14px', border: 'none', cursor: 'pointer',
@@ -796,9 +773,6 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
 
 
               <div className="name" onClick={() => startRename(item)} style={{ cursor: 'pointer' }}>{item.name}</div>
-              }
-                {tab === 'subcategories' &&
-              <div className="sub">in {parentName(item.categoryId) || '—'}</div>
               }
                 {tab === 'accounts' && item.tail &&
               <div className="sub">···· {item.tail}</div>
@@ -1323,10 +1297,7 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
   const incomeCatNames = ['Salary', 'Freelance', 'Other', 'Gift', 'Refund'];
   const expenseCatNames = (catalog.categories || []).map((c) => c.name);
   const cats = isIncome ? incomeCatNames : expenseCatNames;
-  const selectedCatObj = (catalog.categories || []).find(c => c.name === cat);
-  const subs = (!isIncome && selectedCatObj)
-    ? (catalog.subcategories || []).filter(s => s.categoryId === selectedCatObj.id).map(s => s.name)
-    : [];
+  const subs = !isIncome ? (catalog.subcategories || []).map(s => s.name) : [];
   const accs = (catalog.accounts || []).map((a) => a.name);
 
   function handleSave() {
@@ -1340,8 +1311,6 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
     })).finally(() => setSaving(false));
   }
 
-  // Reset sub when category changes
-  useEffectS(() => { setSub(''); }, [cat]);
 
   return (
     <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.55)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}>
@@ -1404,11 +1373,7 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
             value={sub}
             onChange={setSub}
             placeholder="Search subcategories…"
-            emptyText={
-              !cat
-                ? 'Pick a category first to see its subcategories'
-                : `No subcategories in ${cat} yet — manage them from Settings.`
-            }
+            emptyText="No subcategories yet — add them from Settings."
             iconFor={(s) => {
               const hit = (catalog.subcategories || []).find(x => x.name === s);
               return hit ? hit.icon : null;
