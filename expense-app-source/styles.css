@@ -469,7 +469,7 @@ html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--tex
   position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 30;
   display: flex; justify-content: center;
-  padding-bottom: 12px;
+  padding-bottom: 5px;
   pointer-events: none;
 }
 .bottom-nav-wrap > * { pointer-events: auto; }
