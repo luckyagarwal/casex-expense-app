@@ -106,7 +106,7 @@ async function handleD1Bootstrap(env) {
 
   const [categories, subcategories, accounts, recentExpenses] = await Promise.all([
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM categories ORDER BY name"),
-    d1All(env.DB, "SELECT id,name,category_id,icon_url FROM subcategories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,icon_url FROM subcategories ORDER BY name"),
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM accounts ORDER BY name"),
     d1All(env.DB,
       "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 20"),
@@ -170,9 +170,8 @@ async function handleD1CreateEntity(env, table, body) {
   const id = crypto.randomUUID();
 
   if (table === "subcategories") {
-    const categoryId = body?.categoryId || null;
-    const subIconUrl = iconUrl || emoji || null; // no emoji column; store emoji in icon_url
-    await d1Run(env.DB, "INSERT INTO subcategories (id,name,category_id,icon_url) VALUES (?,?,?,?)", [id, name, categoryId, subIconUrl]);
+    const subIconUrl = iconUrl || emoji || null;
+    await d1Run(env.DB, "INSERT INTO subcategories (id,name,icon_url) VALUES (?,?,?)", [id, name, subIconUrl]);
   } else if (table === "categories") {
     await d1Run(env.DB, "INSERT INTO categories (id,name,emoji,icon_url,type) VALUES (?,?,?,?,?)", [id, name, emoji, iconUrl, "expense"]);
   } else {
