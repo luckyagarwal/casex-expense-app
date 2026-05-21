@@ -3,6 +3,13 @@
    Palette: --seed drives the mesh background (Monokai accent hues). */
 
 :root {
+  --bg-base: #050507; /* default dark — overridden per theme below */
+}
+[data-theme="light"] {
+  --bg-base: #f6efe7;
+}
+
+:root {
   /* Monokai Spectrum accents */
   --mk-pink:    #fc618d;
   --mk-orange:  #fd9353;
@@ -459,7 +466,7 @@ html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--tex
 
 /* ── Bottom nav ────────────────────────────────────────────────────── */
 .bottom-nav-wrap {
-  position: fixed; bottom: 24px; left: 0; right: 0;
+  position: fixed; bottom: 10px; left: 0; right: 0;
   z-index: 30;
   display: flex; justify-content: center;
   pointer-events: none;
