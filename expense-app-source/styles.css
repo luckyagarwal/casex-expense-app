@@ -109,7 +109,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: #000; color: var(--text-1); font-family: var(--font-body); }
+html, body { margin: 0; padding: 0; background: var(--bg-base); color: var(--text-1); font-family: var(--font-body); }
 
 /* ── Page-level outside the iPhone ─────────────────────────────────── */
 .page {

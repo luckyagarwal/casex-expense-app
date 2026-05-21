@@ -22,7 +22,7 @@ const HEAD = `<!doctype html>
 <title>Expense Tracker</title>
 <style>
 /* Glass design system — Monokai Spectrum × Apple Vision (mobile shell) */
-html, body { margin: 0; padding: 0; background: #000; color: var(--text-1); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; padding: 0; background: var(--bg-base, #050507); color: var(--text-1); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
 html, body, #root { height: 100%; overscroll-behavior: none; }
 input, button, textarea, select { font-family: inherit; }
 </style>
