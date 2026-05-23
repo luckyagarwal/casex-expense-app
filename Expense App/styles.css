@@ -425,6 +425,26 @@ html, body { margin: 0; padding: 0; background: #000; color: var(--text-1); font
 .txn .amt.income  { color: var(--income); }
 .txn .amt.expense { color: var(--text-1); }
 
+.txn-edit-btn {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(128,128,128,0.18);
+  background: rgba(128,128,128,0.08);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  opacity: 0.7;
+}
+.txn-edit-btn:hover {
+  background: rgba(128,128,128,0.18);
+  border-color: rgba(128,128,128,0.30);
+  color: var(--text-1);
+  opacity: 1;
+}
+.txn-edit-btn:active { transform: scale(0.94); }
+
 .day-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 6px 8px; font-size: 12px;
