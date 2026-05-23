@@ -102,6 +102,8 @@ function App() {
   const [typeFilter, setTypeFilter] = useStateA('all');
   const [sheetOpen, setSheetOpen] = useStateA(false);
   const [addForm, setAddForm] = useStateA(null);
+  const [editTxn, setEditTxn] = useStateA(null);
+  const [detailTxn, setDetailTxn] = useStateA(null);
   const [toast, setToast] = useStateA(null);
   const [txns, setTxns] = useStateA([]);
   const [catalog, setCatalog] = useStateA({ categories: [], subcategories: [], accounts: [] });
@@ -134,7 +136,21 @@ function App() {
   function goto(v, opts = {}) { if (opts.typeFilter) setTypeFilter(opts.typeFilter); setView(v); }
   function openAdd() { setSheetOpen(true); }
   function pickType(k) { setSheetOpen(false); setTimeout(() => setAddForm(k), 240); }
-  function closeAddForm() { setAddForm(null); }
+  function openDetail(txn) { setDetailTxn(txn); }
+  function closeDetail() { setDetailTxn(null); }
+  function openEdit(txn) { setDetailTxn(null); setEditTxn(txn); }
+  function closeForm() { setAddForm(null); setEditTxn(null); }
+
+  async function deleteTxn(txn) {
+    try {
+      await apiJson('/api/d1/expense/' + txn.id, { method: 'DELETE' });
+      await reloadTxns(period);
+      setDetailTxn(null);
+      flashToast('Transaction deleted', txn.type);
+    } catch (e) {
+      flashToast('Failed to delete', 'expense');
+    }
+  }
 
   function flashToast(msg, kind) {
     setToast({ msg, kind });
@@ -149,16 +165,21 @@ function App() {
       amount: form.amount,
       note: form.name || '',
       txnType: form.type,
-      date: new Date().toISOString().slice(0, 10),
+      date: form.date ? new Date(form.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
       categoryId: cat ? cat.id : null,
       subcategoryId: sub ? sub.id : null,
       accountId: acc ? acc.id : null,
     };
     try {
-      await apiJson('/api/d1/expense', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (form.editTxn) {
+        await apiJson('/api/d1/expense/' + form.editTxn.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        flashToast('Transaction updated', form.type);
+      } else {
+        await apiJson('/api/d1/expense', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        flashToast((form.type === 'income' ? 'Income' : 'Expense') + ' saved', form.type);
+      }
       await reloadTxns(period);
-      setAddForm(null);
-      flashToast((form.type === 'income' ? 'Income' : 'Expense') + ' saved', form.type);
+      closeForm();
     } catch (e) {
       flashToast('Failed to save', 'expense');
     }
@@ -217,16 +238,16 @@ function App() {
 
       <div className="screen" style={{ position:'relative', zIndex: 1 }}>
         {view === 'home' && (
-          <HomeScreen txns={txns} period={period} setPeriod={setPeriod} onOpenAdd={openAdd} onGoto={goto} theme={t.theme} onToggleTheme={toggleTheme} />
+          <HomeScreen txns={txns} period={period} setPeriod={setPeriod} onOpenAdd={openAdd} onGoto={goto} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
         )}
         {view === 'transactions' && (
-          <TransactionsScreen txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} theme={t.theme} onToggleTheme={toggleTheme} />
+          <TransactionsScreen txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
         )}
         {view === 'analytics' && (
           <AnalyticsScreen txns={txns} period={period} setPeriod={setPeriod} theme={t.theme} onToggleTheme={toggleTheme} />
         )}
         {view === 'search' && (
-          <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} />
+          <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
         )}
         {view === 'manage' && (
           <ManageScreen catalog={catalog} setCatalog={setCatalogApi} onBack={() => setView('home')} />
@@ -266,7 +287,17 @@ function App() {
         </div>
       </div>
 
-      {addForm && <AddForm kind={addForm} onClose={closeAddForm} onSave={saveTxn} catalog={catalog} />}
+      {detailTxn && (
+        <TxnDetailSheet
+          txn={detailTxn}
+          catalog={catalog}
+          onClose={closeDetail}
+          onEdit={() => openEdit(detailTxn)}
+          onDelete={() => deleteTxn(detailTxn)}
+        />
+      )}
+
+      {(addForm || editTxn) && <AddForm kind={addForm || editTxn.type} editTxn={editTxn} onClose={closeForm} onSave={saveTxn} catalog={catalog} />}
 
       {toast && (
         <div style={{

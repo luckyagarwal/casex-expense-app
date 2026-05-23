@@ -4,7 +4,7 @@ const { useState: useStateS, useEffect: useEffectS, useMemo: useMemoS, useRef: u
 /* ──────────────────────────────────────────────────────────────────────
    HOME
    ────────────────────────────────────────────────────────────────────── */
-function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggleTheme }) {
+function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggleTheme, onEdit }) {
   const scoped = useMemoS(() => filterByPeriod(txns, period), [txns, period]);
   const sum = useMemoS(() => summarize(scoped), [scoped]);
   const recent = useMemoS(() =>
@@ -62,7 +62,7 @@ function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggl
           <div className="see-all" onClick={() => onGoto('transactions')}>See all <Icon name="chevron-right" size={12} /></div>
         </div>
         <div className="txn-list">
-          {recent.map((t) => <TxnRow key={t.id} t={t} />)}
+          {recent.map((t) => <TxnRow key={t.id} t={t} onClick={onEdit ? () => onEdit(t) : undefined} />)}
         </div>
       </div>
     </div>);
@@ -72,7 +72,7 @@ function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggl
 /* ──────────────────────────────────────────────────────────────────────
    TRANSACTIONS
    ────────────────────────────────────────────────────────────────────── */
-function TransactionsScreen({ txns, period, setPeriod, typeFilter, setTypeFilter, theme, onToggleTheme }) {
+function TransactionsScreen({ txns, period, setPeriod, typeFilter, setTypeFilter, theme, onToggleTheme, onEdit }) {
   const scoped = useMemoS(() => filterByPeriod(txns, period), [txns, period]);
   const filtered = useMemoS(() => typeFilter === 'all' ? scoped : scoped.filter((t) => t.type === typeFilter), [scoped, typeFilter]);
   const groups = useMemoS(() => groupByDay(filtered), [filtered]);
@@ -119,7 +119,7 @@ function TransactionsScreen({ txns, period, setPeriod, typeFilter, setTypeFilter
         <div key={i}>
             <DayHead d={g.date} net={g.net} />
             <div className="txn-list">
-              {g.items.map((t) => <TxnRow key={t.id} t={t} />)}
+              {g.items.map((t) => <TxnRow key={t.id} t={t} onClick={onEdit ? () => onEdit(t) : undefined} />)}
             </div>
           </div>
         )}
@@ -1002,7 +1002,7 @@ function IconPickerSheet({ current, onPick, onClose }) {
    SEARCH — mirrors existing app's filter-based search
    (date range required, category/sub/account filters, sort, run button)
    ────────────────────────────────────────────────────────────────────── */
-function SearchScreen({ txns, theme, onToggleTheme }) {
+function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
   // default range: last 30 days
   const defaultFrom = useMemoS(() => {const d = new Date();d.setDate(d.getDate() - 30);return d.toISOString().slice(0, 10);}, []);
   const defaultTo = useMemoS(() => new Date().toISOString().slice(0, 10), []);
@@ -1180,7 +1180,7 @@ function SearchScreen({ txns, theme, onToggleTheme }) {
         <div key={i}>
             <DayHead d={g.date} net={-g.items.reduce((s, t) => s + t.amount, 0)} />
             <div className="txn-list">
-              {g.items.map((t) => <TxnRow key={t.id} t={t} />)}
+              {g.items.map((t) => <TxnRow key={t.id} t={t} onClick={onEdit ? () => onEdit(t) : undefined} />)}
             </div>
           </div>
         )}
@@ -1281,17 +1281,60 @@ function GlassSelect({ value, onChange, options, placeholder = 'Select…' }) {
   );
 }
 
+function AmountField({ isIncome, value, onChange, hasError }) {
+  const [shaking, setShaking] = useStateS(false);
+  useEffectS(() => {
+    if (hasError) { setShaking(true); const t = setTimeout(() => setShaking(false), 500); return () => clearTimeout(t); }
+  }, [hasError]);
+  return (
+    <div className={hasError ? `field-error${shaking ? ' shaking' : ''}` : ''} style={{ marginBottom: 18 }}>
+      <GlassCard className="amount-card">
+        <div className="lbl">{isIncome ? 'Income amount' : 'Expense amount'}</div>
+        <div className="num" style={isIncome ? { color: 'var(--income)' } : {}}>
+          <span className="sym">₹</span>
+          <input
+            inputMode="decimal"
+            value={value}
+            placeholder="0"
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9.]/g, '');
+              const parts = v.split('.');
+              onChange(parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : v);
+            }}
+            style={{
+              background:'transparent', border:'none', outline:'none',
+              color: 'inherit', font: 'inherit', textAlign:'center',
+              width: 'min(280px, 60vw)', padding: 0,
+              caretColor: isIncome ? 'var(--income)' : 'var(--text-1)',
+              fontFeatureSettings:'"tnum"',
+            }}
+          />
+        </div>
+      </GlassCard>
+      {hasError && <div className="field-error-msg">Amount is required</div>}
+    </div>
+  );
+}
+
 /* ──────────────────────────────────────────────────────────────────────
    ADD (expense / income form)
    ────────────────────────────────────────────────────────────────────── */
-function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategories: [], accounts: [] } }) {
-  const isIncome = kind === 'income';
-  const [amount, setAmount] = useStateS('');
-  const [name, setName] = useStateS('');
-  const [cat, setCat] = useStateS('');
-  const [sub, setSub] = useStateS('');
-  const [acc, setAcc] = useStateS('');
+function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], subcategories: [], accounts: [] } }) {
+  const isEditing = !!editTxn;
+  const isIncome = isEditing ? editTxn.type === 'income' : kind === 'income';
+  const [amount, setAmount] = useStateS(isEditing ? String(editTxn.amount) : '');
+  const [name, setName] = useStateS(isEditing ? editTxn.name : '');
+  const [cat, setCat] = useStateS(isEditing ? (editTxn.category || '') : '');
+  const [sub, setSub] = useStateS(isEditing ? (editTxn.sub || '') : '');
+  const [acc, setAcc] = useStateS(isEditing ? (editTxn.account || '') : '');
   const [saving, setSaving] = useStateS(false);
+  const [errors, setErrors] = useStateS({});
+  const amountRef = useRefS(null);
+  const nowIso = useMemoS(() => {
+    const d = isEditing && editTxn.date ? new Date(editTxn.date) : new Date();
+    return d.toISOString().slice(0, 16);
+  }, []);
+  const [datetime, setDatetime] = useStateS(nowIso);
 
   // Cat / subcat / acc options from catalog (passed by parent — backed by D1)
   const incomeCatNames = ['Salary', 'Freelance', 'Other', 'Gift', 'Refund'];
@@ -1303,11 +1346,19 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
   function handleSave() {
     if (saving) return;
     const num = Number(amount);
-    if (!num || isNaN(num)) return;
+    const errs = {};
+    if (!num || isNaN(num)) errs.amount = 'Amount is required';
+    if (!cat) errs.cat = 'Category is required';
+    if (!acc) errs.acc = 'Account is required';
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+    setErrors({});
     setSaving(true);
     Promise.resolve(onSave({
-      type: kind, amount: num, name, cat, sub, acc,
-      catalog,
+      type: isEditing ? editTxn.type : kind, amount: num, name, cat, sub, acc,
+      date: datetime, catalog, editTxn,
     })).finally(() => setSaving(false));
   }
 
@@ -1316,35 +1367,16 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
     <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.55)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}>
       <div className="form-head">
         <div className="icon-btn" onClick={onClose}><Icon name="arrow-left" size={16} /></div>
-        <div className="title">Add {isIncome ? 'income' : 'expense'}</div>
+        <div className="title">{isEditing ? 'Edit' : 'Add'} {isIncome ? 'income' : 'expense'}</div>
         <div className="icon-btn" onClick={onClose}><Icon name="x" size={16} /></div>
       </div>
       <div className="form-body">
-        {/* Amount — tap the big number to type */}
-        <GlassCard className="amount-card">
-          <div className="lbl">{isIncome ? 'Income amount' : 'Expense amount'}</div>
-          <div className="num" style={isIncome ? { color: 'var(--income)' } : {}}>
-            <span className="sym">₹</span>
-            <input
-              inputMode="decimal"
-              value={amount}
-              placeholder="0"
-              onChange={e => {
-                const v = e.target.value.replace(/[^0-9.]/g, '');
-                // single decimal point only
-                const parts = v.split('.');
-                const clean = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : v;
-                setAmount(clean);
-              }}
-              style={{
-                background:'transparent', border:'none', outline:'none',
-                color: 'inherit', font: 'inherit', textAlign:'center',
-                width: 'min(280px, 60vw)', padding: 0, caretColor: isIncome ? 'var(--income)' : 'var(--text-1)',
-                fontFeatureSettings:'"tnum"',
-              }}
-            />
-          </div>
-        </GlassCard>
+        <AmountField
+          isIncome={isIncome}
+          value={amount}
+          hasError={!!errors.amount}
+          onChange={v => { setAmount(v); if (v) setErrors(e => ({ ...e, amount: null })); }}
+        />
 
         <div className="field">
           <div className="lbl">{isIncome ? 'Source' : 'What was it?'}</div>
@@ -1353,12 +1385,14 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
           </div>
         </div>
 
-        <SearchableChips
+        <CompactPicker
           label="Category"
           items={cats}
           value={cat}
-          onChange={setCat}
-          placeholder="Search categories…"
+          onChange={v => { setCat(v); if (v) setErrors(e => ({ ...e, cat: null })); }}
+          placeholder="Pick a category…"
+          hasError={!!errors.cat}
+          errorMsg={errors.cat}
           iconFor={(c) => {
             if (isIncome) return null;
             const hit = (catalog.categories || []).find(x => x.name === c);
@@ -1367,12 +1401,12 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
         />
 
         {!isIncome && (
-          <SearchableChips
+          <CompactPicker
             label="Subcategory"
             items={subs}
             value={sub}
             onChange={setSub}
-            placeholder="Search subcategories…"
+            placeholder="Pick a subcategory…"
             emptyText="No subcategories yet — add them from Settings."
             iconFor={(s) => {
               const hit = (catalog.subcategories || []).find(x => x.name === s);
@@ -1381,31 +1415,217 @@ function AddForm({ kind, onClose, onSave, catalog = { categories: [], subcategor
           />
         )}
 
-        <SearchableChips
+        <CompactPicker
           label="Account"
           items={accs}
           value={acc}
-          onChange={setAcc}
-          placeholder="Search accounts…"
+          onChange={v => { setAcc(v); if (v) setErrors(e => ({ ...e, acc: null })); }}
+          placeholder="Pick an account…"
+          hasError={!!errors.acc}
+          errorMsg={errors.acc}
           iconFor={(a) => {
             const hit = (catalog.accounts || []).find(x => x.name === a);
             return hit ? hit.icon : null;
           }}
         />
+
+        <div className="field">
+          <div className="lbl">Date &amp; time</div>
+          <GlassCard style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Icon name="clock" size={15} color="var(--text-3)" />
+            <input
+              type="datetime-local"
+              className="datetime-input"
+              value={datetime}
+              onChange={e => setDatetime(e.target.value)}
+            />
+          </GlassCard>
+        </div>
       </div>
 
       <div className="save-bar">
-        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={handleSave} disabled={saving || !amount}>
-          {saving ? 'Saving…' : `Save ${isIncome ? 'income' : 'expense'}${amount ? ` · ₹${amount}` : ''}`}
+        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : `${isEditing ? 'Update' : 'Save'} ${isIncome ? 'income' : 'expense'}${amount ? ` · ₹${amount}` : ''}`}
         </button>
       </div>
     </div>);
 
 }
 
-// ── Searchable chip picker ────────────────────────────────────────────
-// Search input that filters a chip row; chip row stays scrollable. Used
-// for Category / Subcategory / Account selection in the Add form.
+// ── Compact picker — shows selected value; tap to open full overlay ──
+function CompactPicker({ label, items, value, onChange, placeholder, emptyText, iconFor, hasError, errorMsg }) {
+  const [open, setOpen] = useStateS(false);
+  const [q, setQ] = useStateS('');
+  const [shaking, setShaking] = useStateS(false);
+  const filtered = items.filter(i => !q.trim() || i.toLowerCase().includes(q.toLowerCase()));
+  const selIcon = value && iconFor ? iconFor(value) : null;
+
+  useEffectS(() => {
+    if (hasError) { setShaking(true); const t = setTimeout(() => setShaking(false), 500); return () => clearTimeout(t); }
+  }, [hasError]);
+
+  return (
+    <div className={`compact-picker${hasError ? ' field-error' : ''}${shaking ? ' shaking' : ''}`}>
+      <div className="lbl">{label}</div>
+      <div className="compact-pick-row" onClick={() => setOpen(true)}>
+        <div className="compact-pick-selected">
+          {value ? (
+            <div className="chip active" style={{ pointerEvents: 'none' }}>
+              {selIcon && (
+                <span style={{ display:'inline-flex', alignItems:'center', width:16, height:16, overflow:'hidden', fontSize:13 }}>
+                  <ItemIcon icon={selIcon} size={14} />
+                </span>
+              )}
+              <span>{value}</span>
+            </div>
+          ) : (
+            <span className="compact-pick-placeholder">{placeholder || `Pick ${label.toLowerCase()}…`}</span>
+          )}
+        </div>
+        {value && (
+          <button className="compact-pick-clear" onClick={e => { e.stopPropagation(); onChange(''); }}>
+            <Icon name="x" size={10} strokeWidth={2.5} />
+          </button>
+        )}
+        <span className="compact-pick-chevron"><Icon name="chevron-right" size={14} /></span>
+      </div>
+      {hasError && errorMsg && <div className="field-error-msg">{errorMsg}</div>}
+
+      {open && (
+        <div className="picker-overlay">
+          <div className="picker-overlay-head">
+            <div className="picker-overlay-title">{label}</div>
+            <div className="icon-btn" onClick={() => { setOpen(false); setQ(''); }}><Icon name="x" size={16} /></div>
+          </div>
+          <div className="picker-overlay-body">
+            <div className="picker-search-row">
+              <Icon name="search" size={14} color="var(--text-3)" />
+              <input
+                value={q} onChange={e => setQ(e.target.value)}
+                placeholder={`Search ${label.toLowerCase()}…`}
+                autoFocus
+              />
+              {q && <div onClick={() => setQ('')} style={{ cursor:'pointer', color:'var(--text-3)' }}><Icon name="x" size={12} /></div>}
+            </div>
+            {filtered.length === 0 ? (
+              <div style={{ fontSize:12, color:'var(--text-3)', padding:'12px 14px', borderRadius:12, background:'var(--glass-fill-soft)' }}>
+                {emptyText || (q ? `No matches for "${q}"` : 'No items yet')}
+              </div>
+            ) : (
+              <div className="chip-row">
+                {filtered.map(item => {
+                  const icon = iconFor ? iconFor(item) : null;
+                  return (
+                    <div key={item} className={`chip ${value === item ? 'active' : ''}`}
+                      onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
+                      {icon && (
+                        <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}>
+                          <ItemIcon icon={icon} size={16} />
+                        </span>
+                      )}
+                      <span>{item}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Transaction detail sheet ──────────────────────────────────────────
+function TxnDetailSheet({ txn, onClose, onEdit, onDelete, catalog }) {
+  const isIn = txn.type === 'income';
+  const d = new Date(txn.date);
+  const dateStr = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  const timeStr = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12: true });
+  const accObj = (catalog?.accounts || []).find(a => a.name === txn.account);
+  const subObj = (catalog?.subcategories || []).find(s => s.name === txn.sub);
+
+  return (
+    <>
+      <div className="sheet-backdrop show" onClick={onClose} />
+      <div className="sheet show" style={{ zIndex: 46 }}>
+        <div className="grabber" />
+
+        <div className="txn-detail-hero">
+          <div className="txn-detail-icon">
+            {txn.icon && txn.icon.startsWith('<svg')
+              ? <span dangerouslySetInnerHTML={{ __html: txn.icon.replace('<svg ', '<svg width="28" height="28" ') }} />
+              : <span>{txn.icon || (isIn ? '💼' : '💸')}</span>
+            }
+          </div>
+          <div className="txn-detail-meta">
+            <div className="txn-detail-name">{txn.name}</div>
+            <div className="txn-detail-sub">{txn.category}{txn.sub ? ` · ${txn.sub}` : ''}</div>
+          </div>
+          <div className={`txn-detail-amount ${isIn ? 'income' : 'expense'}`}>
+            {isIn ? '+' : '−'}{fmtINR(txn.amount, { withFrac: false })}
+          </div>
+        </div>
+
+        <div className="txn-detail-rows">
+          {txn.account && (
+            <div className="txn-detail-row">
+              <span className="txn-detail-row-label">Account</span>
+              <span className="txn-detail-row-val" style={{ display:'flex', alignItems:'center', gap: 7 }}>
+                {accObj?.icon && (
+                  <span style={{ width:20, height:20, borderRadius:6, overflow:'hidden', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <ItemIcon icon={accObj.icon} size={18} />
+                  </span>
+                )}
+                {txn.account}
+              </span>
+            </div>
+          )}
+          {txn.sub && (
+            <div className="txn-detail-row">
+              <span className="txn-detail-row-label">Subcategory</span>
+              <span className="txn-detail-row-val" style={{ display:'flex', alignItems:'center', gap: 7 }}>
+                {subObj?.icon && (
+                  <span style={{ width:20, height:20, borderRadius:6, overflow:'hidden', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <ItemIcon icon={subObj.icon} size={18} />
+                  </span>
+                )}
+                {txn.sub}
+              </span>
+            </div>
+          )}
+          <div className="txn-detail-row">
+            <span className="txn-detail-row-label">Date</span>
+            <span className="txn-detail-row-val">{dateStr}</span>
+          </div>
+          <div className="txn-detail-row">
+            <span className="txn-detail-row-label">Time</span>
+            <span className="txn-detail-row-val">{timeStr}</span>
+          </div>
+          <div className="txn-detail-row">
+            <span className="txn-detail-row-label">Type</span>
+            <span className="txn-detail-row-val" style={{ color: isIn ? 'var(--income)' : 'var(--text-1)' }}>
+              {isIn ? 'Income' : 'Expense'}
+            </span>
+          </div>
+        </div>
+
+        <div className="txn-detail-actions">
+          <button className="txn-detail-btn delete" onClick={onDelete}>
+            <Icon name="x" size={15} strokeWidth={2} />
+            Delete
+          </button>
+          <button className="txn-detail-btn edit-action" onClick={onEdit}>
+            <Icon name="edit" size={15} />
+            Edit
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Searchable chip picker (legacy — kept for ManageScreen) ───────────
 function SearchableChips({ label, items, value, onChange, placeholder, emptyText, iconFor }) {
   const [q, setQ] = useStateS('');
   const filtered = items.filter(i => !q.trim() || i.toLowerCase().includes(q.toLowerCase()));
@@ -1455,5 +1675,5 @@ function SearchableChips({ label, items, value, onChange, placeholder, emptyText
 
 Object.assign(window, {
   HomeScreen, TransactionsScreen, AnalyticsScreen, SearchScreen, AddForm, ManageScreen, IconPickerSheet,
-  SearchableChips, buildTrend, TrendChart, DateField, SortRow, GlassSelect
+  SearchableChips, CompactPicker, TxnDetailSheet, buildTrend, TrendChart, DateField, SortRow, GlassSelect
 });

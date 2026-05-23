@@ -109,6 +109,8 @@ function DesktopApp() {
   const [typeFilter, setTypeFilter] = useStateD('all');
   const [sheetOpen, setSheetOpen] = useStateD(false);
   const [addForm, setAddForm]     = useStateD(null);
+  const [editTxn, setEditTxn]     = useStateD(null);
+  const [detailTxn, setDetailTxn] = useStateD(null);
   const [toast, setToast]         = useStateD(null);
   const [txns, setTxns]           = useStateD([]);
   const [catalog, setCatalog]     = useStateD({ categories: [], subcategories: [], accounts: [] });
@@ -149,7 +151,10 @@ function DesktopApp() {
 
   function openAdd() { setSheetOpen(true); }
   function pickType(k) { setSheetOpen(false); setTimeout(() => setAddForm(k), 220); }
-  function closeAddForm() { setAddForm(null); }
+  function openDetail(txn) { setDetailTxn(txn); }
+  function closeDetail() { setDetailTxn(null); }
+  function openEdit(txn) { setDetailTxn(null); setEditTxn(txn); }
+  function closeForm() { setAddForm(null); setEditTxn(null); }
 
   function flashToast(msg, kind) {
     setToast({ msg, kind });
@@ -164,18 +169,34 @@ function DesktopApp() {
       amount: form.amount,
       note: form.name||'',
       txnType: form.type,
-      date: new Date().toISOString().slice(0,10),
+      date: form.date ? new Date(form.date).toISOString().slice(0,10) : new Date().toISOString().slice(0,10),
       categoryId: cat?cat.id:null,
       subcategoryId: sub?sub.id:null,
       accountId: acc?acc.id:null,
     };
     try {
-      await apiJsonD('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      if (form.editTxn) {
+        await apiJsonD('/api/d1/expense/'+form.editTxn.id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        flashToast('Transaction updated', form.type);
+      } else {
+        await apiJsonD('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+        flashToast((form.type==='income'?'Income':'Expense')+' saved', form.type);
+      }
       await reloadTxns(period);
-      setAddForm(null);
-      flashToast((form.type==='income'?'Income':'Expense')+' saved', form.type);
+      closeForm();
     } catch (e) {
       flashToast('Failed to save', 'expense');
+    }
+  }
+
+  async function deleteTxn(txn) {
+    try {
+      await apiJsonD('/api/d1/expense/'+txn.id, { method:'DELETE' });
+      await reloadTxns(period);
+      setDetailTxn(null);
+      flashToast('Transaction deleted', txn.type);
+    } catch (e) {
+      flashToast('Failed to delete', 'expense');
     }
   }
 
@@ -236,10 +257,10 @@ function DesktopApp() {
           typeFilter={typeFilter}
         />
         <div className="desktop-content">
-          {view==='home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} />}
-          {view==='transactions' && <TransactionsDesktop txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} />}
+          {view==='home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
+          {view==='transactions' && <TransactionsDesktop txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
           {view==='analytics'    && <AnalyticsDesktop txns={txns} period={period} setPeriod={setPeriod} />}
-          {view==='search'       && <SearchDesktop txns={txns} />}
+          {view==='search'       && <SearchDesktop txns={txns} onEdit={openDetail} />}
           {view==='manage'       && <ManageDesktop catalog={catalog} setCatalog={setCatalogApi} onBack={()=>setView('home')} />}
           {view==='appearance'   && <AppearanceDesktop t={t} setTweak={setTweak} />}
         </div>
@@ -265,10 +286,20 @@ function DesktopApp() {
         </div>
       </div>
 
-      {addForm && (
-        <div className="desktop-modal-backdrop show" onClick={closeAddForm}>
+      {detailTxn && (
+        <TxnDetailSheet
+          txn={detailTxn}
+          catalog={catalog}
+          onClose={closeDetail}
+          onEdit={() => openEdit(detailTxn)}
+          onDelete={() => deleteTxn(detailTxn)}
+        />
+      )}
+
+      {(addForm || editTxn) && (
+        <div className="desktop-modal-backdrop show" onClick={closeForm}>
           <div className="desktop-form-wrap" onClick={e=>e.stopPropagation()}>
-            <AddForm kind={addForm} onClose={closeAddForm} onSave={saveTxn} catalog={catalog} />
+            <AddForm kind={addForm || editTxn.type} editTxn={editTxn} onClose={closeForm} onSave={saveTxn} catalog={catalog} />
           </div>
         </div>
       )}
@@ -391,7 +422,7 @@ function DesktopTopBar({ view, theme, onToggleTheme, onOpenAdd, txns, period, ty
 /* ──────────────────────────────────────────────────────────────────────
    HOME — overview dashboard
    ────────────────────────────────────────────────────────────────────── */
-function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter }) {
+function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter, onEdit }) {
   const scoped = useMemoD(() => filterByPeriod(txns, period), [txns, period]);
   const sum    = useMemoD(() => summarize(scoped), [scoped]);
   const recent = useMemoD(() => [...txns].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,7), [txns]);
@@ -455,7 +486,7 @@ function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter
           <div className="see-all" onClick={()=>onGoto('transactions')}>See all <Icon name="chevron-right" size={12}/></div>
         </div>
         <div className="txn-list">
-          {recent.length===0 ? <div className="empty"><div className="ic">∅</div>No transactions yet.</div> : recent.map(t=><TxnRow key={t.id} t={t}/>)}
+          {recent.length===0 ? <div className="empty"><div className="ic">∅</div>No transactions yet.</div> : recent.map(t=><TxnRow key={t.id} t={t} onClick={onEdit ? ()=>onEdit(t) : undefined}/>)}
         </div>
       </GlassCard>
 
@@ -500,7 +531,7 @@ function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter
 /* ──────────────────────────────────────────────────────────────────────
    TRANSACTIONS
    ────────────────────────────────────────────────────────────────────── */
-function TransactionsDesktop({ txns, period, setPeriod, typeFilter, setTypeFilter }) {
+function TransactionsDesktop({ txns, period, setPeriod, typeFilter, setTypeFilter, onEdit }) {
   const scoped   = useMemoD(() => filterByPeriod(txns, period), [txns, period]);
   const filtered = useMemoD(() => typeFilter==='all'?scoped:scoped.filter(t=>t.type===typeFilter), [scoped, typeFilter]);
   const groups   = useMemoD(() => groupByDay(filtered), [filtered]);
@@ -547,7 +578,7 @@ function TransactionsDesktop({ txns, period, setPeriod, typeFilter, setTypeFilte
           <div key={i}>
             <DayHead d={g.date} net={g.net}/>
             <div className="txn-list">
-              {g.items.map(t=><TxnRow key={t.id} t={t}/>)}
+              {g.items.map(t=><TxnRow key={t.id} t={t} onClick={onEdit ? ()=>onEdit(t) : undefined}/>)}
             </div>
           </div>
         ))}
@@ -669,8 +700,8 @@ function AnalyticsDesktop({ txns, period, setPeriod }) {
 /* ──────────────────────────────────────────────────────────────────────
    SEARCH / MANAGE / APPEARANCE — reuse mobile screens
    ────────────────────────────────────────────────────────────────────── */
-function SearchDesktop({ txns }) {
-  return <div className="dt-search"><SearchScreen txns={txns}/></div>;
+function SearchDesktop({ txns, onEdit }) {
+  return <div className="dt-search"><SearchScreen txns={txns} onEdit={onEdit}/></div>;
 }
 
 function ManageDesktop({ catalog, setCatalog, onBack }) {

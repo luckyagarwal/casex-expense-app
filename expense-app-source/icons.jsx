@@ -28,6 +28,8 @@ const Icon = ({ name, size = 18, color = 'currentColor', strokeWidth = 1.6 }) =>
     case 'moon':       return <svg {...props}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
     case 'palette':    return <svg {...props}><path d="M12 2a10 10 0 1 0 0 20 2.5 2.5 0 0 0 2.5-2.5c0-.7-.3-1.3-.7-1.8-.4-.4-.7-1-.7-1.7a2.5 2.5 0 0 1 2.5-2.5H18a4 4 0 0 0 4-4c0-4.4-4.5-8-10-8z"/><circle cx="7.5" cy="10.5" r="1.2" fill={color} stroke="none"/><circle cx="12" cy="7" r="1.2" fill={color} stroke="none"/><circle cx="16.5" cy="10.5" r="1.2" fill={color} stroke="none"/></svg>;
     case 'sparkles':   return <svg {...props}><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4L12 3z"/><path d="M19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7L19 14z"/></svg>;
+    case 'edit':       return <svg {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
+    case 'clock':      return <svg {...props}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>;
     default: return null;
   }
 };
