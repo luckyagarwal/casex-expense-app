@@ -1364,7 +1364,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
 
 
   return (
-    <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.55)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }}>
+    <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.88)', backdropFilter: 'blur(60px) saturate(220%)', WebkitBackdropFilter: 'blur(60px) saturate(220%)' }}>
       <div className="form-head">
         <div className="icon-btn" onClick={onClose}><Icon name="arrow-left" size={16} /></div>
         <div className="title">{isEditing ? 'Edit' : 'Add'} {isIncome ? 'income' : 'expense'}</div>
