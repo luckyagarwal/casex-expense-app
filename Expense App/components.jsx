@@ -205,7 +205,7 @@ function TxnRow({ t, onClick }) {
   const isIn = t.type === 'income';
   const d = new Date(t.date);
   return (
-    <div className={`txn ${isIn ? 'income' : 'expense'}`} onClick={onClick}>
+    <div className={`txn ${isIn ? 'income' : 'expense'}`}>
       <div className="ic">{t.icon}</div>
       <div className="meta">
         <div className="name">{t.name}</div>
@@ -215,6 +215,28 @@ function TxnRow({ t, onClick }) {
       <div className={`amt ${isIn ? 'income' : 'expense'}`}>
         {isIn ? '+' : '−'}{fmtINR(t.amount, { withFrac: false })}
       </div>
+      {onClick && (
+        <button
+          onClick={onClick}
+          title="Edit transaction"
+          style={{
+            flexShrink: 0,
+            width: 30, height: 30,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'rgba(255,255,255,0.07)',
+            color: 'var(--text-3)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
+            transition: 'background 120ms ease, color 120ms ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'var(--text-1)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'var(--text-3)'; }}
+        >
+          <Icon name="edit" size={13} />
+        </button>
+      )}
     </div>);
 
 }

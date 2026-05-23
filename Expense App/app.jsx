@@ -94,7 +94,7 @@ function App() {
             <AnalyticsScreen txns={txns} period={period} setPeriod={setPeriod} theme={t.theme} onToggleTheme={toggleTheme} />
           )}
           {view === 'search' && (
-            <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} />
+            <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openEdit} />
           )}
           {view === 'manage' && (
             <ManageScreen catalog={catalog} setCatalog={setCatalog} onBack={() => setView('home')} />

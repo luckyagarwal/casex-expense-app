@@ -89,7 +89,7 @@ function DesktopApp() {
             {view === 'home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} onEdit={openEdit} />}
             {view === 'transactions' && <TransactionsDesktop txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} onEdit={openEdit} />}
             {view === 'analytics'    && <AnalyticsDesktop txns={txns} period={period} setPeriod={setPeriod} />}
-            {view === 'search'       && <SearchDesktop txns={txns} />}
+            {view === 'search'       && <SearchDesktop txns={txns} onEdit={openEdit} />}
             {view === 'manage'       && <ManageDesktop catalog={catalog} setCatalog={setCatalog} onBack={() => setView('home')} />}
             {view === 'appearance'   && <AppearanceDesktop t={t} setTweak={setTweak} />}
           </div>
@@ -545,10 +545,10 @@ function AnalyticsDesktop({ txns, period, setPeriod }) {
 /* ──────────────────────────────────────────────────────────────────────
    SEARCH — desktop two-column form + results
    ────────────────────────────────────────────────────────────────────── */
-function SearchDesktop({ txns }) {
+function SearchDesktop({ txns, onEdit }) {
   return (
     <div className="dt-search">
-      <SearchScreen txns={txns} />
+      <SearchScreen txns={txns} onEdit={onEdit} />
     </div>
   );
 }

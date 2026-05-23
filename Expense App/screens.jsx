@@ -1028,7 +1028,7 @@ function IconPickerSheet({ current, onPick, onClose }) {
    SEARCH — mirrors existing app's filter-based search
    (date range required, category/sub/account filters, sort, run button)
    ────────────────────────────────────────────────────────────────────── */
-function SearchScreen({ txns, theme, onToggleTheme }) {
+function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
   // default range: last 30 days
   const defaultFrom = useMemoS(() => {const d = new Date();d.setDate(d.getDate() - 30);return d.toISOString().slice(0, 10);}, []);
   const defaultTo = useMemoS(() => new Date().toISOString().slice(0, 10), []);
@@ -1206,7 +1206,7 @@ function SearchScreen({ txns, theme, onToggleTheme }) {
         <div key={i}>
             <DayHead d={g.date} net={-g.items.reduce((s, t) => s + t.amount, 0)} />
             <div className="txn-list">
-              {g.items.map((t) => <TxnRow key={t.id} t={t} />)}
+              {g.items.map((t) => <TxnRow key={t.id} t={t} onClick={onEdit ? () => onEdit(t) : undefined} />)}
             </div>
           </div>
         )}
