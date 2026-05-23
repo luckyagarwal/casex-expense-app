@@ -425,6 +425,24 @@ html, body { margin: 0; padding: 0; background: #000; color: var(--text-1); font
 .txn .amt.income  { color: var(--income); }
 .txn .amt.expense { color: var(--text-1); }
 
+/* Date/time input — adapts to theme */
+.datetime-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  width: 100%;
+  padding: 0;
+}
+.app[data-theme="light"] .datetime-input {
+  color-scheme: light;
+}
+.app[data-theme="dark"] .datetime-input {
+  color-scheme: dark;
+}
+
 .txn-edit-btn {
   flex-shrink: 0;
   width: 28px; height: 28px;

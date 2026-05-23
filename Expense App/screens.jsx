@@ -1405,11 +1405,7 @@ function AddForm({ kind, editTxn, onClose, onSave }) {
               type="datetime-local"
               value={datetime}
               onChange={e => setDatetime(e.target.value)}
-              style={{
-                background: 'transparent', border: 'none', outline: 'none',
-                color: 'var(--text-1)', fontFamily: 'var(--font-mono)', fontSize: 14,
-                width: '100%', padding: 0, colorScheme: 'dark',
-              }}
+              className="datetime-input"
             />
           </GlassCard>
         </div>
