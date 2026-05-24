@@ -47,9 +47,9 @@
   --text-3:    rgba(227, 190, 174, 0.42);
   --text-4:    rgba(227, 190, 174, 0.22);
 
-  --glass-fill:        rgba(227, 190, 174, 0.06);
-  --glass-fill-strong: rgba(227, 190, 174, 0.11);
-  --glass-fill-soft:   rgba(227, 190, 174, 0.03);
+  --glass-fill:        rgba(227, 190, 174, 0.10);
+  --glass-fill-strong: rgba(227, 190, 174, 0.18);
+  --glass-fill-soft:   rgba(227, 190, 174, 0.05);
 
   --glass-border-grad:
     linear-gradient(135deg,
@@ -107,12 +107,12 @@
   --expense-soft:rgba(211, 50, 107, 0.14);
 }
 
-/* Blur intensity — punchier across the board */
+/* Blur intensity — frosted glass (reduced 70% from original) */
 :root {
-  --blur-card:   blur(56px) saturate(200%);
-  --blur-nav:    blur(48px) saturate(220%);
-  --blur-pill:   blur(28px) saturate(200%);
-  --blur-sheet:  blur(60px) saturate(200%);
+  --blur-card:   blur(18px) saturate(140%);
+  --blur-nav:    blur(16px) saturate(150%);
+  --blur-pill:   blur(10px) saturate(130%);
+  --blur-sheet:  blur(22px) saturate(140%);
 }
 
 * { box-sizing: border-box; }
@@ -229,7 +229,7 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .bg-aurora { background: var(--bg-base); }
 .bg-aurora .band {
   position: absolute; left: -10%; right: -10%;
-  height: 240px; filter: blur(70px); opacity: 0.65;
+  height: 240px; filter: blur(40px); opacity: 0.55;
   border-radius: 50%;
 }
 .bg-aurora .band-1 { top: -40px; background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--seed) 60%, white), color-mix(in oklch, var(--seed) 80%, #333), transparent); transform: rotate(-8deg); }
@@ -433,7 +433,7 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .txn-name {
   flex: 1; min-width: 0;
   font-size: 17px; font-weight: 600; color: var(--text-1);
-  letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -0.01em; word-break: break-word;
 }
 .txn-amt {
   font-family: var(--font-display); font-weight: 700; font-size: 18px;
@@ -455,8 +455,8 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .txn-foot-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .txn-foot-item { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .txn-foot-label {
-  font-size: 12px; font-weight: 600; color: var(--text-2); white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.01em;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  letter-spacing: 0.01em; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .txn-date-chip {
   font-size: 11.5px; font-weight: 700; color: var(--text-1); white-space: nowrap;
@@ -827,10 +827,17 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .save-btn:active { transform: scale(0.98); }
 .save-btn.income { background: var(--income); color: #052213; box-shadow: 0 12px 30px rgba(123,216,143,0.30), inset 0 1px 0 rgba(255,255,255,0.5); }
 
+.datetime-row {
+  display: flex; gap: 10px;
+}
+.datetime-part {
+  flex: 1; padding: 12px 14px !important;
+  display: flex; align-items: center; gap: 8px;
+}
 .datetime-input {
-  width: 100%; background: transparent; border: none; outline: none;
-  color: var(--text-1); font-family: var(--font-body); font-size: 14px;
-  padding: 0; cursor: pointer;
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text-1); font-family: var(--font-body); font-size: 14px; font-weight: 500;
+  padding: 0; cursor: pointer; min-width: 0;
 }
 [data-theme="light"] .datetime-input { color-scheme: light; }
 [data-theme="dark"]  .datetime-input { color-scheme: dark; }

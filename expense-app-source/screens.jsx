@@ -1332,9 +1332,15 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
   const amountRef = useRefS(null);
   const nowIso = useMemoS(() => {
     const d = isEditing && editTxn.date ? new Date(editTxn.date) : new Date();
-    return d.toISOString().slice(0, 16);
+    // Use local date/time (not UTC) for the inputs
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return { date: dateStr, time: timeStr };
   }, []);
-  const [datetime, setDatetime] = useStateS(nowIso);
+  const [dateVal, setDateVal] = useStateS(nowIso.date);
+  const [timeVal, setTimeVal] = useStateS(nowIso.time);
+  const datetime = `${dateVal}T${timeVal}`;
 
   // Cat / subcat / acc options from catalog (passed by parent — backed by D1)
   const incomeCatNames = ['Salary', 'Freelance', 'Other', 'Gift', 'Refund'];
@@ -1364,7 +1370,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
 
 
   return (
-    <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.88)', backdropFilter: 'blur(60px) saturate(220%)', WebkitBackdropFilter: 'blur(60px) saturate(220%)' }}>
+    <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)' }}>
       <div className="form-head">
         <div className="icon-btn" onClick={onClose}><Icon name="arrow-left" size={16} /></div>
         <div className="title">{isEditing ? 'Edit' : 'Add'} {isIncome ? 'income' : 'expense'}</div>
@@ -1431,15 +1437,26 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
 
         <div className="field">
           <div className="lbl">Date &amp; time</div>
-          <GlassCard style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Icon name="clock" size={15} color="var(--text-3)" />
-            <input
-              type="datetime-local"
-              className="datetime-input"
-              value={datetime}
-              onChange={e => setDatetime(e.target.value)}
-            />
-          </GlassCard>
+          <div className="datetime-row">
+            <GlassCard className="datetime-part">
+              <Icon name="calendar" size={14} color="var(--text-3)" />
+              <input
+                type="date"
+                className="datetime-input"
+                value={dateVal}
+                onChange={e => setDateVal(e.target.value)}
+              />
+            </GlassCard>
+            <GlassCard className="datetime-part">
+              <Icon name="clock" size={14} color="var(--text-3)" />
+              <input
+                type="time"
+                className="datetime-input"
+                value={timeVal}
+                onChange={e => setTimeVal(e.target.value)}
+              />
+            </GlassCard>
+          </div>
         </div>
       </div>
 

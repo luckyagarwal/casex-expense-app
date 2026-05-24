@@ -164,7 +164,7 @@ function DesktopApp() {
 
   async function saveTxn(form) {
     const cat = (catalog.categories||[]).find(c=>c.name===form.cat);
-    const sub = (catalog.subcategories||[]).find(s=>s.name===form.sub&&(!cat||s.categoryId===cat.id));
+    const sub = (catalog.subcategories||[]).find(s=>s.name===form.sub);
     const acc = (catalog.accounts||[]).find(a=>a.name===form.acc);
     const body = {
       amount: form.amount,
@@ -192,7 +192,7 @@ function DesktopApp() {
 
   async function deleteTxn(txn) {
     try {
-      await apiJsonD('/api/d1/expense/'+txn.id, { method:'DELETE' });
+      await apiJsonD('/api/d1/expense/'+txn.id+'?type='+(txn.type||'expense'), { method:'DELETE' });
       await reloadTxns(period);
       setDetailTxn(null);
       flashToast('Transaction deleted', txn.type);

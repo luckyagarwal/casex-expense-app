@@ -281,7 +281,7 @@ html, body {
 .desktop-modal-backdrop {
   position: fixed; inset: 0; z-index: 100;
   background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   opacity: 0; pointer-events: none;
   transition: opacity 220ms ease;
   display: flex; align-items: center; justify-content: center;
@@ -386,7 +386,7 @@ html, body {
   z-index: 200;
   padding: 12px 20px; border-radius: 999px;
   background: var(--glass-fill-strong);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-strong), inset 0 1px 0 var(--inner-highlight);
   color: var(--text-1); font-size: 13px; font-weight: 500;
   display: flex; align-items: center; gap: 10px;

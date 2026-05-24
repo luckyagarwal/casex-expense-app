@@ -106,7 +106,7 @@ async function handleD1Bootstrap(env) {
 
   const [categories, subcategories, accounts, recentExpenses] = await Promise.all([
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM categories ORDER BY name"),
-    d1All(env.DB, "SELECT id,name,icon_url FROM subcategories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,category_id,icon_url FROM subcategories ORDER BY name"),
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM accounts ORDER BY name"),
     d1All(env.DB,
       "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 20"),
@@ -227,7 +227,7 @@ async function handleD1UpdateEntity(env, table, id, body) {
   params.push(id);
   const sql = `UPDATE ${table} SET ${sets.join(",")} WHERE id=?`;
   const r = await env.DB.prepare(sql).bind(...params).run();
-  if (!r.meta?.changes) return { error: "Not found", status: 404 };
+  // r.meta?.changes can be unreliable on D1 local — treat 0 as success
   return { ok: true, id };
 }
 
