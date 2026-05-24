@@ -73,6 +73,7 @@ function mapTxnsD(rows) {
     account: r.account||'',
     date: r.date,
     icon: resolveIconD(r.categoryIcon||r.subcategoryIcon,r.txnType==='income'?'💼':'💸'),
+    subIcon: resolveIconD(r.subcategoryIcon, null),
     categoryId: r.categoryId, subcategoryId: r.subcategoryId, accountId: r.accountId,
   }));
 }

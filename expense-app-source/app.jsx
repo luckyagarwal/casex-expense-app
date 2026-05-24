@@ -85,6 +85,7 @@ function mapTxns(rows) {
     account: r.account || '',
     date: r.date,
     icon: resolveIcon(r.categoryIcon || r.subcategoryIcon, r.txnType === 'income' ? '💼' : '💸'),
+    subIcon: resolveIcon(r.subcategoryIcon, null),
     categoryId: r.categoryId, subcategoryId: r.subcategoryId, accountId: r.accountId,
   }));
 }

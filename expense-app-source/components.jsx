@@ -211,22 +211,58 @@ function TxnIcon({ icon, size }) {
   return <div className="ic">{icon}</div>;
 }
 
+const SUB_HUES = [340, 280, 200, 160, 50, 20, 130, 260];
+function SubBadge({ icon, name, size = 20 }) {
+  if (icon && icon.startsWith('<svg')) {
+    return (
+      <span style={{width:size,height:size,borderRadius:'50%',overflow:'hidden',flexShrink:0,
+        display:'inline-flex',alignItems:'center',justifyContent:'center',
+        background:'var(--glass-fill-strong)'}}
+        dangerouslySetInnerHTML={{__html: icon.replace('<svg ', `<svg width="${size-4}" height="${size-4}" `)}}
+      />
+    );
+  }
+  const hue = SUB_HUES[((name || '').charCodeAt(0) || 0) % SUB_HUES.length];
+  return (
+    <span style={{width:size,height:size,borderRadius:'50%',flexShrink:0,
+      display:'inline-flex',alignItems:'center',justifyContent:'center',
+      background:`hsl(${hue} 35% 22%)`,color:`hsl(${hue} 60% 80%)`,
+      fontSize:8,fontWeight:700,letterSpacing:'0.02em',fontFamily:'var(--font-display)',
+      boxShadow:'inset 0 1px 0 rgba(255,255,255,0.10)',
+    }}>{(name||'?').slice(0,1).toUpperCase()}</span>
+  );
+}
+
 function TxnRow({ t, onClick }) {
   const isIn = t.type === 'income';
   const d = new Date(t.date);
   return (
     <div className={`txn ${isIn ? 'income' : 'expense'}`} onClick={onClick}>
-      <TxnIcon icon={t.icon} />
-      <div className="meta">
-        <div className="name">{t.name}</div>
-        <div className="sub">{t.category}{t.sub ? ` · ${t.sub}` : ''} · {dayLabel(d)} {timeLabel(d)}</div>
+      <div className="txn-top">
+        <TxnIcon icon={t.icon} size={48} />
+        <div className="txn-name">{t.name}</div>
+        <div className={`txn-amt ${isIn ? 'income' : 'expense'}`}>
+          {isIn ? '+' : '−'}{fmtINR(t.amount, { withFrac: false })}
+        </div>
       </div>
-      <AccountBadge account={t.account} />
-      <div className={`amt ${isIn ? 'income' : 'expense'}`}>
-        {isIn ? '+' : '−'}{fmtINR(t.amount, { withFrac: false })}
+      <div className="txn-divider" />
+      <div className="txn-foot">
+        <div className="txn-foot-left">
+          {t.sub && (
+            <span className="txn-foot-item">
+              <SubBadge icon={t.subIcon} name={t.sub} size={20} />
+              <span className="txn-foot-label">{t.sub}</span>
+            </span>
+          )}
+          <span className="txn-foot-item">
+            <AccountBadge account={t.account} size={20} />
+            <span className="txn-foot-label">{t.account}</span>
+          </span>
+        </div>
+        <span className="txn-date-chip">{dayLabel(d)} · {timeLabel(d)}</span>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 // ── Day header ────────────────────────────────────────────────────────
@@ -243,7 +279,7 @@ Object.assign(window, {
   hexToRgbTriplet,
   fmtINR, fmtParts, isSameDay, dayLabel, timeLabel,
   filterByPeriod, summarize, groupByDay,
-  Background, GlassCard, PeriodTabs, TypeTabs, TxnRow, TxnIcon, DayHead, AccountBadge,
+  Background, GlassCard, PeriodTabs, TypeTabs, TxnRow, TxnIcon, SubBadge, DayHead, AccountBadge,
   ThemeToggle,
 });
 
