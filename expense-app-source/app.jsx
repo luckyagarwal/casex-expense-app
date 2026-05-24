@@ -83,7 +83,7 @@ function mapTxns(rows) {
     category: r.category || '',
     sub: r.subcategory || null,
     account: r.account || '',
-    date: r.date && r.date.length === 10 ? r.date + 'T12:00:00' : r.date,
+    date: r.date,
     icon: resolveIcon(r.categoryIcon || r.subcategoryIcon, r.txnType === 'income' ? '💼' : '💸'),
     categoryId: r.categoryId, subcategoryId: r.subcategoryId, accountId: r.accountId,
   }));
@@ -165,7 +165,7 @@ function App() {
       amount: form.amount,
       note: form.name || '',
       txnType: form.type,
-      date: form.date ? new Date(form.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      date: form.date || new Date().toISOString(),
       categoryId: cat ? cat.id : null,
       subcategoryId: sub ? sub.id : null,
       accountId: acc ? acc.id : null,
