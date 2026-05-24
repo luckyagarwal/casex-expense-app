@@ -219,7 +219,7 @@ function TxnRow({ t, onClick }) {
       <TxnIcon icon={t.icon} />
       <div className="meta">
         <div className="name">{t.name}</div>
-        <div className="sub">{t.category}{t.sub ? ` · ${t.sub}` : ''} · {timeLabel(d)}</div>
+        <div className="sub">{t.category}{t.sub ? ` · ${t.sub}` : ''} · {dayLabel(d)} {timeLabel(d)}</div>
       </div>
       <AccountBadge account={t.account} />
       <div className={`amt ${isIn ? 'income' : 'expense'}`}>
