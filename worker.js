@@ -106,7 +106,7 @@ async function handleD1Bootstrap(env) {
 
   const [categories, subcategories, accounts, recentExpenses] = await Promise.all([
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM categories ORDER BY name"),
-    d1All(env.DB, "SELECT id,name,category_id,icon_url FROM subcategories ORDER BY name"),
+    d1All(env.DB, "SELECT id,name,icon_url FROM subcategories ORDER BY name"),
     d1All(env.DB, "SELECT id,name,emoji,icon_url FROM accounts ORDER BY name"),
     d1All(env.DB,
       "SELECT e.category_id,e.subcategory_id,e.account_id FROM expenses e ORDER BY e.date DESC LIMIT 20"),
