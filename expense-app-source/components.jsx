@@ -236,30 +236,38 @@ function SubBadge({ icon, name, size = 20 }) {
 function TxnRow({ t, onClick }) {
   const isIn = t.type === 'income';
   const d = new Date(t.date);
+  // Footer: show sub if present, else fall back to category
+  const footerLeft = t.sub
+    ? { icon: t.subIcon, name: t.sub, isSub: true }
+    : t.category
+      ? { icon: t.icon, name: t.category, isSub: false }
+      : null;
   return (
     <div className={`txn ${isIn ? 'income' : 'expense'}`} onClick={onClick}>
       <div className="txn-top">
-        <TxnIcon icon={t.icon} size={48} />
-        <div className="txn-name">{t.name}</div>
+        <div className="txn-name-col">
+          <div className={`txn-name ${isIn ? 'income' : ''}`}>{t.name}</div>
+          <div className="txn-subtime">{dayLabel(d)} · {timeLabel(d)}</div>
+        </div>
         <div className={`txn-amt ${isIn ? 'income' : 'expense'}`}>
           {isIn ? '+' : '−'}{fmtINR(t.amount, { withFrac: false })}
         </div>
       </div>
       <div className="txn-divider" />
       <div className="txn-foot">
-        <div className="txn-foot-left">
-          {t.sub && (
-            <span className="txn-foot-item">
-              <SubBadge icon={t.subIcon} name={t.sub} size={20} />
-              <span className="txn-foot-label">{t.sub}</span>
-            </span>
-          )}
+        {footerLeft && (
+          <span className="txn-foot-item">
+            <SubBadge icon={footerLeft.icon} name={footerLeft.name} size={20} />
+            <span className="txn-foot-label">{footerLeft.name}</span>
+          </span>
+        )}
+        {footerLeft && t.account && <span className="txn-foot-sep">·</span>}
+        {t.account && (
           <span className="txn-foot-item">
             <AccountBadge account={t.account} size={20} />
             <span className="txn-foot-label">{t.account}</span>
           </span>
-        </div>
-        <span className="txn-date-chip">{dayLabel(d)} · {timeLabel(d)}</span>
+        )}
       </div>
     </div>
   );

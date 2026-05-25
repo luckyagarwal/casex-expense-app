@@ -425,45 +425,62 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
   font-size: 22px; flex-shrink: 0;
   box-shadow: inset 0 1px 0 var(--inner-highlight);
 }
-/* two-row card layout */
+/* ── Transaction card — Name + time stacked layout ───────────────── */
 .txn-top {
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px 12px;
+  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+  padding: 10px 13px 7px;
+}
+.txn-name-col {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
 }
 .txn-name {
-  flex: 1; min-width: 0;
-  font-size: 17px; font-weight: 600; color: var(--text-1);
-  letter-spacing: -0.01em; word-break: break-word;
+  font-family: var(--font-display); font-size: 19px; font-weight: 700;
+  color: var(--text-1); letter-spacing: -0.02em;
+  word-break: break-word; line-height: 1.2;
+}
+.txn-name.income { color: var(--income); }
+.txn-subtime {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--text-2);
+  letter-spacing: 0.01em; white-space: nowrap;
 }
 .txn-amt {
-  font-family: var(--font-display); font-weight: 700; font-size: 18px;
+  font-family: var(--font-display); font-weight: 700; font-size: 19px;
   letter-spacing: -0.02em; white-space: nowrap; font-feature-settings: "tnum";
-  flex-shrink: 0;
+  flex-shrink: 0; align-self: start; padding-top: 1px;
 }
 .txn-amt.income  { color: var(--income); }
 .txn-amt.expense { color: var(--text-1); }
 .txn-divider {
-  margin: 0 16px;
-  border: none;
-  border-top: 1px dashed rgba(255,255,255,0.10);
+  margin: 7px 13px 6px;
+  height: 1px; border: none;
+  background: repeating-linear-gradient(to right,
+    transparent 0 3px,
+    rgba(255,255,255,0.09) 3px 7px);
 }
-.app[data-theme="light"] .txn-divider { border-top-color: rgba(0,0,0,0.10); }
+.app[data-theme="light"] .txn-divider {
+  background: repeating-linear-gradient(to right,
+    transparent 0 3px,
+    rgba(0,0,0,0.09) 3px 7px);
+}
 .txn-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 16px 12px; gap: 8px;
+  display: flex; align-items: center;
+  padding: 0 13px 9px; gap: 8px;
 }
-.txn-foot-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .txn-foot-item { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.txn-foot-sep { font-size: 12px; color: var(--text-3); flex-shrink: 0; }
 .txn-foot-label {
-  font-size: 12px; font-weight: 600; color: var(--text-2);
-  letter-spacing: 0.01em; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; font-weight: 500; color: var(--text-2);
+  letter-spacing: 0.01em; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.txn-date-chip {
-  font-size: 11.5px; font-weight: 700; color: var(--text-1); white-space: nowrap;
-  letter-spacing: 0.01em; flex-shrink: 0;
+
+/* ── Transaction chip (detail sheet) ────────────────────────────── */
+.txn-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px 4px 7px; border-radius: 20px;
   background: var(--glass-fill-strong);
-  padding: 3px 9px; border-radius: 20px;
   box-shadow: inset 0 1px 0 var(--inner-highlight);
+  font-size: 12px; font-weight: 500; color: var(--text-1);
+  letter-spacing: 0.01em;
 }
 
 /* ── Transaction detail sheet ────────────────────────────────────── */

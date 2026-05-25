@@ -1597,6 +1597,11 @@ function TxnDetailSheet({ txn, onClose, onEdit, onDelete, catalog }) {
   const timeStr = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12: true });
   const accObj = (catalog?.accounts || []).find(a => a.name === txn.account);
   const subObj = (catalog?.subcategories || []).find(s => s.name === txn.sub);
+  const catObj = (catalog?.categories || []).find(c => c.name === txn.category);
+
+  // Heading: user note if different from category, else category name
+  const hasNote = txn.name && txn.name !== txn.category;
+  const heading = hasNote ? txn.name : (txn.category || txn.name);
 
   return (
     <>
@@ -1604,49 +1609,36 @@ function TxnDetailSheet({ txn, onClose, onEdit, onDelete, catalog }) {
       <div className="sheet show" style={{ zIndex: 46 }}>
         <div className="grabber" />
 
-        <div className="txn-detail-hero">
-          <div className="txn-detail-icon">
-            {txn.icon && txn.icon.startsWith('<svg')
-              ? <span dangerouslySetInnerHTML={{ __html: txn.icon.replace('<svg ', '<svg width="28" height="28" ') }} />
-              : <span>{txn.icon || (isIn ? '💼' : '💸')}</span>
-            }
-          </div>
-          <div className="txn-detail-meta">
-            <div className="txn-detail-name">{txn.name}</div>
-            <div className="txn-detail-sub">{txn.category}{txn.sub ? ` · ${txn.sub}` : ''}</div>
-          </div>
-          <div className={`txn-detail-amount ${isIn ? 'income' : 'expense'}`}>
+        {/* Amount + heading */}
+        <div style={{ padding: '4px 4px 18px' }}>
+          <div className={`txn-detail-amount ${isIn ? 'income' : 'expense'}`} style={{ marginBottom: 6 }}>
             {isIn ? '+' : '−'}{fmtINR(txn.amount, { withFrac: false })}
+          </div>
+          <div className="txn-detail-name" style={{ fontSize: 22, fontWeight: 700 }}>{heading}</div>
+          {/* Chips: category / subcategory / account — only if they exist */}
+          <div style={{ display:'flex', flexWrap:'wrap', gap: 7, marginTop: 12 }}>
+            {txn.category && (
+              <span className="txn-chip">
+                {catObj?.icon && <ItemIcon icon={catObj.icon} size={14} />}
+                {txn.category}
+              </span>
+            )}
+            {txn.sub && (
+              <span className="txn-chip">
+                {subObj?.icon && <ItemIcon icon={subObj.icon} size={14} />}
+                {txn.sub}
+              </span>
+            )}
+            {txn.account && (
+              <span className="txn-chip">
+                <AccountBadge account={txn.account} size={16} />
+                {txn.account}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="txn-detail-rows">
-          {txn.account && (
-            <div className="txn-detail-row">
-              <span className="txn-detail-row-label">Account</span>
-              <span className="txn-detail-row-val" style={{ display:'flex', alignItems:'center', gap: 7 }}>
-                {accObj?.icon && (
-                  <span style={{ width:20, height:20, borderRadius:6, overflow:'hidden', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <ItemIcon icon={accObj.icon} size={18} />
-                  </span>
-                )}
-                {txn.account}
-              </span>
-            </div>
-          )}
-          {txn.sub && (
-            <div className="txn-detail-row">
-              <span className="txn-detail-row-label">Subcategory</span>
-              <span className="txn-detail-row-val" style={{ display:'flex', alignItems:'center', gap: 7 }}>
-                {subObj?.icon && (
-                  <span style={{ width:20, height:20, borderRadius:6, overflow:'hidden', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <ItemIcon icon={subObj.icon} size={18} />
-                  </span>
-                )}
-                {txn.sub}
-              </span>
-            </div>
-          )}
           <div className="txn-detail-row">
             <span className="txn-detail-row-label">Date</span>
             <span className="txn-detail-row-val">{dateStr}</span>
