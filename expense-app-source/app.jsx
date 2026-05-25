@@ -67,10 +67,20 @@ function iconToApiPayload(iconStr) {
 }
 
 function mapCatalog(boot) {
+  const cats = (boot.categories || []).map(c => ({ id: c.id, name: c.name, icon: resolveIcon(c.icon, '📁') }));
+  const subs = (boot.subcategories || []).map(s => ({ id: s.id, name: s.name, icon: resolveIcon(s.icon, '🏷️') }));
+  const accs = (boot.accounts || []).map(a => ({ id: a.id, name: a.name, icon: resolveIcon(a.icon, '🏦'), tail: null }));
+  const r = boot.recent || {};
+  const catById = new Map(cats.map(c => [c.id, c.name]));
+  const subById = new Map(subs.map(s => [s.id, s.name]));
+  const accById = new Map(accs.map(a => [a.id, a.name]));
   return {
-    categories:    (boot.categories || []).map(c => ({ id: c.id, name: c.name, icon: resolveIcon(c.icon, '📁') })),
-    subcategories: (boot.subcategories || []).map(s => ({ id: s.id, categoryId: s.categoryId, name: s.name, icon: resolveIcon(s.icon, '🏷️') })),
-    accounts:      (boot.accounts || []).map(a => ({ id: a.id, name: a.name, icon: resolveIcon(a.icon, '🏦'), tail: null })),
+    categories: cats, subcategories: subs, accounts: accs,
+    recent: {
+      categories:    (r.categories    || []).map(id => catById.get(id)).filter(Boolean),
+      subcategories: (r.subcategories || []).map(id => subById.get(id)).filter(Boolean),
+      accounts:      (r.accounts      || []).map(id => accById.get(id)).filter(Boolean),
+    },
   };
 }
 

@@ -828,7 +828,7 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .save-btn.income { background: var(--income); color: #052213; box-shadow: 0 12px 30px rgba(123,216,143,0.30), inset 0 1px 0 rgba(255,255,255,0.5); }
 
 .datetime-row {
-  display: flex; gap: 10px;
+  display: flex; gap: 10px; margin-top: 8px;
 }
 .datetime-part {
   flex: 1; padding: 12px 14px !important;
@@ -841,6 +841,24 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 }
 [data-theme="light"] .datetime-input { color-scheme: light; }
 [data-theme="dark"]  .datetime-input { color-scheme: dark; }
+
+.date-quick-row {
+  display: flex; gap: 8px; margin-bottom: 0;
+}
+.date-quick-btn {
+  padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+  background: var(--glass-fill-strong); color: var(--text-2);
+  transition: background 120ms ease, color 120ms ease;
+}
+.date-quick-btn.active { background: var(--accent); color: #fff; }
+.date-quick-btn:hover:not(.active) { background: var(--glass-fill-strong); color: var(--text-1); }
+
+.picker-section { margin-bottom: 4px; }
+.picker-section-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 8px; padding: 0 2px;
+}
 
 /* ── Analytics ─────────────────────────────────────────────────────── */
 .chart-card { padding: 18px; margin-bottom: 16px; }

@@ -1394,6 +1394,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
         <CompactPicker
           label="Category"
           items={cats}
+          recent={isIncome ? [] : (catalog.recent?.categories || [])}
           value={cat}
           onChange={v => { setCat(v); if (v) setErrors(e => ({ ...e, cat: null })); }}
           placeholder="Pick a category…"
@@ -1410,6 +1411,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
           <CompactPicker
             label="Subcategory"
             items={subs}
+            recent={catalog.recent?.subcategories || []}
             value={sub}
             onChange={setSub}
             placeholder="Pick a subcategory…"
@@ -1424,6 +1426,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
         <CompactPicker
           label="Account"
           items={accs}
+          recent={catalog.recent?.accounts || []}
           value={acc}
           onChange={v => { setAcc(v); if (v) setErrors(e => ({ ...e, acc: null })); }}
           placeholder="Pick an account…"
@@ -1437,6 +1440,18 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
 
         <div className="field">
           <div className="lbl">Date &amp; time</div>
+          <div className="date-quick-row">
+            {[['Today', 0], ['Yesterday', -1], ['2 days ago', -2]].map(([label, offset]) => {
+              const d = new Date(); d.setDate(d.getDate() + offset);
+              const pad = n => String(n).padStart(2, '0');
+              const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+              return (
+                <button key={label} className={`date-quick-btn${dateVal === v ? ' active' : ''}`} onClick={() => setDateVal(v)}>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className="datetime-row">
             <GlassCard className="datetime-part">
               <Icon name="calendar" size={14} color="var(--text-3)" />
@@ -1470,11 +1485,12 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
 }
 
 // ── Compact picker — shows selected value; tap to open full overlay ──
-function CompactPicker({ label, items, value, onChange, placeholder, emptyText, iconFor, hasError, errorMsg }) {
+function CompactPicker({ label, items, value, onChange, placeholder, emptyText, iconFor, hasError, errorMsg, recent = [] }) {
   const [open, setOpen] = useStateS(false);
   const [q, setQ] = useStateS('');
   const [shaking, setShaking] = useStateS(false);
   const filtered = items.filter(i => !q.trim() || i.toLowerCase().includes(q.toLowerCase()));
+  const recentFiltered = recent.filter(r => items.includes(r));
   const selIcon = value && iconFor ? iconFor(value) : null;
 
   useEffectS(() => {
@@ -1524,26 +1540,46 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
               />
               {q && <div onClick={() => setQ('')} style={{ cursor:'pointer', color:'var(--text-3)' }}><Icon name="x" size={12} /></div>}
             </div>
+            {!q && recentFiltered.length > 0 && (
+              <div className="picker-section">
+                <div className="picker-section-lbl">Recent</div>
+                <div className="chip-row">
+                  {recentFiltered.map(item => {
+                    const icon = iconFor ? iconFor(item) : null;
+                    return (
+                      <div key={item} className={`chip ${value === item ? 'active' : ''}`}
+                        onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
+                        {icon && <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}><ItemIcon icon={icon} size={16} /></span>}
+                        <span>{item}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {filtered.length === 0 ? (
               <div style={{ fontSize:12, color:'var(--text-3)', padding:'12px 14px', borderRadius:12, background:'var(--glass-fill-soft)' }}>
                 {emptyText || (q ? `No matches for "${q}"` : 'No items yet')}
               </div>
             ) : (
-              <div className="chip-row">
-                {filtered.map(item => {
-                  const icon = iconFor ? iconFor(item) : null;
-                  return (
-                    <div key={item} className={`chip ${value === item ? 'active' : ''}`}
-                      onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
-                      {icon && (
-                        <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}>
-                          <ItemIcon icon={icon} size={16} />
-                        </span>
-                      )}
-                      <span>{item}</span>
-                    </div>
-                  );
-                })}
+              <div>
+                {!q && recentFiltered.length > 0 && <div className="picker-section-lbl" style={{marginTop:12}}>All</div>}
+                <div className="chip-row">
+                  {filtered.map(item => {
+                    const icon = iconFor ? iconFor(item) : null;
+                    return (
+                      <div key={item} className={`chip ${value === item ? 'active' : ''}`}
+                        onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
+                        {icon && (
+                          <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}>
+                            <ItemIcon icon={icon} size={16} />
+                          </span>
+                        )}
+                        <span>{item}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
