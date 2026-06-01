@@ -145,6 +145,24 @@ function DesktopApp() {
     } catch (e) { console.warn('txns failed', e); }
   }, []);
 
+  const searchTxns = useCallbackD(async ({ from, to, category, subcat, account, query, sort }) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const params = new URLSearchParams({
+      type: 'expense',
+      from,
+      to,
+      timeZone: tz,
+      sortBy: sort && sort.startsWith('amount') ? 'amount' : 'date',
+      sortDir: sort === 'asc' || sort === 'amount-asc' ? 'asc' : 'desc',
+    });
+    if (category) params.set('category', category);
+    if (subcat) params.set('subcategory', subcat);
+    if (account) params.set('account', account);
+    if (query && query.trim()) params.set('q', query.trim());
+    const r = await apiJsonD('/api/d1/expenses?' + params.toString());
+    return mapTxnsD(r.expenses);
+  }, []);
+
   useEffectD(() => {
     (async () => {
       setLoading(true);
@@ -271,7 +289,7 @@ function DesktopApp() {
           {view==='home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
           {view==='transactions' && <TransactionsDesktop txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
           {view==='analytics'    && <AnalyticsDesktop txns={txns} period={period} setPeriod={setPeriod} />}
-          {view==='search'       && <SearchDesktop txns={txns} onEdit={openDetail} />}
+          {view==='search'       && <SearchDesktop txns={txns} onEdit={openDetail} onSearch={searchTxns} />}
           {view==='manage'       && <ManageDesktop catalog={catalog} setCatalog={setCatalogApi} onBack={()=>setView('home')} />}
           {view==='appearance'   && <AppearanceDesktop t={t} setTweak={setTweak} />}
         </div>
@@ -711,8 +729,8 @@ function AnalyticsDesktop({ txns, period, setPeriod }) {
 /* ──────────────────────────────────────────────────────────────────────
    SEARCH / MANAGE / APPEARANCE — reuse mobile screens
    ────────────────────────────────────────────────────────────────────── */
-function SearchDesktop({ txns, onEdit }) {
-  return <div className="dt-search"><SearchScreen txns={txns} onEdit={onEdit}/></div>;
+function SearchDesktop({ txns, onEdit, onSearch }) {
+  return <div className="dt-search"><SearchScreen txns={txns} onEdit={onEdit} onSearch={onSearch}/></div>;
 }
 
 function ManageDesktop({ catalog, setCatalog, onBack }) {

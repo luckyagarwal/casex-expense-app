@@ -1002,7 +1002,7 @@ function IconPickerSheet({ current, onPick, onClose }) {
    SEARCH — mirrors existing app's filter-based search
    (date range required, category/sub/account filters, sort, run button)
    ────────────────────────────────────────────────────────────────────── */
-function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
+function SearchScreen({ txns, theme, onToggleTheme, onEdit, onSearch }) {
   // default range: last 30 days
   const defaultFrom = useMemoS(() => {const d = new Date();d.setDate(d.getDate() - 30);return d.toISOString().slice(0, 10);}, []);
   const defaultTo = useMemoS(() => new Date().toISOString().slice(0, 10), []);
@@ -1012,36 +1012,68 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
   const [category, setCategory] = useStateS(''); // '' = all
   const [subcat, setSubcat] = useStateS(''); // '' = all (within category)
   const [account, setAccount] = useStateS(''); // '' = all
+  const [query, setQuery] = useStateS('');
   const [dateSort, setDateSort] = useStateS('desc'); // desc | asc
   const [amtSort, setAmtSort] = useStateS(''); // '' | amount-desc | amount-asc
   const [ran, setRan] = useStateS(false);
   const [results, setResults] = useStateS([]);
   const [err, setErr] = useStateS(null);
+  const [searching, setSearching] = useStateS(false);
 
   // derive category / subcategory / account options from existing expenses
-  const allCats = useMemoS(() => [...new Set(txns.filter((t) => t.type === 'expense').map((t) => t.category))], [txns]);
-  const allAccs = useMemoS(() => [...new Set(txns.filter((t) => t.type === 'expense').map((t) => t.account))], [txns]);
-  const allSubs = useMemoS(() => [...new Set(txns.filter((t) => t.type === 'expense' && t.sub).map((t) => t.sub))], [txns]);
+  const allCats = useMemoS(() => {
+    const seen = new Map();
+    txns.filter((t) => t.type === 'expense' && t.category).forEach((t) => seen.set(t.categoryId || t.category, t.category));
+    return [...seen].map(([value, label]) => ({ value, label }));
+  }, [txns]);
+  const allAccs = useMemoS(() => {
+    const seen = new Map();
+    txns.filter((t) => t.type === 'expense' && t.account).forEach((t) => seen.set(t.accountId || t.account, t.account));
+    return [...seen].map(([value, label]) => ({ value, label }));
+  }, [txns]);
+  const allSubs = useMemoS(() => {
+    const seen = new Map();
+    txns.filter((t) => t.type === 'expense' && t.sub).forEach((t) => seen.set(t.subcategoryId || t.sub, t.sub));
+    return [...seen].map(([value, label]) => ({ value, label }));
+  }, [txns]);
   const subsForCat = useMemoS(() => {
     if (!category) return allSubs;
-    return [...new Set(txns.filter((t) => t.category === category && t.sub).map((t) => t.sub))];
+    const seen = new Map();
+    txns
+      .filter((t) => (t.categoryId === category || t.category === category) && t.sub)
+      .forEach((t) => seen.set(t.subcategoryId || t.sub, t.sub));
+    return [...seen].map(([value, label]) => ({ value, label }));
   }, [category, txns, allSubs]);
 
   // reset subcat when category changes
   useEffectS(() => {setSubcat('');}, [category]);
 
-  function runSearch() {
+  async function runSearch() {
     setErr(null);
     if (!from || !to) {setErr('Choose both From and To dates');return;}
     if (from > to) {setErr('From date must be before To date');return;}
 
-    let r = txns.filter((t) => t.type === 'expense');
-    const fromMs = new Date(from + 'T00:00:00').getTime();
-    const toMs = new Date(to + 'T23:59:59').getTime();
-    r = r.filter((t) => {const d = new Date(t.date).getTime();return d >= fromMs && d <= toMs;});
-    if (category) r = r.filter((t) => t.category === category);
-    if (subcat) r = r.filter((t) => t.sub === subcat);
-    if (account) r = r.filter((t) => t.account === account);
+    setSearching(true);
+    let r = [];
+    try {
+      if (onSearch) {
+        r = await onSearch({ from, to, category, subcat, account, query, sort: amtSort || dateSort });
+      } else {
+        r = txns.filter((t) => t.type === 'expense');
+        const fromMs = new Date(from + 'T00:00:00').getTime();
+        const toMs = new Date(to + 'T23:59:59').getTime();
+        const q = query.trim().toLowerCase();
+        r = r.filter((t) => {const d = new Date(t.date).getTime();return d >= fromMs && d <= toMs;});
+        if (category) r = r.filter((t) => t.categoryId === category || t.category === category);
+        if (subcat) r = r.filter((t) => t.subcategoryId === subcat || t.sub === subcat);
+        if (account) r = r.filter((t) => t.accountId === account || t.account === account);
+        if (q) r = r.filter((t) => [t.name, t.category, t.sub, t.account].some((v) => String(v || '').toLowerCase().includes(q)));
+      }
+    } catch (e) {
+      setErr('Search failed. Try again.');
+      setSearching(false);
+      return;
+    }
 
     // sort: amount takes precedence (matches existing applySearchSort)
     const sort = amtSort || dateSort;
@@ -1052,10 +1084,12 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
 
     setResults(r);
     setRan(true);
+    setSearching(false);
   }
 
   function reset() {
     setCategory('');setSubcat('');setAccount('');
+    setQuery('');
     setDateSort('desc');setAmtSort('');
     setFrom(defaultFrom);setTo(defaultTo);
     setRan(false);setResults([]);setErr(null);
@@ -1118,18 +1152,18 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
           <GlassSelect
             value={category} onChange={setCategory}
             placeholder="All categories"
-            options={allCats.map((c) => ({ value: c, label: c }))} />
+            options={allCats} />
           
         </div>
 
         {/* Subcategory — always visible; narrows when a category is picked */}
         {subsForCat.length > 0 &&
         <div className="field">
-            <div className="lbl">Subcategory{category ? ` · in ${category}` : ''}</div>
+            <div className="lbl">Subcategory</div>
             <GlassSelect
             value={subcat} onChange={setSubcat}
-            placeholder={category ? `All subcategories in ${category}` : 'All subcategories'}
-            options={subsForCat.map((s) => ({ value: s, label: s }))} />
+            placeholder="All subcategories"
+            options={subsForCat} />
           
           </div>
         }
@@ -1140,13 +1174,26 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit }) {
           <GlassSelect
             value={account} onChange={setAccount}
             placeholder="All accounts"
-            options={allAccs.map((a) => ({ value: a, label: a }))} />
+            options={allAccs} />
           
         </div>
 
+        <div className="field">
+          <div className="lbl">Text</div>
+          <div className="search-input-wrap">
+            <Icon name="search" size={14} color="currentColor" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') runSearch(); }}
+              placeholder="Search note, category, or account"
+            />
+          </div>
+        </div>
+
         {/* Run */}
-        <button className="save-btn" style={{ marginTop: 6, marginBottom: 22 }} onClick={runSearch}>
-          Search expenses
+        <button className="save-btn" style={{ marginTop: 6, marginBottom: 22 }} onClick={runSearch} disabled={searching}>
+          {searching ? 'Searching…' : 'Search expenses'}
         </button>
 
         {/* Results */}

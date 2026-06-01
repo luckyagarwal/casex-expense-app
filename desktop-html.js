@@ -15,6 +15,8 @@ const HEAD = `<!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=1280" />
 <meta name="theme-color" id="themeColorMeta" content="#050507" />
+<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<link rel="dns-prefetch" href="https://unpkg.com" />
 <title>Expense Tracker — Desktop</title>
 <style>
 /* Glass design system — Monokai Spectrum × Apple Vision (desktop shell) */

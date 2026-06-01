@@ -513,8 +513,8 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v20";
-const OFFLINE_URLS = ["/", "/desktop"];
+const CACHE_NAME = "ne-pwa-v21";
+const OFFLINE_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -556,15 +556,18 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname === "/" || url.pathname === "/desktop") {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
+      (async () => {
+        const cachedResponse = await caches.match(event.request);
+        try {
+          const networkResponse = await fetch(event.request);
           const ct = networkResponse.headers.get("Content-Type") || "";
           if (networkResponse.ok && ct.includes("text/html"))
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
           return networkResponse;
-        }).catch(() => null);
-        return cachedResponse || fetchPromise;
-      })
+        } catch (e) {
+          return cachedResponse || Response.error();
+        }
+      })()
     );
     return;
   }

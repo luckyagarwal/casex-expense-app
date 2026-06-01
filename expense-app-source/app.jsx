@@ -135,6 +135,24 @@ function App() {
     } catch (e) { console.warn('txns failed', e); }
   }, []);
 
+  const searchTxns = useCallbackA(async ({ from, to, category, subcat, account, query, sort }) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const params = new URLSearchParams({
+      type: 'expense',
+      from,
+      to,
+      timeZone: tz,
+      sortBy: sort && sort.startsWith('amount') ? 'amount' : 'date',
+      sortDir: sort === 'asc' || sort === 'amount-asc' ? 'asc' : 'desc',
+    });
+    if (category) params.set('category', category);
+    if (subcat) params.set('subcategory', subcat);
+    if (account) params.set('account', account);
+    if (query && query.trim()) params.set('q', query.trim());
+    const r = await apiJson('/api/d1/expenses?' + params.toString());
+    return mapTxns(r.expenses);
+  }, []);
+
   useEffectA(() => {
     (async () => {
       setLoading(true);
@@ -258,7 +276,7 @@ function App() {
           <AnalyticsScreen txns={txns} period={period} setPeriod={setPeriod} theme={t.theme} onToggleTheme={toggleTheme} />
         )}
         {view === 'search' && (
-          <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
+          <SearchScreen txns={txns} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} onSearch={searchTxns} />
         )}
         {view === 'manage' && (
           <ManageScreen catalog={catalog} setCatalog={setCatalogApi} onBack={() => setView('home')} />

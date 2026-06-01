@@ -19,6 +19,8 @@ const HEAD = `<!doctype html>
 <meta name="format-detection" content="telephone=no" />
 <meta name="theme-color" id="themeColorMeta" content="#050507" />
 <link rel="manifest" href="/manifest.json" />
+<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<link rel="dns-prefetch" href="https://unpkg.com" />
 <title>Expense Tracker</title>
 <style>
 /* Glass design system — Monokai Spectrum × Apple Vision (mobile shell) */
