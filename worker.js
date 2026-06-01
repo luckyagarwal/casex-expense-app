@@ -414,7 +414,14 @@ Be extremely accurate:
 2. Select the closest category/subcategory.
 3. Map transaction type correctly. Income is money received (e.g. "earned", "salary received", "received salary", "freelance gig"). Expense is money spent or paid out (e.g. "paid salary to kajal", "salary paid", "rent paid", "bought lunch"). "Salary" by itself is income, but "salary paid" or "paid salary" is an expense.
 4. The "note" field should be the specific noun, subject, person, or item of the transaction (e.g. "Kajal", "Internet bill", "Keyboard", "Freelance gig"). Do NOT throw away specific names, nouns, or subjects. Only if no custom subject or specific noun is present, default to the matched subcategory name or category name. Do NOT include amounts, dates, times, relative terms (like "now", "today", "5pm"), or filler words (like "spend", "paid", "using").
-5. Map account names accurately. Inputs like "yes bank" or "yes" match "YES BANK R" or "YES BANK I". Inputs like "icici" or "icici bank" match "ICICI Bank" or "ICICI MMT". Map to the closest available account name.`;
+5. Map account names accurately. Inputs like "yes bank" or "yes" match "YES BANK R" or "YES BANK I". Inputs like "icici" or "icici bank" match "ICICI Bank" or "ICICI MMT". Map to the closest available account name.
+6. In this app, category and subcategory columns are independent and not related. Analyze both separately. Direct mapping rules:
+   - Keywords "lunch", "dinner", "restaurant", "zomato", "swiggy" map to "Food" category.
+   - Keywords "party", "drinks" map to "Social Life" category.
+   - Keywords "alcohol", "juices", "drinks" map to "Beverages" subcategory.
+   - Keywords "wifi", "subscription", "mobile recharge" map to "Subscription" category.
+   - Keyword "instamart" maps to "Household" category and "instamart" subcategory.
+   - Keyword "amazon" maps to "Household" category and "amazon" subcategory.`;
 
   try {
     const inputPayload = {
@@ -556,7 +563,7 @@ async function parseHeuristicNaturalLanguage(env, text, categories, subcategorie
   const pad = n => String(n).padStart(2, "0");
   const dateStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}T${pad(targetDate.getHours())}:${pad(targetDate.getMinutes())}:00`;
 
-  // 5. Match Category & Subcategory
+  // 5. Match Category & Subcategory (Independent matching)
   let categoryId = null;
   let subcategoryId = null;
   let categoryName = "";
@@ -565,79 +572,35 @@ async function parseHeuristicNaturalLanguage(env, text, categories, subcategorie
   const words = cleanText.split(/[^a-zA-Z0-9]/).map(w => w.trim()).filter(w => w.length > 0);
   const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // Sort subcategories by length descending to match longer specific names first
-  const sortedSubcategories = [...subcategories].sort((a, b) => b.name.length - a.name.length);
-  let bestSub = null;
-  for (const s of sortedSubcategories) {
-    const sName = s.name.toLowerCase();
-    if (words.includes(sName)) {
-      bestSub = s;
+  // A. Match Category by explicit keywords first
+  const KEYWORD_TO_CAT = {
+    "lunch": "food", "dinner": "food", "restaurant": "food", "zomato": "food", "swiggy": "food",
+    "party": "social life", "drinks": "social life",
+    "wifi": "subscription", "subscription": "subscription", "mobile recharge": "subscription",
+    "instamart": "household", "amazon": "household"
+  };
+
+  let matchedCatName = "";
+  for (const [kw, catVal] of Object.entries(KEYWORD_TO_CAT)) {
+    const kwRegex = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
+    if (kwRegex.test(cleanText)) {
+      matchedCatName = catVal;
       break;
     }
   }
-  if (!bestSub) {
-    for (const s of sortedSubcategories) {
-      const sName = s.name.toLowerCase();
-      const subRegex = new RegExp(`\\b${escapeRegExp(sName)}\\b`, "i");
-      if (subRegex.test(cleanText)) {
-        bestSub = s;
-        break;
-      }
-    }
-  }
-  if (!bestSub) {
-    for (const s of sortedSubcategories) {
-      const sName = s.name.toLowerCase();
-      if (cleanText.includes(sName)) {
-        bestSub = s;
-        break;
-      }
+
+  if (matchedCatName) {
+    const cat = categories.find(c => c.name.toLowerCase() === matchedCatName);
+    if (cat) {
+      categoryId = cat.id;
+      categoryName = cat.name;
     }
   }
 
-  if (bestSub) {
-    subcategoryId = bestSub.id;
-    subcategoryName = bestSub.name;
-    
-    // Check D1 recent associations first
-    const association = await d1First(env.DB, 
-      "SELECT category_id FROM expenses WHERE subcategory_id = ? ORDER BY date DESC LIMIT 1", 
-      [bestSub.id]
-    );
-    if (association && association.category_id) {
-      const parentCat = categories.find(c => c.id === association.category_id);
-      if (parentCat) {
-        categoryId = parentCat.id;
-        categoryName = parentCat.name;
-      }
-    }
-    
-    // Heuristic fallback mapping
-    if (!categoryId) {
-      const SUB_TO_CAT_MAP = {
-        "lunch": "food", "dinner": "food", "beverages": "food", "eating out": "food", "snacking": "food", "swiggy": "food",
-        "amazon": "household", "appliances": "household", "blinkit": "household", "country delight": "household",
-        "fruits": "household", "grocery": "household", "instamart": "household", "kitchen": "household",
-        "vegetables": "household", "zepto": "household",
-        "cab": "transport", "fuel": "transport", "metro": "transport", "tax": "transport",
-        "cosmetics": "beauty", "haircut": "health", "medicine": "health", "entertainment": "subscription",
-        "mobile recharge": "subscription", "wifi": "subscription", "movie": "culture", "stay": "holiday",
-        "travel": "holiday", "school supplies": "education", "salary": "salary", "clothing": "shopping"
-      };
-      const catKey = SUB_TO_CAT_MAP[subcategoryName.toLowerCase()];
-      if (catKey) {
-        const parentCat = categories.find(c => c.name.toLowerCase() === catKey);
-        if (parentCat) {
-          categoryId = parentCat.id;
-          categoryName = parentCat.name;
-        }
-      }
-    }
-  }
-
+  // If not matched by keywords, match by category names (sorted by length descending)
   if (!categoryId) {
-    let bestCat = null;
     const sortedCategories = [...categories].sort((a, b) => b.name.length - a.name.length);
+    let bestCat = null;
     for (const c of sortedCategories) {
       const cName = c.name.toLowerCase();
       if (words.includes(cName)) {
@@ -667,6 +630,104 @@ async function parseHeuristicNaturalLanguage(env, text, categories, subcategorie
     if (bestCat) {
       categoryId = bestCat.id;
       categoryName = bestCat.name;
+    }
+  }
+
+  // B. Match Subcategory by explicit keywords first
+  const KEYWORD_TO_SUB = {
+    "alcohol": "beverages", "juices": "beverages", "drinks": "beverages",
+    "wifi": "wifi", "mobile recharge": "wifi",
+    "instamart": "instamart", "amazon": "amazon"
+  };
+
+  let matchedSubName = "";
+  for (const [kw, subVal] of Object.entries(KEYWORD_TO_SUB)) {
+    const kwRegex = new RegExp(`\\b${escapeRegExp(kw)}\\b`, "i");
+    if (kwRegex.test(cleanText)) {
+      matchedSubName = subVal;
+      break;
+    }
+  }
+
+  if (matchedSubName) {
+    const sub = subcategories.find(s => s.name.toLowerCase() === matchedSubName);
+    if (sub) {
+      subcategoryId = sub.id;
+      subcategoryName = sub.name;
+    }
+  }
+
+  // If not matched by keywords, match by subcategory names (sorted by length descending)
+  if (!subcategoryId) {
+    const sortedSubcategories = [...subcategories].sort((a, b) => b.name.length - a.name.length);
+    let bestSub = null;
+    for (const s of sortedSubcategories) {
+      const sName = s.name.toLowerCase();
+      if (words.includes(sName)) {
+        bestSub = s;
+        break;
+      }
+    }
+    if (!bestSub) {
+      for (const s of sortedSubcategories) {
+        const sName = s.name.toLowerCase();
+        const subRegex = new RegExp(`\\b${escapeRegExp(sName)}\\b`, "i");
+        if (subRegex.test(cleanText)) {
+          bestSub = s;
+          break;
+        }
+      }
+    }
+    if (!bestSub) {
+      for (const s of sortedSubcategories) {
+        const sName = s.name.toLowerCase();
+        if (cleanText.includes(sName)) {
+          bestSub = s;
+          break;
+        }
+      }
+    }
+    if (bestSub) {
+      subcategoryId = bestSub.id;
+      subcategoryName = bestSub.name;
+    }
+  }
+
+  // C. Post-resolving: if subcategory is matched but category is not, map default category
+  if (subcategoryId && !categoryId) {
+    // Check D1 recent associations first
+    const association = await d1First(env.DB, 
+      "SELECT category_id FROM expenses WHERE subcategory_id = ? ORDER BY date DESC LIMIT 1", 
+      [subcategoryId]
+    );
+    if (association && association.category_id) {
+      const parentCat = categories.find(c => c.id === association.category_id);
+      if (parentCat) {
+        categoryId = parentCat.id;
+        categoryName = parentCat.name;
+      }
+    }
+    
+    // Heuristic fallback mapping
+    if (!categoryId) {
+      const SUB_TO_CAT_MAP = {
+        "lunch": "food", "dinner": "food", "beverages": "food", "eating out": "food", "snacking": "food", "swiggy": "food",
+        "amazon": "household", "appliances": "household", "blinkit": "household", "country delight": "household",
+        "fruits": "household", "grocery": "household", "instamart": "household", "kitchen": "household",
+        "vegetables": "household", "zepto": "household",
+        "cab": "transport", "fuel": "transport", "metro": "transport", "tax": "transport",
+        "cosmetics": "beauty", "haircut": "health", "medicine": "health", "entertainment": "subscription",
+        "mobile recharge": "subscription", "wifi": "subscription", "movie": "culture", "stay": "holiday",
+        "travel": "holiday", "school supplies": "education", "salary": "salary", "clothing": "shopping"
+      };
+      const catKey = SUB_TO_CAT_MAP[subcategoryName.toLowerCase()];
+      if (catKey) {
+        const parentCat = categories.find(c => c.name.toLowerCase() === catKey);
+        if (parentCat) {
+          categoryId = parentCat.id;
+          categoryName = parentCat.name;
+        }
+      }
     }
   }
 
@@ -979,7 +1040,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v22";
+const CACHE_NAME = "ne-pwa-v23";
 const OFFLINE_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
