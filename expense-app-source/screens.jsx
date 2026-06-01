@@ -51,12 +51,13 @@ function QuickAddCard({ onQuickAddSuccess }) {
           </div>
           {error && <span style={{ fontSize: 11, color: 'var(--expense)', fontWeight: 500 }}>{error}</span>}
         </div>
-        <div className="quick-add-input-wrap">
-          <input
+        <div className="quick-add-input-wrap" style={{ alignItems: 'flex-end', padding: '6px 8px' }}>
+          <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             disabled={loading}
-            placeholder='e.g., 220 spend on food lunch at 3pm'
+            maxLength={1000}
+            placeholder="e.g., 220 spend on food lunch at 3pm"
             style={{
               flex: 1,
               background: 'transparent',
@@ -65,6 +66,9 @@ function QuickAddCard({ onQuickAddSuccess }) {
               color: 'var(--text-1)',
               fontSize: 13,
               padding: '6px 8px',
+              height: '72px',
+              fontFamily: 'inherit',
+              resize: 'none',
             }}
           />
           <button 
@@ -72,6 +76,7 @@ function QuickAddCard({ onQuickAddSuccess }) {
             disabled={loading || !text.trim()} 
             className={`quick-add-btn ${loading ? 'loading' : ''}`}
             aria-label="Submit Quick Add"
+            style={{ marginBottom: 4 }}
           >
             {loading ? (
               <span className="quick-add-spinner"></span>
