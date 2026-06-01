@@ -270,6 +270,21 @@ html, body {
 .dt-manage .txn-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .dt-manage .manage-row { min-width: 0; }
 .dt-manage .manage-row .name { font-size: 14.5px; }
+.dt-manage .manage-add-card {
+  max-width: 560px;
+  margin-bottom: 18px;
+}
+.dt-manage .manage-add-fields {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+.dt-manage .manage-add-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+}
+.dt-manage .manage-add-input input {
+  min-height: 64px;
+}
 @media (max-width: 720px) {
   .dt-manage .txn-list { grid-template-columns: 1fr; }
 }

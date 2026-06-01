@@ -689,45 +689,52 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
 
         {/* Add form */}
         {adding &&
-        <GlassCard className="strong" style={{ padding: 14, marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <GlassCard className="strong manage-add-card">
+            <div className="manage-add-head">
+              <div>
+                <div className="manage-add-title">Add {tablabels[tab]}</div>
+                <div className="manage-add-hint">Choose an icon and name it clearly.</div>
+              </div>
+              <button className="manage-add-close" onClick={cancelAdd} title="Cancel"><Icon name="x" size={13} /></button>
+            </div>
+
+            <div className="manage-add-fields">
               <button
+              className="manage-add-icon"
               onClick={() => setIconPickFor('__new')}
-              style={{
-                width: 44, height: 44, borderRadius: 14, border: 'none',
-                background: 'rgba(255,255,255,0.07)', color: 'var(--text-1)',
-                fontSize: 20, cursor: 'pointer', flexShrink: 0,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden'
-              }}
               title="Pick icon">
               {newIcon ? <ItemIcon icon={newIcon} size={24} /> : <span style={{ color: 'var(--text-3)' }}>+</span>}</button>
-              <input
-              placeholder={tablabels[tab] + ' name…'}
-              value={newName} onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => {if (e.key === 'Enter') commitAdd();if (e.key === 'Escape') cancelAdd();}}
-              autoFocus
-              style={{
-                flex: 1, background: 'rgba(255,255,255,0.04)', border: 'none', outline: 'none',
-                padding: '12px 14px', borderRadius: 14, color: 'var(--text-1)',
-                fontFamily: 'var(--font-body)', fontSize: 14,
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)'
-              }} />
-            
+
+              <label className="manage-add-input">
+                <span>Name</span>
+                <input
+                  placeholder={tablabels[tab] + ' name'}
+                  value={newName} onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {if (e.key === 'Enter') commitAdd();if (e.key === 'Escape') cancelAdd();}}
+                  autoFocus
+                />
+              </label>
+
+              {tab === 'accounts' &&
+              <label className="manage-add-input manage-add-tail">
+                  <span>Last 4 digits</span>
+                  <input
+                  inputMode="numeric"
+                  maxLength="4"
+                  placeholder="Optional"
+                  value={newTail}
+                  onChange={(e) => setNewTail(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  onKeyDown={(e) => {if (e.key === 'Enter') commitAdd();if (e.key === 'Escape') cancelAdd();}}
+                />
+                </label>
+              }
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={commitAdd}
-            style={{ flex: 1, padding: '10px 14px', border: 'none', cursor: 'pointer',
-              borderRadius: 999, background: 'rgba(255,255,255,0.95)', color: '#0a0a0d',
-              fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 13 }}>
+
+            <div className="manage-add-actions">
+              <button className="manage-add-primary" onClick={commitAdd}>
                 Add
               </button>
-              <button onClick={cancelAdd}
-            style={{ padding: '10px 18px', border: 'none', cursor: 'pointer',
-              borderRadius: 999, background: 'rgba(255,255,255,0.05)', color: 'var(--text-2)',
-              fontFamily: 'var(--font-body)', fontSize: 13,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+              <button className="manage-add-secondary" onClick={cancelAdd}>
                 Cancel
               </button>
             </div>

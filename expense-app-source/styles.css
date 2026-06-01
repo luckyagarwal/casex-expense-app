@@ -459,6 +459,123 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
 .manage-row .manage-action-btn {
   flex: 0 0 auto;
 }
+
+.manage-add-card {
+  padding: 16px !important;
+  margin-bottom: 14px;
+}
+.manage-add-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.manage-add-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-1);
+}
+.manage-add-hint {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.manage-add-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--glass-fill-soft);
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 var(--inner-highlight);
+}
+.manage-add-fields {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.manage-add-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border: none;
+  background: var(--glass-fill);
+  color: var(--text-1);
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 var(--inner-highlight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.manage-add-input {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.manage-add-input span {
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+.manage-add-input input {
+  width: 100%;
+  min-height: 56px;
+  background: var(--glass-fill-soft);
+  border: none;
+  outline: none;
+  border-radius: 16px;
+  color: var(--text-1);
+  font-family: var(--font-body);
+  font-size: 16px;
+  padding: 0 14px;
+  box-shadow: inset 0 1px 0 var(--inner-highlight);
+}
+.manage-add-input input::placeholder {
+  color: var(--text-3);
+}
+.manage-add-tail {
+  grid-column: 2;
+}
+.manage-add-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+.manage-add-primary,
+.manage-add-secondary {
+  min-height: 44px;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 14px;
+}
+.manage-add-primary {
+  background: var(--surface-active);
+  color: var(--surface-active-fg);
+  box-shadow: 0 8px 18px rgba(var(--accent-rgb), 0.24), inset 0 1px 0 var(--inner-highlight);
+}
+.manage-add-secondary {
+  padding: 0 18px;
+  background: var(--glass-fill-soft);
+  color: var(--text-2);
+  box-shadow: inset 0 1px 0 var(--inner-highlight);
+}
 /* ── Transaction card — Name + time stacked layout ───────────────── */
 .txn-top {
   display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
