@@ -222,6 +222,15 @@ function SubBadge({ icon, name, size = 20 }) {
       />
     );
   }
+  if (icon) {
+    return (
+      <span style={{width:size,height:size,borderRadius:'50%',flexShrink:0,
+        display:'inline-flex',alignItems:'center',justifyContent:'center',
+        background:'rgba(255,255,255,0.08)',fontSize:11}}>
+        {icon}
+      </span>
+    );
+  }
   const hue = SUB_HUES[((name || '').charCodeAt(0) || 0) % SUB_HUES.length];
   return (
     <span style={{width:size,height:size,borderRadius:'50%',flexShrink:0,

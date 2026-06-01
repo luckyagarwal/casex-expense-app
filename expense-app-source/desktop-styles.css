@@ -466,3 +466,9 @@ html, body {
   .dt-an-chart { grid-column: span 1; }
   .dt-hero .balance { font-size: 44px !important; }
 }
+
+/* Quick Add Desktop adjustments */
+.desktop-app .quick-add-card {
+  margin-top: 4px;
+}
+

@@ -368,6 +368,472 @@ async function handleD1Summary(env, url) {
 }
 
 // ----------------------------------------------------------------------------
+// Natural Language Parser (Workers AI + Heuristic Fallback)
+// ----------------------------------------------------------------------------
+
+async function parseNaturalLanguage(env, text, categories, subcategories, accounts, localDateTime) {
+  const currentDate = localDateTime || new Date().toISOString().slice(0, 16);
+
+  if (!env.AI) {
+    console.warn("AI binding not configured. Falling back to heuristic parser.");
+    return parseHeuristicNaturalLanguage(env, text, categories, subcategories, accounts, currentDate);
+  }
+  
+  const systemPrompt = `You are a precise transaction parser for an expense tracker application.
+Analyze the user's natural language input and extract transaction details.
+You will be provided a JSON input containing:
+{
+  "text": "the user's transaction description",
+  "currentDateTime": "YYYY-MM-DDTHH:mm representing the reference time context"
+}
+
+You MUST output a valid JSON object ONLY matching the format below. Do not include any explanations, markdown code blocks, or formatting.
+
+JSON Output Format:
+{
+  "amount": number,
+  "note": string,
+  "txnType": "expense" or "income",
+  "date": string (ISO-like string YYYY-MM-DDTHH:mm representing the transaction time. Resolve relative terms like "today", "yesterday", "at 3pm", "3:30 pm" based on the "currentDateTime" provided in the input),
+  "categoryId": string,
+  "subcategoryId": string or null,
+  "accountId": string
+}
+
+Valid Categories:
+${JSON.stringify(categories.map(c => ({ id: c.id, name: c.name })))}
+
+Valid Subcategories:
+${JSON.stringify(subcategories.map(s => ({ id: s.id, name: s.name })))}
+
+Valid Accounts:
+${JSON.stringify(accounts.map(a => ({ id: a.id, name: a.name })))}
+
+Be extremely accurate:
+1. Parse relative days (yesterday, today) and specific times (at 3pm) correctly based on currentDateTime.
+2. Select the closest category/subcategory.
+3. Map transaction type correctly. Income is money received (e.g. "earned", "salary received", "received salary", "freelance gig"). Expense is money spent or paid out (e.g. "paid salary to kajal", "salary paid", "rent paid", "bought lunch"). "Salary" by itself is income, but "salary paid" or "paid salary" is an expense.
+4. The "note" field should be the specific noun, subject, person, or item of the transaction (e.g. "Kajal", "Internet bill", "Keyboard", "Freelance gig"). Do NOT throw away specific names, nouns, or subjects. Only if no custom subject or specific noun is present, default to the matched subcategory name or category name. Do NOT include amounts, dates, times, relative terms (like "now", "today", "5pm"), or filler words (like "spend", "paid", "using").
+5. Map account names accurately. Inputs like "yes bank" or "yes" match "YES BANK R" or "YES BANK I". Inputs like "icici" or "icici bank" match "ICICI Bank" or "ICICI MMT". Map to the closest available account name.`;
+
+  try {
+    const inputPayload = {
+      text: text,
+      currentDateTime: currentDate
+    };
+
+    const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(inputPayload, null, 2) }
+      ]
+    });
+
+    let resultText = "";
+    if (typeof aiResponse === "string") {
+      resultText = aiResponse;
+    } else if (aiResponse.response) {
+      resultText = aiResponse.response;
+    } else if (aiResponse.result) {
+      resultText = aiResponse.result;
+    } else {
+      resultText = JSON.stringify(aiResponse);
+    }
+
+    let cleanedText = resultText.trim();
+    if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+    }
+
+    const parsed = JSON.parse(cleanedText);
+
+    const resolvedCat = categories.find(c => c.id === parsed.categoryId);
+    const resolvedSub = subcategories.find(s => s.id === parsed.subcategoryId);
+    const resolvedAcc = accounts.find(a => a.id === parsed.accountId);
+
+    const defaultAcc = accounts.find(a => a.name.toLowerCase().includes("cash")) || accounts[0];
+
+    return {
+      amount: parsed.amount || 0,
+      note: parsed.note || (resolvedSub ? resolvedSub.name : (resolvedCat ? resolvedCat.name : "Expense")),
+      txnType: parsed.txnType || "expense",
+      date: parsed.date || currentDate,
+      categoryId: resolvedCat ? resolvedCat.id : (categories[0] ? categories[0].id : null),
+      category: resolvedCat ? resolvedCat.name : (categories[0] ? categories[0].name : ""),
+      subcategoryId: resolvedSub ? resolvedSub.id : null,
+      subcategory: resolvedSub ? resolvedSub.name : "",
+      accountId: resolvedAcc ? resolvedAcc.id : (defaultAcc ? defaultAcc.id : null),
+      account: resolvedAcc ? resolvedAcc.name : (defaultAcc ? defaultAcc.name : "")
+    };
+  } catch (err) {
+    console.error("Workers AI failed, using heuristic fallback", err);
+    return parseHeuristicNaturalLanguage(env, text, categories, subcategories, accounts, currentDate);
+  }
+}
+
+async function parseHeuristicNaturalLanguage(env, text, categories, subcategories, accounts, localDateTime) {
+  const textLower = text.toLowerCase().trim();
+
+  // 1. Extract Amount
+  const amountRegex = /(?:rs\.?|inr|₹|\$)?\s*(\d+(?:\.\d+)?)/i;
+  const amtMatch = textLower.match(amountRegex);
+  const amount = amtMatch ? parseFloat(amtMatch[1]) : 0;
+
+  let cleanText = textLower;
+  if (amtMatch) {
+    cleanText = cleanText.replace(amtMatch[0], "");
+  }
+
+  // 2. Extract transaction type (income vs expense)
+  const incomeKeywords = ["earned", "salary received", "received salary", "income", "received", "refund", "gifted", "deposit"];
+  const expenseKeywords = ["paid", "spent", "spends", "gave", "sent", "bought", "cost", "purchase", "bill"];
+  
+  let txnType = "expense";
+  const hasIncomeKw = incomeKeywords.some(kw => cleanText.includes(kw)) || (cleanText.includes("salary") && !expenseKeywords.some(kw => cleanText.includes(kw)));
+  if (hasIncomeKw) {
+    txnType = "income";
+  }
+
+  // 3. Extract Time
+  let parsedHour = null;
+  let parsedMinute = 0;
+  
+  const specificTimeMatch = cleanText.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i) || 
+                             cleanText.match(/\b(?:at\s+)(\d{1,2})(?::(\d{2}))?\b/i) ||
+                             cleanText.match(/\b(\d{1,2}):(\d{2})\b/i);
+  if (specificTimeMatch) {
+    let hr = parseInt(specificTimeMatch[1], 10);
+    const min = specificTimeMatch[2] ? parseInt(specificTimeMatch[2], 10) : 0;
+    const ampm = specificTimeMatch[3] ? specificTimeMatch[3].toLowerCase() : null;
+    
+    if (ampm === "pm" && hr < 12) hr += 12;
+    if (ampm === "am" && hr === 12) hr = 0;
+    
+    parsedHour = hr;
+    parsedMinute = min;
+    
+    cleanText = cleanText.replace(specificTimeMatch[0], "");
+  }
+
+  // 4. Extract Date
+  let targetDate = localDateTime ? new Date(localDateTime) : new Date();
+  if (cleanText.includes("yesterday")) {
+    targetDate.setDate(targetDate.getDate() - 1);
+    cleanText = cleanText.replace("yesterday", "");
+  } else if (cleanText.includes("today")) {
+    cleanText = cleanText.replace("today", "");
+  } else if (cleanText.includes("2 days ago")) {
+    targetDate.setDate(targetDate.getDate() - 2);
+    cleanText = cleanText.replace("2 days ago", "");
+  } else {
+    const months = [
+      "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"
+    ];
+    const shortMonths = [
+      "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"
+    ];
+    
+    for (let mIdx = 0; mIdx < 12; mIdx++) {
+      const mName = months[mIdx];
+      const mShort = shortMonths[mIdx];
+      const monthPattern = new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${mName}|${mShort})\\b|\\b(${mName}|${mShort})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, "i");
+      const mMatch = cleanText.match(monthPattern);
+      if (mMatch) {
+        const dayStr = mMatch[1] || mMatch[4];
+        const dayNum = parseInt(dayStr, 10);
+        targetDate.setMonth(mIdx);
+        targetDate.setDate(dayNum);
+        cleanText = cleanText.replace(mMatch[0], "");
+        break;
+      }
+    }
+  }
+
+  if (parsedHour !== null) {
+    targetDate.setHours(parsedHour, parsedMinute, 0, 0);
+  }
+
+  const pad = n => String(n).padStart(2, "0");
+  const dateStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}T${pad(targetDate.getHours())}:${pad(targetDate.getMinutes())}:00`;
+
+  // 5. Match Category & Subcategory
+  let categoryId = null;
+  let subcategoryId = null;
+  let categoryName = "";
+  let subcategoryName = "";
+
+  const words = cleanText.split(/[^a-zA-Z0-9]/).map(w => w.trim()).filter(w => w.length > 0);
+  const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Sort subcategories by length descending to match longer specific names first
+  const sortedSubcategories = [...subcategories].sort((a, b) => b.name.length - a.name.length);
+  let bestSub = null;
+  for (const s of sortedSubcategories) {
+    const sName = s.name.toLowerCase();
+    if (words.includes(sName)) {
+      bestSub = s;
+      break;
+    }
+  }
+  if (!bestSub) {
+    for (const s of sortedSubcategories) {
+      const sName = s.name.toLowerCase();
+      const subRegex = new RegExp(`\\b${escapeRegExp(sName)}\\b`, "i");
+      if (subRegex.test(cleanText)) {
+        bestSub = s;
+        break;
+      }
+    }
+  }
+  if (!bestSub) {
+    for (const s of sortedSubcategories) {
+      const sName = s.name.toLowerCase();
+      if (cleanText.includes(sName)) {
+        bestSub = s;
+        break;
+      }
+    }
+  }
+
+  if (bestSub) {
+    subcategoryId = bestSub.id;
+    subcategoryName = bestSub.name;
+    
+    // Check D1 recent associations first
+    const association = await d1First(env.DB, 
+      "SELECT category_id FROM expenses WHERE subcategory_id = ? ORDER BY date DESC LIMIT 1", 
+      [bestSub.id]
+    );
+    if (association && association.category_id) {
+      const parentCat = categories.find(c => c.id === association.category_id);
+      if (parentCat) {
+        categoryId = parentCat.id;
+        categoryName = parentCat.name;
+      }
+    }
+    
+    // Heuristic fallback mapping
+    if (!categoryId) {
+      const SUB_TO_CAT_MAP = {
+        "lunch": "food", "dinner": "food", "beverages": "food", "eating out": "food", "snacking": "food", "swiggy": "food",
+        "amazon": "household", "appliances": "household", "blinkit": "household", "country delight": "household",
+        "fruits": "household", "grocery": "household", "instamart": "household", "kitchen": "household",
+        "vegetables": "household", "zepto": "household",
+        "cab": "transport", "fuel": "transport", "metro": "transport", "tax": "transport",
+        "cosmetics": "beauty", "haircut": "health", "medicine": "health", "entertainment": "subscription",
+        "mobile recharge": "subscription", "wifi": "subscription", "movie": "culture", "stay": "holiday",
+        "travel": "holiday", "school supplies": "education", "salary": "salary", "clothing": "shopping"
+      };
+      const catKey = SUB_TO_CAT_MAP[subcategoryName.toLowerCase()];
+      if (catKey) {
+        const parentCat = categories.find(c => c.name.toLowerCase() === catKey);
+        if (parentCat) {
+          categoryId = parentCat.id;
+          categoryName = parentCat.name;
+        }
+      }
+    }
+  }
+
+  if (!categoryId) {
+    let bestCat = null;
+    const sortedCategories = [...categories].sort((a, b) => b.name.length - a.name.length);
+    for (const c of sortedCategories) {
+      const cName = c.name.toLowerCase();
+      if (words.includes(cName)) {
+        bestCat = c;
+        break;
+      }
+    }
+    if (!bestCat) {
+      for (const c of sortedCategories) {
+        const cName = c.name.toLowerCase();
+        const catRegex = new RegExp(`\\b${escapeRegExp(cName)}\\b`, "i");
+        if (catRegex.test(cleanText)) {
+          bestCat = c;
+          break;
+        }
+      }
+    }
+    if (!bestCat) {
+      for (const c of sortedCategories) {
+        const cName = c.name.toLowerCase();
+        if (cleanText.includes(cName)) {
+          bestCat = c;
+          break;
+        }
+      }
+    }
+    if (bestCat) {
+      categoryId = bestCat.id;
+      categoryName = bestCat.name;
+    }
+  }
+
+  // 6. Match Account
+  let accountId = null;
+  let accountName = "";
+  let bestAcc = null;
+
+  // Helper to generate search aliases for an account name
+  const getAccountAliases = name => {
+    const lower = name.toLowerCase();
+    const list = [lower];
+    if (lower.includes("yes bank")) {
+      list.push("yes bank");
+      list.push("yes");
+    }
+    if (lower.includes("icici")) {
+      list.push("icici");
+      if (lower.includes("mmt")) {
+        list.push("icici mmt");
+        list.push("mmt");
+      }
+      if (lower.includes("coral")) {
+        list.push("icici coral");
+        list.push("coral");
+      }
+    }
+    if (lower.includes("axis")) {
+      list.push("axis");
+      list.push("flipkart");
+    }
+    if (lower.includes("cred")) {
+      list.push("cred");
+    }
+    return list;
+  };
+
+  const accountMatches = [];
+  for (const a of accounts) {
+    const aliases = getAccountAliases(a.name);
+    for (const alias of aliases) {
+      accountMatches.push({ account: a, alias: alias });
+    }
+  }
+  // Sort by alias length descending
+  accountMatches.sort((a, b) => b.alias.length - a.alias.length);
+
+  for (const m of accountMatches) {
+    const aliasPat = new RegExp(`\\b${escapeRegExp(m.alias)}\\b`, "i");
+    if (aliasPat.test(cleanText)) {
+      bestAcc = m.account;
+      break;
+    }
+  }
+  if (!bestAcc) {
+    for (const m of accountMatches) {
+      if (cleanText.includes(m.alias)) {
+        bestAcc = m.account;
+        break;
+      }
+    }
+  }
+  if (bestAcc) {
+    accountId = bestAcc.id;
+    accountName = bestAcc.name;
+  } else {
+    if (accounts.length > 0) {
+      const cashAcc = accounts.find(a => a.name.toLowerCase().includes("cash"));
+      const defaultAcc = cashAcc || accounts[0];
+      accountId = defaultAcc.id;
+      accountName = defaultAcc.name;
+    }
+  }
+
+  // 7. Note/Description Extraction
+  let noteText = cleanText;
+  const fillers = [
+    /\bspends?\b/gi, /\bspent\b/gi, /\bpaid\b/gi, /\bbought\b/gi,
+    /\bfor\b/gi, /\bon\b/gi, /\bfrom\b/gi, /\bat\b/gi, /\bin\b/gi,
+    /\bto\b/gi, /\bwith\b/gi, /\bvia\b/gi, /\bthrough\b/gi, /\busing\b/gi,
+    /\bunder\b/gi, /\bnow\b/gi, /\btoday\b/gi, /\byesterday\b/gi, /\btomorrow\b/gi,
+    /\btonight\b/gi, /\brupees?\b/gi, /\brs\.?\b/gi, /\binr\b/gi, /\bbucks\b/gi,
+    /\bamt\b/gi, /\bamount\b/gi, /\band\b/gi, /\ba\b/gi, /\ban\b/gi, /\bthe\b/gi
+  ];
+  for (const filler of fillers) {
+    noteText = noteText.replace(filler, "");
+  }
+
+  if (categoryName) {
+    const catWords = categoryName.toLowerCase().split(/[^a-z0-9]/).filter(w => w.length > 0);
+    for (const w of catWords) {
+      noteText = noteText.replace(new RegExp(`\\b${escapeRegExp(w)}\\b`, "gi"), "");
+    }
+  }
+  if (subcategoryName) {
+    const subWords = subcategoryName.toLowerCase().split(/[^a-z0-9]/).filter(w => w.length > 0);
+    for (const w of subWords) {
+      noteText = noteText.replace(new RegExp(`\\b${escapeRegExp(w)}\\b`, "gi"), "");
+    }
+  }
+  if (accountName) {
+    const accWords = accountName.toLowerCase().split(/[^a-z0-9]/).filter(w => w.length > 0);
+    for (const w of accWords) {
+      noteText = noteText.replace(new RegExp(`\\b${escapeRegExp(w)}\\b`, "gi"), "");
+    }
+  }
+
+  noteText = noteText.replace(/\s+/g, " ").trim();
+  noteText = noteText.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").trim();
+
+  let note = noteText ? noteText.charAt(0).toUpperCase() + noteText.slice(1) : "";
+  
+  const cleanNoteLower = note.toLowerCase().trim();
+  const rubbishWords = ["now", "today", "yesterday", "tomorrow", "tonight", "rupee", "rupees", "rs", "inr", "bucks", "pm", "am", "under", "r"];
+  if (!note || note.length <= 2 || rubbishWords.includes(cleanNoteLower)) {
+    note = subcategoryName || categoryName || (txnType === "income" ? "Income" : "Expense");
+  }
+
+  if (!categoryId && categories.length > 0) {
+    if (txnType === "income") {
+      const salaryCat = categories.find(c => c.name.toLowerCase() === "salary");
+      const otherCat = salaryCat || categories.find(c => c.name.toLowerCase() === "other") || categories[0];
+      categoryId = otherCat.id;
+      categoryName = otherCat.name;
+    } else {
+      const otherCat = categories.find(c => c.name.toLowerCase() === "other") || 
+                       categories.find(c => c.name.toLowerCase() === "miscellaneous") || 
+                       categories[0];
+      categoryId = otherCat.id;
+      categoryName = otherCat.name;
+    }
+  }
+
+  return {
+    amount,
+    note,
+    txnType,
+    date: dateStr,
+    categoryId,
+    category: categoryName,
+    subcategoryId,
+    subcategory: subcategoryName,
+    accountId,
+    account: accountName
+  };
+}
+
+async function handleD1QuickAdd(env, body) {
+  if (!env.DB) return { error: "D1 not configured", status: 500 };
+  const { text, localDateTime } = body || {};
+  if (!text || !text.trim()) return { error: "Text required", status: 400 };
+
+  const [categories, subcategories, accounts] = await Promise.all([
+    d1All(env.DB, "SELECT id,name,emoji,icon_url FROM categories"),
+    d1All(env.DB, "SELECT id,name,icon_url FROM subcategories"),
+    d1All(env.DB, "SELECT id,name,emoji,icon_url FROM accounts"),
+  ]);
+
+  const parsed = await parseNaturalLanguage(env, text, categories, subcategories, accounts, localDateTime);
+  
+  const createResult = await handleD1CreateTransaction(env, parsed);
+  if (createResult.error) return createResult;
+  
+  return { ok: true, id: createResult.id, parsed };
+}
+
+// ----------------------------------------------------------------------------
 // Write — create / update / delete transactions
 // ----------------------------------------------------------------------------
 
@@ -615,6 +1081,14 @@ export default {
         if (url.pathname === "/api/d1/summary" && request.method === "GET") {
           const result = await handleD1Summary(env, url);
           if (result.error) return json(result, result.status || 500);
+          return json(result);
+        }
+
+        // Quick add via natural language
+        if (url.pathname === "/api/d1/quick-add" && request.method === "POST") {
+          const body = await request.json().catch(() => null);
+          const result = await handleD1QuickAdd(env, body);
+          if (result.error) return json(result, result.status || 400);
           return json(result);
         }
 

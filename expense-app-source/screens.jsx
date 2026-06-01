@@ -2,9 +2,93 @@
 const { useState: useStateS, useEffect: useEffectS, useMemo: useMemoS, useRef: useRefS } = React;
 
 /* ──────────────────────────────────────────────────────────────────────
+   QUICK ADD (Natural Language Parser Input Card)
+   ────────────────────────────────────────────────────────────────────── */
+function QuickAddCard({ onQuickAddSuccess }) {
+  const [text, setText] = useStateS('');
+  const [loading, setLoading] = useStateS(false);
+  const [error, setError] = useStateS(null);
+
+  async function handleSubmit(e) {
+    if (e) e.preventDefault();
+    if (!text.trim() || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/d1/quick-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text.trim(),
+          localDateTime: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        })
+      });
+      if (!res.ok) {
+        throw new Error('Server returned error ' + res.status);
+      }
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      setText('');
+      if (onQuickAddSuccess) {
+        onQuickAddSuccess(data.parsed);
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to add expense');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <GlassCard className="quick-add-card" style={{ padding: '12px 14px', marginBottom: 14 }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="lbl" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-3)' }}>
+            ⚡️ Quick Add
+          </div>
+          {error && <span style={{ fontSize: 11, color: 'var(--expense)', fontWeight: 500 }}>{error}</span>}
+        </div>
+        <div className="quick-add-input-wrap">
+          <input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            disabled={loading}
+            placeholder='e.g., 220 spend on food lunch at 3pm'
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text-1)',
+              fontSize: 13,
+              padding: '6px 8px',
+            }}
+          />
+          <button 
+            type="submit" 
+            disabled={loading || !text.trim()} 
+            className={`quick-add-btn ${loading ? 'loading' : ''}`}
+            aria-label="Submit Quick Add"
+          >
+            {loading ? (
+              <span className="quick-add-spinner"></span>
+            ) : (
+              <Icon name="sparkles" size={13} />
+            )}
+          </button>
+        </div>
+      </form>
+    </GlassCard>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────
    HOME
    ────────────────────────────────────────────────────────────────────── */
-function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggleTheme, onEdit }) {
+function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggleTheme, onEdit, onQuickAddSuccess }) {
   const scoped = useMemoS(() => filterByPeriod(txns, period), [txns, period]);
   const sum = useMemoS(() => summarize(scoped), [scoped]);
   const recent = useMemoS(() =>
@@ -38,23 +122,14 @@ function HomeScreen({ txns, period, setPeriod, onOpenAdd, onGoto, theme, onToggl
         </GlassCard>
 
         {/* Period switcher */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           <PeriodTabs value={period} onChange={setPeriod} />
         </div>
 
-        {/* Income / Expense split */}
-        <div className="stat-row">
-          <GlassCard className="stat-card in" onClick={() => onGoto('transactions', { typeFilter: 'income' })}>
-            <div className="lbl">Income</div>
-            <div className="val">+{fmtINR(sum.income, { withFrac: false })}</div>
-            <div className="delta up"><Icon name="arrow-down-left" size={10} /> {scoped.filter((t) => t.type === 'income').length} entries</div>
-          </GlassCard>
-          <GlassCard className="stat-card out" onClick={() => onGoto('transactions', { typeFilter: 'expense' })}>
-            <div className="lbl">Expense</div>
-            <div className="val">−{fmtINR(sum.expense, { withFrac: false })}</div>
-            <div className="delta down"><Icon name="arrow-up-right" size={10} /> {scoped.filter((t) => t.type === 'expense').length} entries</div>
-          </GlassCard>
-        </div>
+        {/* Quick Add */}
+        <QuickAddCard onQuickAddSuccess={onQuickAddSuccess} />
+
+
 
         {/* Recent transactions */}
         <div className="section-head">
@@ -1767,5 +1842,5 @@ function SearchableChips({ label, items, value, onChange, placeholder, emptyText
 
 Object.assign(window, {
   HomeScreen, TransactionsScreen, AnalyticsScreen, SearchScreen, AddForm, ManageScreen, IconPickerSheet,
-  SearchableChips, CompactPicker, TxnDetailSheet, buildTrend, TrendChart, DateField, SortRow, GlassSelect
+  SearchableChips, CompactPicker, TxnDetailSheet, buildTrend, TrendChart, DateField, SortRow, GlassSelect, QuickAddCard
 });

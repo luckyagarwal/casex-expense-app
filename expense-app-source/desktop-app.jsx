@@ -190,6 +190,17 @@ function DesktopApp() {
     setTimeout(() => setToast(null), 1800);
   }
 
+  function handleQuickAddSuccess(parsed) {
+    reloadTxns(period);
+    reloadCatalog();
+    const amtStr = '₹' + parsed.amount;
+    const catStr = parsed.subcategory 
+      ? parsed.category + ' · ' + parsed.subcategory 
+      : parsed.category || (parsed.txnType === 'income' ? 'Income' : 'Expense');
+    const accStr = parsed.account ? ' using ' + parsed.account : '';
+    flashToast(`Saved ${amtStr} under ${catStr}${accStr}`, parsed.txnType);
+  }
+
   async function saveTxn(form) {
     const cat = (catalog.categories||[]).find(c=>c.name===form.cat);
     const sub = (catalog.subcategories||[]).find(s=>s.name===form.sub);
@@ -286,7 +297,7 @@ function DesktopApp() {
           typeFilter={typeFilter}
         />
         <div className="desktop-content">
-          {view==='home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
+          {view==='home'         && <HomeDesktop txns={txns} period={period} setPeriod={setPeriod} onGoto={setView} onOpenAdd={openAdd} setTypeFilter={setTypeFilter} onEdit={openDetail} onQuickAddSuccess={handleQuickAddSuccess} />}
           {view==='transactions' && <TransactionsDesktop txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} onEdit={openDetail} />}
           {view==='analytics'    && <AnalyticsDesktop txns={txns} period={period} setPeriod={setPeriod} />}
           {view==='search'       && <SearchDesktop txns={txns} onEdit={openDetail} onSearch={searchTxns} />}
@@ -451,7 +462,7 @@ function DesktopTopBar({ view, theme, onToggleTheme, onOpenAdd, txns, period, ty
 /* ──────────────────────────────────────────────────────────────────────
    HOME — overview dashboard
    ────────────────────────────────────────────────────────────────────── */
-function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter, onEdit }) {
+function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter, onEdit, onQuickAddSuccess }) {
   const scoped = useMemoD(() => filterByPeriod(txns, period), [txns, period]);
   const sum    = useMemoD(() => summarize(scoped), [scoped]);
   const recent = useMemoD(() => [...txns].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,7), [txns]);
@@ -489,25 +500,10 @@ function HomeDesktop({ txns, period, setPeriod, onGoto, onOpenAdd, setTypeFilter
         </div>
       </GlassCard>
 
-      <GlassCard className="stat-card in dt-stat" onClick={()=>{setTypeFilter('income');onGoto('transactions');}}>
-        <div className="lbl">Income</div>
-        <div className="val">+{fmtINR(sum.income,{withFrac:false})}</div>
-        <div className="delta up"><Icon name="arrow-down-left" size={10}/> {scoped.filter(t=>t.type==='income').length} entries</div>
-      </GlassCard>
-      <GlassCard className="stat-card out dt-stat" onClick={()=>{setTypeFilter('expense');onGoto('transactions');}}>
-        <div className="lbl">Expense</div>
-        <div className="val">−{fmtINR(sum.expense,{withFrac:false})}</div>
-        <div className="delta down"><Icon name="arrow-up-right" size={10}/> {scoped.filter(t=>t.type==='expense').length} entries</div>
-      </GlassCard>
-      <GlassCard className="stat-card dt-stat dt-savings">
-        <div className="lbl">Net savings</div>
-        <div className="val" style={{color:sum.net>=0?'var(--income)':'var(--expense)'}}>
-          {sum.net>=0?'+':'−'}{fmtINR(Math.abs(sum.net),{withFrac:false})}
-        </div>
-        <div className="delta" style={{background:'var(--glass-fill)',color:'var(--text-2)'}}>
-          {sum.expense?Math.round((sum.net/Math.max(sum.income,1))*100):0}% of income
-        </div>
-      </GlassCard>
+      <div style={{ gridColumn: 'span 12' }}>
+        <QuickAddCard onQuickAddSuccess={onQuickAddSuccess} />
+      </div>
+
 
       <GlassCard className="dt-card dt-recent">
         <div className="dt-card-head">

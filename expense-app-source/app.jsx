@@ -214,6 +214,17 @@ function App() {
     }
   }
 
+  const handleQuickAddSuccess = useCallbackA((parsed) => {
+    reloadTxns(period);
+    reloadCatalog();
+    const amtStr = '₹' + parsed.amount;
+    const catStr = parsed.subcategory 
+      ? parsed.category + ' · ' + parsed.subcategory 
+      : parsed.category || (parsed.txnType === 'income' ? 'Income' : 'Expense');
+    const accStr = parsed.account ? ' using ' + parsed.account : '';
+    flashToast(`Saved ${amtStr} under ${catStr}${accStr}`, parsed.txnType);
+  }, [period, reloadTxns, reloadCatalog]);
+
   // ManageScreen mutates a local `catalog`; this wrapper diffs old vs new and pushes API calls.
   const setCatalogApi = useCallbackA((next) => {
     const prev = catalog;
@@ -267,7 +278,7 @@ function App() {
 
       <div className="screen" style={{ position:'relative', zIndex: 1 }}>
         {view === 'home' && (
-          <HomeScreen txns={txns} period={period} setPeriod={setPeriod} onOpenAdd={openAdd} onGoto={goto} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
+          <HomeScreen txns={txns} period={period} setPeriod={setPeriod} onOpenAdd={openAdd} onGoto={goto} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} onQuickAddSuccess={handleQuickAddSuccess} />
         )}
         {view === 'transactions' && (
           <TransactionsScreen txns={txns} period={period} setPeriod={setPeriod} typeFilter={typeFilter} setTypeFilter={setTypeFilter} theme={t.theme} onToggleTheme={toggleTheme} onEdit={openDetail} />
