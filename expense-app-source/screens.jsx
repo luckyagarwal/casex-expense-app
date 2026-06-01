@@ -744,7 +744,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
 
         <div className="txn-list">
           {items.map((item) =>
-          <div key={item.id} className="txn" style={{ cursor: 'default' }}>
+          <div key={item.id} className="txn manage-row" style={{ cursor: 'default' }}>
               <button
               onClick={() => setIconPickFor(item.id)}
               style={{
@@ -756,7 +756,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
               }}>
               <ItemIcon icon={item.icon || defaultIcon(tab)} size={20} /></button>
 
-              <div className="meta">
+              <div className="meta manage-meta">
                 {editingId === item.id ?
               <input
                 autoFocus
@@ -780,6 +780,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
               </div>
 
               <button
+              className="manage-action-btn"
               onClick={() => startRename(item)}
               style={{
                 width: 32, height: 32, borderRadius: '50%', border: 'none',
@@ -790,6 +791,7 @@ function ManageScreen({ catalog, setCatalog, onBack }) {
               title="Rename">
               ✎</button>
               <button
+              className="manage-action-btn danger"
               onClick={() => removeItem(item)}
               style={{
                 width: 32, height: 32, borderRadius: '50%', border: 'none',

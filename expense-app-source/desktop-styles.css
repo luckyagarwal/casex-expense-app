@@ -261,15 +261,43 @@ html, body {
 /* ──────────────────────────────────────────────────────────────
    SETTINGS / MANAGE — mobile screen embedded in a centred column
    ────────────────────────────────────────────────────────────── */
-.dt-manage { max-width: 820px; margin: 0 auto; }
+.dt-manage { max-width: 920px; margin: 0 auto; }
 .dt-manage .screen-head { padding: 0 4px 14px; }
 .dt-manage .screen-head .back { display: none; }
 .dt-manage .screen-head h1 { font-size: 22px; }
 .dt-manage .screen-scroll { padding: 0 !important; overflow: visible !important; }
 .dt-manage .type-tabs { max-width: 360px; }
 .dt-manage .txn-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.dt-manage .manage-row { min-width: 0; }
+.dt-manage .manage-row .name { font-size: 14.5px; }
 @media (max-width: 720px) {
   .dt-manage .txn-list { grid-template-columns: 1fr; }
+}
+
+.desktop-app .dt-manage .sheet-backdrop {
+  position: fixed;
+  z-index: 130;
+}
+.desktop-app .dt-manage .sheet {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: min(760px, calc(100vh - 48px)) !important;
+  border-radius: 24px;
+  padding: 16px 18px 22px;
+  transform: translate(-50%, calc(-50% + 18px)) scale(0.98);
+  z-index: 140;
+  box-shadow: var(--shadow-strong), inset 0 1px 0 var(--inner-highlight);
+}
+.desktop-app .dt-manage .sheet.show {
+  transform: translate(-50%, -50%) scale(1);
+}
+.desktop-app .dt-manage .sheet .grabber {
+  display: none;
 }
 
 /* hide bottom nav on desktop layout */
