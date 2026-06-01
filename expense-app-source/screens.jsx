@@ -1096,14 +1096,6 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit, onSearch }) {
     setSearching(false);
   }
 
-  function reset() {
-    setCategory('');setSubcat('');setAccount('');
-    setQuery('');
-    setDateSort('desc');setAmtSort('');
-    setFrom(defaultFrom);setTo(defaultTo);
-    setRan(false);setResults([]);setErr(null);
-  }
-
   const total = useMemoS(() => results.reduce((s, t) => s + t.amount, 0), [results]);
   // group by day for the results list (matches existing renderExpenseGroups)
   const groups = useMemoS(() => {
@@ -1123,7 +1115,6 @@ function SearchScreen({ txns, theme, onToggleTheme, onEdit, onSearch }) {
         <h1>Search</h1>
         <div style={{ display:'flex', gap: 8 }}>
           <ThemeToggle theme={theme} onToggle={onToggleTheme} size={38} />
-          <div className="icon-btn" style={{ width:38, height:38 }} onClick={reset} title="Reset"><Icon name="x" size={14} /></div>
         </div>
       </div>
 
