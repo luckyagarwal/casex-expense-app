@@ -395,19 +395,19 @@ JSON Output Format:
   "note": string,
   "txnType": "expense" or "income",
   "date": string (ISO-like string YYYY-MM-DDTHH:mm representing the transaction time. Resolve relative terms like "today", "yesterday", "at 3pm", "3:30 pm" based on the "currentDateTime" provided in the input),
-  "categoryId": string,
-  "subcategoryId": string or null,
-  "accountId": string
+  "category": string (One of the exact category names provided below, or null),
+  "subcategory": string or null (One of the exact subcategory names provided below, or null),
+  "account": string (One of the exact account names provided below, or null)
 }
 
 Valid Categories:
-${JSON.stringify(categories.map(c => ({ id: c.id, name: c.name })))}
+${JSON.stringify(categories.map(c => c.name))}
 
 Valid Subcategories:
-${JSON.stringify(subcategories.map(s => ({ id: s.id, name: s.name })))}
+${JSON.stringify(subcategories.map(s => s.name))}
 
 Valid Accounts:
-${JSON.stringify(accounts.map(a => ({ id: a.id, name: a.name })))}
+${JSON.stringify(accounts.map(a => a.name))}
 
 Be extremely accurate:
 1. Parse relative days (yesterday, today) and specific times (at 3pm) correctly based on currentDateTime.
@@ -454,9 +454,105 @@ Be extremely accurate:
 
     const parsed = JSON.parse(cleanedText);
 
-    const resolvedCat = categories.find(c => c.id === parsed.categoryId);
-    const resolvedSub = subcategories.find(s => s.id === parsed.subcategoryId);
-    const resolvedAcc = accounts.find(a => a.id === parsed.accountId);
+    // A. Resolve Category
+    let resolvedCat = null;
+    if (parsed.category) {
+      resolvedCat = categories.find(c => c.name.toLowerCase() === parsed.category.toLowerCase());
+    }
+
+    // B. Resolve Subcategory
+    let resolvedSub = null;
+    if (parsed.subcategory) {
+      resolvedSub = subcategories.find(s => s.name.toLowerCase() === parsed.subcategory.toLowerCase());
+    }
+
+    // C. Resolve Account (using exact and alias fallback)
+    let resolvedAcc = null;
+    const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (parsed.account) {
+      const accLower = parsed.account.toLowerCase();
+      resolvedAcc = accounts.find(a => a.name.toLowerCase() === accLower);
+      
+      if (!resolvedAcc) {
+        const getAccountAliases = name => {
+          const lower = name.toLowerCase();
+          const list = [lower];
+          if (lower.includes("yes bank")) {
+            list.push("yes bank");
+            list.push("yes");
+          }
+          if (lower.includes("icici")) {
+            list.push("icici");
+            if (lower.includes("mmt")) {
+              list.push("icici mmt");
+              list.push("mmt");
+            }
+            if (lower.includes("coral")) {
+              list.push("icici coral");
+              list.push("coral");
+            }
+          }
+          if (lower.includes("axis")) {
+            list.push("axis");
+            list.push("flipkart");
+          }
+          if (lower.includes("cred")) {
+            list.push("cred");
+          }
+          return list;
+        };
+
+        const accountMatches = [];
+        for (const a of accounts) {
+          const aliases = getAccountAliases(a.name);
+          for (const alias of aliases) {
+            accountMatches.push({ account: a, alias: alias });
+          }
+        }
+        accountMatches.sort((a, b) => b.alias.length - a.alias.length);
+
+        const foundMatch = accountMatches.find(m => m.alias === accLower || accLower.includes(m.alias));
+        if (foundMatch) {
+          resolvedAcc = foundMatch.account;
+        }
+      }
+    }
+
+    // Post-resolving Fallbacks
+    // If subcategory resolved but category is not
+    if (resolvedSub && !resolvedCat) {
+      const association = await d1First(env.DB, 
+        "SELECT category_id FROM expenses WHERE subcategory_id = ? ORDER BY date DESC LIMIT 1", 
+        [resolvedSub.id]
+      );
+      if (association && association.category_id) {
+        resolvedCat = categories.find(c => c.id === association.category_id);
+      }
+      
+      if (!resolvedCat) {
+        const SUB_TO_CAT_MAP = {
+          "lunch": "food", "dinner": "food", "beverages": "food", "eating out": "food", "snacking": "food", "swiggy": "food",
+          "amazon": "household", "appliances": "household", "blinkit": "household", "country delight": "household",
+          "fruits": "household", "grocery": "household", "instamart": "household", "kitchen": "household",
+          "vegetables": "household", "zepto": "household",
+          "cab": "transport", "fuel": "transport", "metro": "transport", "tax": "transport",
+          "cosmetics": "beauty", "haircut": "health", "medicine": "health", "entertainment": "subscription",
+          "mobile recharge": "subscription", "wifi": "subscription", "movie": "culture", "stay": "holiday",
+          "travel": "holiday", "school supplies": "education", "salary": "salary", "clothing": "shopping"
+        };
+        const catKey = SUB_TO_CAT_MAP[resolvedSub.name.toLowerCase()];
+        if (catKey) {
+          resolvedCat = categories.find(c => c.name.toLowerCase() === catKey);
+        }
+      }
+    }
+
+    // Default category fallback to "Other" or "Miscellaneous" instead of categories[0]
+    if (!resolvedCat && categories.length > 0) {
+      resolvedCat = categories.find(c => c.name.toLowerCase() === "other") || 
+                    categories.find(c => c.name.toLowerCase() === "miscellaneous") || 
+                    categories[0];
+    }
 
     const defaultAcc = accounts.find(a => a.name.toLowerCase().includes("cash")) || accounts[0];
 
@@ -1040,7 +1136,7 @@ const MANIFEST_JSON = JSON.stringify({
 });
 
 const SW_JS = `
-const CACHE_NAME = "ne-pwa-v23";
+const CACHE_NAME = "ne-pwa-v24";
 const OFFLINE_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
