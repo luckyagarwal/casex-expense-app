@@ -5,12 +5,10 @@
    - dashboard content grid for each screen
    - centered modal (instead of bottom-sheet)
    ============================================================ */
-
 html, body {
   height: 100%;
   margin: 0;
-  /* mirror the dark page bg outside .app */
-  background: #050507;
+  background: var(--bg-base, #050507);
 }
 
 .desktop-shell {

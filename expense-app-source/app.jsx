@@ -207,8 +207,10 @@ function App() {
         await apiJson('/api/d1/expense', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         flashToast((form.type === 'income' ? 'Income' : 'Expense') + ' saved', form.type);
       }
-      await reloadTxns(period);
-      closeForm();
+      await Promise.all([reloadCatalog(), reloadTxns(period)]);
+      if (!form.keepOpen) {
+        closeForm();
+      }
     } catch (e) {
       flashToast('Failed to save', 'expense');
     }
@@ -295,9 +297,12 @@ function App() {
         {view === 'appearance' && (
           <AppearanceScreen t={t} setTweak={setTweak} onBack={() => setView('home')} palettes={PALETTES} />
         )}
+        {view === 'shortcuts' && (
+          <ShortcutsHelpScreen onBack={() => setView('home')} />
+        )}
       </div>
 
-      {view !== 'manage' && view !== 'appearance' && (
+      {view !== 'manage' && view !== 'appearance' && view !== 'shortcuts' && (
         <div className="bottom-nav-wrap">
           <nav className="bottom-nav">
             <button className={`nav-tab ${view==='home'?'active':''}`} onClick={() => setView('home')} aria-label="Home"><Icon name="home" size={18}/></button>

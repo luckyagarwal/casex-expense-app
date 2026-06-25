@@ -178,6 +178,75 @@ function DesktopApp() {
     if (meta) meta.setAttribute('content', isLight ? '#f5ece2' : '#050507');
   }, [t.theme]);
 
+  useEffectD(() => {
+    const handleGlobalKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable
+      );
+
+      if (e.key === 'Escape') {
+        if (sheetOpen) {
+          setSheetOpen(false);
+          e.preventDefault();
+        } else if (addForm || editTxn) {
+          closeForm();
+          e.preventDefault();
+        } else if (detailTxn) {
+          closeDetail();
+          e.preventDefault();
+        }
+        return;
+      }
+
+      if (isInput) return;
+
+      let matched = true;
+      switch (e.key.toLowerCase()) {
+        case 'n':
+        case 'c':
+        case '+':
+          openAdd();
+          break;
+        case 'h':
+          setView('home');
+          break;
+        case 't':
+          setView('transactions');
+          break;
+        case 'a':
+          setView('analytics');
+          break;
+        case 's':
+        case '/':
+          setView('search');
+          setTimeout(() => {
+            const searchInput = document.querySelector('.search-input-wrap input, input[placeholder*="Search"]');
+            if (searchInput) searchInput.focus();
+          }, 50);
+          break;
+        case 'p':
+          setView('appearance');
+          break;
+        case 'm':
+          setView('manage');
+          break;
+        default:
+          matched = false;
+      }
+
+      if (matched) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [sheetOpen, addForm, editTxn, detailTxn]);
+
   function openAdd() { setSheetOpen(true); }
   function pickType(k) { setSheetOpen(false); setTimeout(() => setAddForm(k), 220); }
   function openDetail(txn) { setDetailTxn(txn); }
@@ -222,8 +291,10 @@ function DesktopApp() {
         await apiJsonD('/api/d1/expense', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
         flashToast((form.type==='income'?'Income':'Expense')+' saved', form.type);
       }
-      await reloadTxns(period);
-      closeForm();
+      await Promise.all([reloadCatalog(), reloadTxns(period)]);
+      if (!form.keepOpen) {
+        closeForm();
+      }
     } catch (e) {
       flashToast('Failed to save', 'expense');
     }
@@ -303,6 +374,7 @@ function DesktopApp() {
           {view==='search'       && <SearchDesktop txns={txns} onEdit={openDetail} onSearch={searchTxns} />}
           {view==='manage'       && <ManageDesktop catalog={catalog} setCatalog={setCatalogApi} onBack={()=>setView('home')} />}
           {view==='appearance'   && <AppearanceDesktop t={t} setTweak={setTweak} />}
+          {view==='shortcuts'    && <ShortcutsDesktop />}
         </div>
       </main>
 
@@ -375,6 +447,7 @@ function Sidebar({ view, setView, theme, onToggleTheme, onOpenAdd }) {
     ['search',       'Search',       'search'],
     ['appearance',   'Appearance',   'palette'],
     ['manage',       'Settings',     'settings'],
+    ['shortcuts',    'Shortcuts',    'keyboard'],
   ];
   return (
     <aside className="desktop-sidebar glass">
@@ -404,7 +477,6 @@ function Sidebar({ view, setView, theme, onToggleTheme, onOpenAdd }) {
         <button className="sb-theme" onClick={onToggleTheme}>
           <Icon name={isDark?'sun':'moon'} size={15}/>
           <span>{isDark?'Light theme':'Dark theme'}</span>
-          <span className="sb-kbd">⌥T</span>
         </button>
       </div>
     </aside>
@@ -422,6 +494,7 @@ function DesktopTopBar({ view, theme, onToggleTheme, onOpenAdd, txns, period, ty
     search:       ['Search',       'Find any expense by range and filter.'],
     appearance:   ['Appearance',   'Theme, background, hue and button tint.'],
     manage:       ['Settings',     'Categories, subcategories, and accounts.'],
+    shortcuts:    ['Shortcuts',    'Keyboard and accessibility helpers.'],
   };
   const [title, sub] = titles[view] || titles.home;
   const today = new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
@@ -735,6 +808,10 @@ function ManageDesktop({ catalog, setCatalog, onBack }) {
 
 function AppearanceDesktop({ t, setTweak }) {
   return <div className="dt-appearance"><AppearanceScreen t={t} setTweak={setTweak} palettes={PALETTES_D}/></div>;
+}
+
+function ShortcutsDesktop() {
+  return <div className="dt-shortcuts"><ShortcutsHelpScreen /></div>;
 }
 
 /* ──────────────────────────────────────────────────────────────────────

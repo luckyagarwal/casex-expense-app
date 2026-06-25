@@ -1462,3 +1462,12 @@ html, body { margin: 0; padding: 0; background: transparent; color: var(--text-1
   to { transform: rotate(360deg); }
 }
 
+@keyframes mic-pulse {
+  0% { transform: scale(1); background: rgba(255, 75, 75, 0.15); }
+  50% { transform: scale(1.08); background: rgba(255, 75, 75, 0.35); }
+  100% { transform: scale(1); background: rgba(255, 75, 75, 0.15); }
+}
+.quick-add-mic-btn.active {
+  animation: mic-pulse 1.4s infinite ease-in-out;
+}
+

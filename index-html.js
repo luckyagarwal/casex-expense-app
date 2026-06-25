@@ -18,6 +18,19 @@ const HEAD = `<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="format-detection" content="telephone=no" />
 <meta name="theme-color" id="themeColorMeta" content="#050507" />
+<script>
+(function() {
+  try {
+    var raw = localStorage.getItem('casex.glass.tweaks');
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.theme) {
+        document.documentElement.setAttribute('data-theme', parsed.theme);
+      }
+    }
+  } catch (e) {}
+})();
+</script>
 <link rel="manifest" href="/manifest.json" />
 <link rel="preconnect" href="https://unpkg.com" crossorigin />
 <link rel="dns-prefetch" href="https://unpkg.com" />

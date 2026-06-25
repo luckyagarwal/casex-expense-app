@@ -8,6 +8,72 @@ function QuickAddCard({ onQuickAddSuccess }) {
   const [text, setText] = useStateS('');
   const [loading, setLoading] = useStateS(false);
   const [error, setError] = useStateS(null);
+  const [recognizing, setRecognizing] = useStateS(false);
+  const recognitionRef = useRefS(null);
+
+  useEffectS(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-IN';
+
+      rec.onstart = () => {
+        setRecognizing(true);
+        setError(null);
+      };
+      rec.onresult = (e) => {
+        const resultText = e.results[0][0].transcript;
+        if (resultText) {
+          setText(prev => (prev ? prev + ' ' : '') + resultText);
+        }
+      };
+      rec.onerror = (e) => {
+        console.error(e);
+        if (e.error !== 'no-speech') {
+          setError('Voice input failed: ' + e.error);
+        }
+      };
+      rec.onend = () => {
+        setRecognizing(false);
+      };
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  const toggleSpeech = () => {
+    if (!recognitionRef.current) return;
+    if (recognizing) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  useEffectS(() => {
+    const handleVoiceKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable
+      );
+      if (isInput) return;
+
+      if (e.key.toLowerCase() === 'v') {
+        toggleSpeech();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleVoiceKeyDown);
+    return () => window.removeEventListener('keydown', handleVoiceKeyDown);
+  }, [recognizing]);
 
   async function handleSubmit(e) {
     if (e) e.preventDefault();
@@ -71,19 +137,45 @@ function QuickAddCard({ onQuickAddSuccess }) {
               resize: 'none',
             }}
           />
-          <button 
-            type="submit" 
-            disabled={loading || !text.trim()} 
-            className={`quick-add-btn ${loading ? 'loading' : ''}`}
-            aria-label="Submit Quick Add"
-            style={{ marginBottom: 4 }}
-          >
-            {loading ? (
-              <span className="quick-add-spinner"></span>
-            ) : (
-              <Icon name="sparkles" size={13} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 4 }}>
+            {recognitionRef.current && (
+              <button 
+                type="button"
+                onClick={toggleSpeech}
+                className={`quick-add-mic-btn ${recognizing ? 'active' : ''}`}
+                aria-label="Voice input"
+                title="Voice input (Press V)"
+                style={{
+                  background: recognizing ? 'rgba(255, 75, 75, 0.2)' : 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: recognizing ? '#ff4b4b' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                <Icon name={recognizing ? 'mic-off' : 'mic'} size={14} />
+              </button>
             )}
-          </button>
+            <button 
+              type="submit" 
+              disabled={loading || !text.trim()} 
+              className={`quick-add-btn ${loading ? 'loading' : ''}`}
+              aria-label="Submit Quick Add"
+            >
+              {loading ? (
+                <span className="quick-add-spinner"></span>
+              ) : (
+                <Icon name="sparkles" size={13} />
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </GlassCard>
@@ -1408,7 +1500,7 @@ function GlassSelect({ value, onChange, options, placeholder = 'Select…' }) {
   );
 }
 
-function AmountField({ isIncome, value, onChange, hasError }) {
+function AmountField({ isIncome, value, onChange, hasError, amountRef }) {
   const [shaking, setShaking] = useStateS(false);
   useEffectS(() => {
     if (hasError) { setShaking(true); const t = setTimeout(() => setShaking(false), 500); return () => clearTimeout(t); }
@@ -1420,6 +1512,7 @@ function AmountField({ isIncome, value, onChange, hasError }) {
         <div className="num" style={isIncome ? { color: 'var(--income)' } : {}}>
           <span className="sym">₹</span>
           <input
+            ref={amountRef}
             inputMode="decimal"
             value={value}
             placeholder="0"
@@ -1457,6 +1550,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
   const [saving, setSaving] = useStateS(false);
   const [errors, setErrors] = useStateS({});
   const amountRef = useRefS(null);
+  const nameRef = useRefS(null);
   const nowIso = useMemoS(() => {
     const d = isEditing && editTxn.date ? new Date(editTxn.date) : new Date();
     // Use local date/time (not UTC) for the inputs
@@ -1476,7 +1570,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
   const subs = !isIncome ? (catalog.subcategories || []).map(s => s.name) : [];
   const accs = (catalog.accounts || []).map((a) => a.name);
 
-  function handleSave() {
+  function handleSave(e, forceClose = false) {
     if (saving) return;
     const num = Number(amount);
     const errs = {};
@@ -1489,15 +1583,47 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
     }
     setErrors({});
     setSaving(true);
+    
+    // keepOpen is true if not editing, not forced to close, and Cmd/Ctrl keys are not pressed on the event
+    const keepOpen = !isEditing && !forceClose && !(e && (e.metaKey || e.ctrlKey));
+
     Promise.resolve(onSave({
       type: isEditing ? editTxn.type : kind, amount: num, name, cat, sub, acc,
-      date: datetime, catalog, editTxn,
-    })).finally(() => setSaving(false));
+      date: datetime, catalog, editTxn, keepOpen,
+    })).then(() => {
+      if (keepOpen) {
+        setAmount('');
+        setName('');
+        setTimeout(() => {
+          if (amountRef.current) amountRef.current.focus();
+        }, 50);
+      }
+    }).finally(() => setSaving(false));
   }
 
+  const handleFormKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const activeEl = document.activeElement;
+      const isButton = activeEl && (activeEl.tagName === 'BUTTON' || activeEl.closest('button'));
+      const isChip = activeEl && (activeEl.classList.contains('chip') || activeEl.closest('.chip'));
+      const isPickRow = activeEl && (activeEl.classList.contains('compact-pick-row') || activeEl.closest('.compact-pick-row'));
+
+      if (isButton || isChip || isPickRow) {
+        return;
+      }
+
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        handleSave(e, true);
+      } else {
+        e.preventDefault();
+        handleSave(e, false);
+      }
+    }
+  };
 
   return (
-    <div className="form-screen screen-enter" style={{ background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)' }}>
+    <div className="form-screen screen-enter" onKeyDown={handleFormKeyDown} style={{ background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)' }}>
       <div className="form-head">
         <div className="icon-btn" onClick={onClose}><Icon name="arrow-left" size={16} /></div>
         <div className="title">{isEditing ? 'Edit' : 'Add'} {isIncome ? 'income' : 'expense'}</div>
@@ -1509,12 +1635,13 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
           value={amount}
           hasError={!!errors.amount}
           onChange={v => { setAmount(v); if (v) setErrors(e => ({ ...e, amount: null })); }}
+          amountRef={amountRef}
         />
 
         <div className="field">
           <div className="lbl">{isIncome ? 'Source' : 'What was it?'}</div>
           <div className="input-row">
-            <input placeholder={isIncome ? 'e.g. Monthly salary' : 'e.g. Coffee at Blue Tokai'} value={name} onChange={(e) => setName(e.target.value)} />
+            <input ref={nameRef} placeholder={isIncome ? 'e.g. Monthly salary' : 'e.g. Coffee at Blue Tokai'} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
         </div>
 
@@ -1603,7 +1730,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
       </div>
 
       <div className="save-bar">
-        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={handleSave} disabled={saving}>
+        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={(e) => handleSave(e, true)} disabled={saving}>
           {saving ? 'Saving…' : `${isEditing ? 'Update' : 'Save'} ${isIncome ? 'income' : 'expense'}${amount ? ` · ₹${amount}` : ''}`}
         </button>
       </div>
@@ -1616,6 +1743,7 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
   const [open, setOpen] = useStateS(false);
   const [q, setQ] = useStateS('');
   const [shaking, setShaking] = useStateS(false);
+  const pickerRef = useRefS(null);
   const filtered = items.filter(i => !q.trim() || i.toLowerCase().includes(q.toLowerCase()));
   const recentFiltered = recent.filter(r => items.includes(r));
   const selIcon = value && iconFor ? iconFor(value) : null;
@@ -1627,7 +1755,19 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
   return (
     <div className={`compact-picker${hasError ? ' field-error' : ''}${shaking ? ' shaking' : ''}`}>
       <div className="lbl">{label}</div>
-      <div className="compact-pick-row" onClick={() => setOpen(true)}>
+      <div 
+        ref={pickerRef}
+        className="compact-pick-row" 
+        tabIndex={0}
+        onClick={() => setOpen(true)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setOpen(true);
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+      >
         <div className="compact-pick-selected">
           {value ? (
             <div className="chip active" style={{ pointerEvents: 'none' }}>
@@ -1652,10 +1792,18 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
       {hasError && errorMsg && <div className="field-error-msg">{errorMsg}</div>}
 
       {open && (
-        <div className="picker-overlay">
+        <div className="picker-overlay" onKeyDown={e => {
+          if (e.key === 'Escape') {
+            setOpen(false);
+            setQ('');
+            e.preventDefault();
+            e.stopPropagation();
+            setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50);
+          }
+        }}>
           <div className="picker-overlay-head">
             <div className="picker-overlay-title">{label}</div>
-            <div className="icon-btn" onClick={() => { setOpen(false); setQ(''); }}><Icon name="x" size={16} /></div>
+            <div className="icon-btn" onClick={() => { setOpen(false); setQ(''); setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50); }}><Icon name="x" size={16} /></div>
           </div>
           <div className="picker-overlay-body">
             <div className="picker-search-row">
@@ -1664,6 +1812,19 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
                 value={q} onChange={e => setQ(e.target.value)}
                 placeholder={`Search ${label.toLowerCase()}…`}
                 autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const first = filtered[0];
+                    if (first) {
+                      onChange(first);
+                      setOpen(false);
+                      setQ('');
+                      setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50);
+                    }
+                  }
+                }}
               />
               {q && <div onClick={() => setQ('')} style={{ cursor:'pointer', color:'var(--text-3)' }}><Icon name="x" size={12} /></div>}
             </div>
@@ -1674,8 +1835,22 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
                   {recentFiltered.map(item => {
                     const icon = iconFor ? iconFor(item) : null;
                     return (
-                      <div key={item} className={`chip ${value === item ? 'active' : ''}`}
-                        onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
+                      <div 
+                        key={item} 
+                        className={`chip ${value === item ? 'active' : ''}`}
+                        tabIndex={0}
+                        onClick={() => { onChange(item); setOpen(false); setQ(''); setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onChange(item);
+                            setOpen(false);
+                            setQ('');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50);
+                          }
+                        }}
+                      >
                         {icon && <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}><ItemIcon icon={icon} size={16} /></span>}
                         <span>{item}</span>
                       </div>
@@ -1695,8 +1870,22 @@ function CompactPicker({ label, items, value, onChange, placeholder, emptyText, 
                   {filtered.map(item => {
                     const icon = iconFor ? iconFor(item) : null;
                     return (
-                      <div key={item} className={`chip ${value === item ? 'active' : ''}`}
-                        onClick={() => { onChange(item); setOpen(false); setQ(''); }}>
+                      <div 
+                        key={item} 
+                        className={`chip ${value === item ? 'active' : ''}`}
+                        tabIndex={0}
+                        onClick={() => { onChange(item); setOpen(false); setQ(''); setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onChange(item);
+                            setOpen(false);
+                            setQ('');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTimeout(() => { if (pickerRef.current) pickerRef.current.focus(); }, 50);
+                          }
+                        }}
+                      >
                         {icon && (
                           <span style={{ display:'inline-flex', alignItems:'center', width:18, height:18, overflow:'hidden', fontSize:14 }}>
                             <ItemIcon icon={icon} size={16} />
@@ -1842,10 +2031,91 @@ function SearchableChips({ label, items, value, onChange, placeholder, emptyText
         </div>
       )}
     </div>
+function ShortcutsHelpScreen({ onBack }) {
+  const categories = [
+    {
+      title: 'Global Navigation',
+      items: [
+        { keys: ['H'], desc: 'Go to Overview / Home' },
+        { keys: ['T'], desc: 'Go to Transactions' },
+        { keys: ['A'], desc: 'Go to Analytics' },
+        { keys: ['S', '/'], desc: 'Go to Search (and focus search input)' },
+        { keys: ['P'], desc: 'Go to Appearance settings' },
+        { keys: ['M'], desc: 'Go to Manage / Settings' },
+      ]
+    },
+    {
+      title: 'Transactions & Actions',
+      items: [
+        { keys: ['N', 'C', '+'], desc: 'Open New Transaction modal' },
+        { keys: ['Esc'], desc: 'Close any active modal, popup, or sheet' },
+      ]
+    },
+    {
+      title: 'Quick Add (Home page)',
+      items: [
+        { keys: ['V'], desc: 'Toggle Voice Input (Speech Recognition)' },
+      ]
+    },
+    {
+      title: 'New Transaction Form',
+      items: [
+        { keys: ['Tab'], desc: 'Move to next field / input' },
+        { keys: ['Enter'], desc: 'Select focused chip / Save & Add another (Bulk Entry)' },
+        { keys: ['⌘ + Enter', 'Ctrl + Enter'], desc: 'Save & Close form (Single Entry)' },
+      ]
+    }
+  ];
+
+  return (
+    <div className="screen-enter shortcuts-help-screen">
+      <div className="screen-head">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {onBack && <div className="back" onClick={onBack}><Icon name="arrow-left" size={16} /></div>}
+          <h1>Keyboard Shortcuts</h1>
+        </div>
+      </div>
+      <div className="screen-scroll shortcuts-help-body" style={{ paddingBottom: 60 }}>
+        <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 20 }}>
+          Use these shortcuts to navigate the app and record transactions rapidly without touching your mouse.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {categories.map((cat, i) => (
+            <div key={i}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)', marginBottom: 10 }}>
+                {cat.title}
+              </div>
+              <GlassCard style={{ padding: '4px 0' }}>
+                {cat.items.map((item, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderBottom: idx === cat.items.length - 1 ? 'none' : '1px solid var(--glass-fill)'
+                  }}>
+                    <div style={{ fontSize: 13.5, color: 'var(--text-2)' }}>{item.desc}</div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {item.keys.map((k, kid) => (
+                        <kbd key={kid} style={{
+                          padding: '3px 8px', borderRadius: 6,
+                          background: 'var(--glass-fill-strong)',
+                          border: '1px solid var(--inner-highlight)',
+                          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-1)',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
+                        }}>{k}</kbd>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </GlassCard>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
 Object.assign(window, {
   HomeScreen, TransactionsScreen, AnalyticsScreen, SearchScreen, AddForm, ManageScreen, IconPickerSheet,
-  SearchableChips, CompactPicker, TxnDetailSheet, buildTrend, TrendChart, DateField, SortRow, GlassSelect, QuickAddCard
+  SearchableChips, CompactPicker, TxnDetailSheet, buildTrend, TrendChart, DateField, SortRow, GlassSelect, QuickAddCard, ShortcutsHelpScreen
 });
