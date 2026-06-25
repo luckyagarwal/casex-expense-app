@@ -1539,7 +1539,7 @@ function AmountField({ isIncome, value, onChange, hasError, amountRef }) {
 /* ──────────────────────────────────────────────────────────────────────
    ADD (expense / income form)
    ────────────────────────────────────────────────────────────────────── */
-function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], subcategories: [], accounts: [] } }) {
+function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], subcategories: [], accounts: [] }, isDesktop }) {
   const isEditing = !!editTxn;
   const isIncome = isEditing ? editTxn.type === 'income' : kind === 'income';
   const [amount, setAmount] = useStateS(isEditing ? String(editTxn.amount) : '');
@@ -1584,8 +1584,11 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
     setErrors({});
     setSaving(true);
     
-    // keepOpen is true if not editing, not forced to close, and Cmd/Ctrl keys are not pressed on the event
-    const keepOpen = !isEditing && !forceClose && !(e && (e.metaKey || e.ctrlKey));
+    // On desktop, keepOpen is true if not editing, not forced to close, and Cmd/Ctrl keys are not pressed on the event.
+    // On mobile, keepOpen is always false (we always close on save).
+    const keepOpen = isDesktop 
+      ? (!isEditing && !forceClose && !(e && (e.metaKey || e.ctrlKey)))
+      : false;
 
     Promise.resolve(onSave({
       type: isEditing ? editTxn.type : kind, amount: num, name, cat, sub, acc,
@@ -1730,7 +1733,7 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
       </div>
 
       <div className="save-bar">
-        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={(e) => handleSave(e, true)} disabled={saving}>
+        <button className={`save-btn ${isIncome ? 'income' : ''}`} onClick={(e) => handleSave(e, false)} disabled={saving}>
           {saving ? 'Saving…' : `${isEditing ? 'Update' : 'Save'} ${isIncome ? 'income' : 'expense'}${amount ? ` · ₹${amount}` : ''}`}
         </button>
       </div>
@@ -2051,6 +2054,8 @@ function ShortcutsHelpScreen({ onBack }) {
       title: 'Transactions & Actions',
       items: [
         { keys: ['N', 'C', '+'], desc: 'Open New Transaction modal' },
+        { keys: ['E'], desc: 'Open New Expense form directly' },
+        { keys: ['I'], desc: 'Open New Income form directly' },
         { keys: ['Esc'], desc: 'Close any active modal, popup, or sheet' },
       ]
     },

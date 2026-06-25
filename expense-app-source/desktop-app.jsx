@@ -211,6 +211,12 @@ function DesktopApp() {
         case '+':
           openAdd();
           break;
+        case 'e':
+          setAddForm('expense');
+          break;
+        case 'i':
+          setAddForm('income');
+          break;
         case 'h':
           setView('home');
           break;
@@ -411,7 +417,7 @@ function DesktopApp() {
       {(addForm || editTxn) && (
         <div className="desktop-modal-backdrop show" onClick={closeForm}>
           <div className="desktop-form-wrap" onClick={e=>e.stopPropagation()}>
-            <AddForm kind={addForm || editTxn.type} editTxn={editTxn} onClose={closeForm} onSave={saveTxn} catalog={catalog} />
+            <AddForm kind={addForm || editTxn.type} editTxn={editTxn} onClose={closeForm} onSave={saveTxn} catalog={catalog} isDesktop={true} />
           </div>
         </div>
       )}
