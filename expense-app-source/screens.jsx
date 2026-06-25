@@ -121,6 +121,13 @@ function QuickAddCard({ onQuickAddSuccess }) {
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            title="Press Enter to submit, Shift+Enter for new line"
             disabled={loading}
             maxLength={1000}
             placeholder="e.g., 220 spend on food lunch at 3pm"
