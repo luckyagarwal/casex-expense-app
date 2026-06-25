@@ -2031,6 +2031,9 @@ function SearchableChips({ label, items, value, onChange, placeholder, emptyText
         </div>
       )}
     </div>
+  );
+}
+
 function ShortcutsHelpScreen({ onBack }) {
   const categories = [
     {
