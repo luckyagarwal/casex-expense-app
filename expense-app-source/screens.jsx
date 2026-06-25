@@ -1615,18 +1615,21 @@ function AddForm({ kind, editTxn, onClose, onSave, catalog = { categories: [], s
         return;
       }
 
-      if (e.metaKey || e.ctrlKey) {
-        e.preventDefault();
-        handleSave(e, true);
-      } else {
-        e.preventDefault();
-        handleSave(e, false);
-      }
+      e.preventDefault();
+      handleSave(e, false);
+    }
+  };
+
+  const handleFormKeyDownCapture = (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSave(e, true);
     }
   };
 
   return (
-    <div className="form-screen screen-enter" onKeyDown={handleFormKeyDown} style={{ background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)' }}>
+    <div className="form-screen screen-enter" onKeyDown={handleFormKeyDown} onKeyDownCapture={handleFormKeyDownCapture} style={{ background: 'rgba(6,6,10,0.92)', backdropFilter: 'blur(20px) saturate(150%)', WebkitBackdropFilter: 'blur(20px) saturate(150%)' }}>
       <div className="form-head">
         <div className="icon-btn" onClick={onClose}><Icon name="arrow-left" size={16} /></div>
         <div className="title">{isEditing ? 'Edit' : 'Add'} {isIncome ? 'income' : 'expense'}</div>

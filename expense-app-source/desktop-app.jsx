@@ -203,6 +203,7 @@ function DesktopApp() {
       }
 
       if (isInput) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       let matched = true;
       switch (e.key.toLowerCase()) {
